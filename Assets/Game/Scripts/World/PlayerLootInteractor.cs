@@ -65,10 +65,12 @@ namespace TheOldRoad.World
                 activeChest.SetHighlighted(false);
                 activeChest = null;
                 InteractionHint = "Finish the current action first.";
+                PlayerSpeechBubble.Say("speech.action_busy");
                 return;
             }
 
             InteractionHint = "Opening " + activeChest.DisplayName + "...";
+            PlayerSpeechBubble.Say("speech.loot_start");
         }
 
         private void UpdateActiveOpen()
@@ -100,6 +102,7 @@ namespace TheOldRoad.World
                 sliceController?.NotifyLootChestOpened(chest);
                 chest.SetHighlighted(false);
                 if (nearestChest == chest) nearestChest = null;
+                PlayerSpeechBubble.Say("speech.loot_done");
             }
         }
 

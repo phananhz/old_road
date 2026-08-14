@@ -36,5 +36,9 @@ Current objective sequence:
 15. Build a campfire.
 16. Cook one meal.
 17. Build an animal pen.
+18. Find a cave entrance.
+19. Read the dragon-scarred ridge.
 
 Future expansion should replace this with authored quest definitions, rewards, prerequisites, and localized text.
+
+The cave and dragon steps are story hooks only in this prototype. They establish the future direction for cave exploration and a dragon confrontation without implementing full combat, boss AI, dungeon generation, or authored quest rewards yet.

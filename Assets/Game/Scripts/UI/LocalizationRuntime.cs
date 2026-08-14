@@ -52,6 +52,8 @@ namespace TheOldRoad.UI
                 case "Build a campfire": return "Xây bếp lửa";
                 case "Cook one meal": return "Nấu một bữa ăn";
                 case "Build an animal pen": return "Xây chuồng nuôi";
+                case "Find a cave entrance": return "Tìm một cửa hang";
+                case "Read the dragon-scarred ridge": return "Đọc dấu tích rồng trên sườn núi";
                 default: return english;
             }
         }
@@ -159,7 +161,24 @@ namespace TheOldRoad.UI
                 case "legend_landmark": return "Landmark";
                 case "legend_loot": return "Loot chest";
                 case "legend_npc": return "Villager NPC";
+                case "legend_animal": return "Harmless animal";
                 case "legend_hint": return "Explore by following the road. Markers are prototype testing aids.";
+                case "home_locator": return "Home Locator";
+                case "home": return "Home";
+                case "home_site": return "Home site";
+                case "no_home_built": return "No home built yet.";
+                case "follow_arrow_home": return "Follow the arrow to return.";
+                case "waypoint": return "Waypoint";
+                case "no_waypoint": return "Open Map and left-click to pin a marker.";
+                case "follow_arrow_waypoint": return "Follow the arrow to the pin.";
+                case "map_pin_hint": return "Left click/tap map to pin. Right click to clear.";
+                case "clear_waypoint": return "Clear Waypoint";
+                case "waypoint_set": return "Waypoint pinned.";
+                case "waypoint_cleared": return "Waypoint cleared.";
+                case "legend_home": return "Home";
+                case "legend_building": return "Building";
+                case "legend_waypoint": return "Waypoint";
+                case "legend_clean_map_hint": return "Map hides resources, loot, NPCs, and animals so navigation stays clean.";
                 case "item.wood": return "Wood";
                 case "item.stone": return "Stone";
                 case "item.cabin-plank": return "Cabin Plank";
@@ -172,6 +191,28 @@ namespace TheOldRoad.UI
                 case "item.torch": return "Torch";
                 case "item.bell-fragment": return "Bell Fragment";
                 case "item.old-coin": return "Old Coin";
+                case "speech.gather_start": return "Let's see what I can use here.";
+                case "speech.gather_done": return "That should help on the road.";
+                case "speech.gather_blocked": return "I need the right tool first.";
+                case "speech.gather_cancelled": return "Too far. I'll come back to it.";
+                case "speech.action_busy": return "One thing at a time.";
+                case "speech.craft_done": return "Good. This will be useful.";
+                case "speech.craft_blocked": return "I still need more materials.";
+                case "speech.cook_done": return "Warm food. That helps.";
+                case "speech.cook_blocked": return "I need berries and something to cook with.";
+                case "speech.build_begin": return "This place could become something.";
+                case "speech.build_started": return "Work has begun.";
+                case "speech.build_invalid": return "This ground will not work.";
+                case "speech.build_blocked": return "I do not have enough materials.";
+                case "speech.loot_start": return "Someone left this behind.";
+                case "speech.loot_done": return "Found something.";
+                case "speech.landmark_start": return "The old road left a mark here.";
+                case "speech.landmark_done": return "I should write this down.";
+                case "speech.enter_home": return "At least there is shelter.";
+                case "speech.exit_home": return "Back to the road.";
+                case "speech.sleep_prompt": return "Eight hours might clear my head.";
+                case "speech.sleep_done": return "I feel rested.";
+                case "speech.sleep_cancelled": return "Not yet.";
                 default: return key;
             }
         }
@@ -279,7 +320,24 @@ namespace TheOldRoad.UI
                 case "legend_landmark": return "Địa danh";
                 case "legend_loot": return "Rương";
                 case "legend_npc": return "Dân làng NPC";
+                case "legend_animal": return "Động vật vô hại";
                 case "legend_hint": return "Khám phá bằng cách men theo đường. Marker là hỗ trợ test prototype.";
+                case "home_locator": return "Định vị nhà";
+                case "home": return "Nhà";
+                case "home_site": return "Nền nhà";
+                case "no_home_built": return "Chưa xây nhà.";
+                case "follow_arrow_home": return "Đi theo mũi tên để về.";
+                case "waypoint": return "Mốc ghim";
+                case "no_waypoint": return "Mở Bản đồ và click trái để ghim mốc.";
+                case "follow_arrow_waypoint": return "Đi theo mũi tên tới mốc.";
+                case "map_pin_hint": return "Click/chạm bản đồ để ghim. Click phải để xóa.";
+                case "clear_waypoint": return "Xóa mốc";
+                case "waypoint_set": return "Đã ghim mốc.";
+                case "waypoint_cleared": return "Đã xóa mốc.";
+                case "legend_home": return "Nhà";
+                case "legend_building": return "Công trình";
+                case "legend_waypoint": return "Mốc ghim";
+                case "legend_clean_map_hint": return "Bản đồ ẩn tài nguyên, rương, NPC và động vật để dễ định hướng.";
                 case "item.wood": return "Gỗ";
                 case "item.stone": return "Đá";
                 case "item.cabin-plank": return "Ván gỗ";
@@ -292,6 +350,28 @@ namespace TheOldRoad.UI
                 case "item.torch": return "Đuốc";
                 case "item.bell-fragment": return "Mảnh chuông";
                 case "item.old-coin": return "Xu cũ";
+                case "speech.gather_start": return "Để xem có dùng được gì ở đây.";
+                case "speech.gather_done": return "Thứ này sẽ có ích trên đường.";
+                case "speech.gather_blocked": return "Mình cần đúng công cụ trước.";
+                case "speech.gather_cancelled": return "Xa quá. Lát nữa quay lại.";
+                case "speech.action_busy": return "Làm từng việc một thôi.";
+                case "speech.craft_done": return "Tốt. Cái này sẽ hữu dụng.";
+                case "speech.craft_blocked": return "Mình vẫn cần thêm nguyên liệu.";
+                case "speech.cook_done": return "Đồ ăn nóng. Dễ chịu hơn rồi.";
+                case "speech.cook_blocked": return "Mình cần quả dại và thứ gì đó để nấu.";
+                case "speech.build_begin": return "Chỗ này có thể dựng được thứ gì đó.";
+                case "speech.build_started": return "Công việc bắt đầu rồi.";
+                case "speech.build_invalid": return "Nền đất này không ổn.";
+                case "speech.build_blocked": return "Mình không đủ nguyên liệu.";
+                case "speech.loot_start": return "Có ai đó đã để lại thứ này.";
+                case "speech.loot_done": return "Tìm được thứ gì đó rồi.";
+                case "speech.landmark_start": return "Con Đường Cũ để lại dấu vết ở đây.";
+                case "speech.landmark_done": return "Mình nên ghi lại điều này.";
+                case "speech.enter_home": return "Ít nhất cũng có chỗ trú.";
+                case "speech.exit_home": return "Trở lại con đường.";
+                case "speech.sleep_prompt": return "Ngủ tám tiếng có thể giúp đầu óc tỉnh hơn.";
+                case "speech.sleep_done": return "Mình thấy khỏe hơn rồi.";
+                case "speech.sleep_cancelled": return "Chưa phải lúc.";
                 default: return English(key);
             }
         }

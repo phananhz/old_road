@@ -11,7 +11,9 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 
 - title/start screen: blocks gameplay until the player starts the journey, hides the gameplay HUD behind it, and exposes Settings/Quit;
 - top-left: game title, player health, day/time, and save status;
-- top-right: in-game day/time and a local minimap centered around the player for chunk-streamed exploration;
+- top-right: in-game day/time and a clean local minimap centered around the player for chunk-streamed exploration;
+- below minimap: a Home Locator card shows a directional arrow and distance to the nearest completed or in-progress home building;
+- below the Home Locator: a Waypoint card shows direction and distance to the player-pinned map marker;
 - bottom-center: 9-slot hotbar for key materials and build actions;
 - bottom-left: virtual joystick for mobile-style movement testing;
 - bottom-right: mobile-style action buttons for `Gather`, `Craft`, `Build`, `Bag`, `Map`, and `Log`;
@@ -22,7 +24,7 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 - a centered bed confirmation prompt that can be accepted with `Y`/`Enter` or the `Yes` button, and cancelled with `N`/`Esc` or the `No` button;
 - top-center: temporary contextual prompts for gathering, inspecting, crafting, and building.
 - `I`: inventory overlay with all current prototype item stacks.
-- `M`: expanded map overlay with player, resources, construction sites, landmarks, road, and river markers.
+- `M`: expanded map overlay with terrain, road, river, player, construction markers, and an optional player waypoint. Resource, loot, landmark, NPC, and animal markers are hidden by default to keep navigation clean.
 - `J`: Roadwarden Journal overlay with discovered landmark entries.
 - `Esc`: close overlays.
 
@@ -34,11 +36,15 @@ The visual skin uses dark panels, gold trim, parchment text, subtle shadows, cor
 
 Hotbar slots can be selected with number keys or by clicking/tapping directly on the slot. The bag overlay uses compact square item cells with quantity badges to avoid text spilling outside slots. Build catalog cards can be selected by click or tap.
 
+The expanded map supports waypoint pinning. Left-clicking or tapping the map sets a waypoint at that world position; right-clicking the map or pressing the clear button removes it. The HUD then shows a directional arrow and distance to that waypoint, separate from the home locator.
+
 The build catalog now exposes multiple buildable prototype buildings: Cabin, Stone Cottage, Storage Shed, Campfire, Cooking Hearth, Small Animal Pen, and Long Animal Pen. Fire buildings support cooking and warm light; animal pens produce prototype animal-product items over time. If the player lacks required materials, the catalog does not enter placement mode and shows the missing materials.
 
 The mobile action buttons emit the same prototype input events as keyboard controls so gathering, crafting, building, inventory, map, and journal logic remain outside the UI layer.
 
 Contextual prompt messages appear near the top of the screen and auto-hide after a short delay so they do not cover the hotbar.
+
+The player has a lightweight world-space self-talk speech bubble above their sprite. It is used for short flavor reactions to prototype actions such as starting or completing gathering, crafting, building, looting, landmark inspection, cooking, entering/exiting shelter, and bed sleep decisions. This is intentionally presentation-only prototype feedback and not the final branching NPC dialogue system.
 
 Nearby interactable objects show a temporary glow outline while they are in interaction range.
 

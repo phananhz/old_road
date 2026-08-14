@@ -50,6 +50,7 @@ namespace TheOldRoad.Gathering
             if (!nearestNode.CanHarvest(inventorySession.Runtime))
             {
                 InteractionHint = FormatBlockedHint(nearestNode);
+                PlayerSpeechBubble.Say("speech.gather_blocked");
                 return;
             }
 
@@ -75,10 +76,12 @@ namespace TheOldRoad.Gathering
                 activeNode.SetHighlighted(false);
                 activeNode = null;
                 InteractionHint = "Finish the current action first.";
+                PlayerSpeechBubble.Say("speech.action_busy");
                 return;
             }
 
             InteractionHint = "Gathering " + activeNode.DisplayName + "...";
+            PlayerSpeechBubble.Say("speech.gather_start");
         }
 
         private void UpdateActiveGather()
@@ -110,11 +113,13 @@ namespace TheOldRoad.Gathering
                 sliceController?.NotifyResourceHarvested(node);
                 node.SetHighlighted(false);
                 if (nearestNode == node) nearestNode = null;
+                PlayerSpeechBubble.Say("speech.gather_done");
             }
             else
             {
                 InteractionHint = FormatBlockedHint(node);
                 node.SetHighlighted(false);
+                PlayerSpeechBubble.Say("speech.gather_blocked");
             }
         }
 
@@ -124,6 +129,7 @@ namespace TheOldRoad.Gathering
             activeNode = null;
             activeProgress = null;
             InteractionHint = "Gather cancelled.";
+            PlayerSpeechBubble.Say("speech.gather_cancelled");
         }
 
         private void UpdateNearestNode(bool force)

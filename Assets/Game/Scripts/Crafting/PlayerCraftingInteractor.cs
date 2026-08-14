@@ -3,6 +3,7 @@ using TheOldRoad.Core;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Items;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.Crafting
 {
@@ -31,6 +32,7 @@ namespace TheOldRoad.Crafting
             if (recipes == null || recipes.Length == 0 || inventorySession == null || inventorySession.Runtime == null)
             {
                 CraftingHint = "Crafting is not ready.";
+                PlayerSpeechBubble.Say("speech.craft_blocked");
                 return;
             }
 
@@ -39,6 +41,7 @@ namespace TheOldRoad.Crafting
             {
                 RecipeDefinition blocked = SelectNextProgressRecipe();
                 CraftingHint = blocked != null ? "Need: " + FormatIngredients(blocked) + "." : "No craftable recipe.";
+                PlayerSpeechBubble.Say("speech.craft_blocked");
                 return;
             }
 
@@ -46,10 +49,12 @@ namespace TheOldRoad.Crafting
             {
                 CraftingHint = "Crafted " + recipe.ResultQuantity + " " + PrototypeItemCatalog.Get(recipe.ResultItemId).DisplayName + ".";
                 sliceController?.NotifyCrafted(recipe);
+                PlayerSpeechBubble.Say("speech.craft_done");
             }
             else
             {
                 CraftingHint = "Need: " + FormatIngredients(recipe) + ".";
+                PlayerSpeechBubble.Say("speech.craft_blocked");
             }
         }
 

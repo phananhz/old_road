@@ -20,8 +20,10 @@
 - FR-WORLD-003: The river shall include lightweight animated visual motion in the prototype scene.
 - FR-WORLD-004: The prototype shall stream deterministic world chunks around the player so exploration can continue beyond the original Valen Outskirts map.
 - FR-WORLD-005: Streamed world chunks may contain deterministic prototype villages.
+- FR-WORLD-006: The prototype shall include discoverable cave and dragon-foreshadowing landmarks as story hooks for later adventure regions.
 - FR-NPC-001: Prototype village NPCs shall be harmless and shall not attack the player.
 - FR-NPC-002: Prototype village NPCs shall have simple visible jobs and movement loops.
+- FR-NPC-003: Streamed villages may contain harmless animal NPCs that wander locally for atmosphere.
 - FR-ITEM-001: Static item data shall use stable item IDs.
 - FR-ITEM-002: The prototype shall include multiple material, forage, ore, and currency item IDs for inventory testing.
 - FR-ITEM-003: The prototype shall include a torch item that can provide a small local light radius.
@@ -44,6 +46,7 @@
 - FR-EXPLORE-003: Discovered landmarks shall appear in a journal-style UI.
 - FR-EXPLORE-004: Landmark discovery state shall persist through save/load.
 - FR-EXPLORE-005: Inspecting a landmark shall show a short world-space progress countdown above the target before the journal entry is discovered.
+- FR-EXPLORE-006: The prototype objective tracker shall include cave discovery and dragon-foreshadowing exploration steps.
 - FR-QUEST-001: The vertical slice shall show a current objective tracker for the core prototype flow.
 - FR-QUEST-002: Objective completion shall be derived from gameplay state rather than directly edited by UI.
 - FR-CRAFT-001: Recipes shall define stable recipe ID, ingredients, result, optional duration, and optional workstation.
@@ -82,13 +85,17 @@
 - FR-VS-001: The Valen Outskirts flow shall be playable end-to-end in the Unity Editor.
 - FR-UI-001: The prototype HUD shall show player health.
 - FR-UI-002: The prototype HUD shall show a hotbar with key item quantities.
-- FR-UI-003: The prototype HUD shall show a minimap with player and nearby world markers.
+- FR-UI-003: The prototype HUD shall show a clean minimap with terrain, player, construction markers, home direction, and optional waypoint direction.
 - FR-UI-004: The prototype HUD shall show in-game day and time.
 - FR-UI-005: The prototype HUD shall allow hotbar slot selection by click or tap.
 - FR-UI-006: The prototype HUD shall expose mobile-style action buttons for gather, craft, build, inventory, and map.
 - FR-UI-007: The prototype HUD shall expose a journal/log overlay for discovered landmarks.
 - FR-UI-008: The bag overlay shall display items as compact square slots so item labels and counts stay inside their cells.
 - FR-UI-009: The prototype shall show a start screen before gameplay begins.
+- FR-UI-010: The prototype shall show short world-space player self-talk speech bubbles for selected gameplay actions such as gathering, crafting, building, looting, discovering, cooking, entering/exiting shelter, and sleeping.
+- FR-UI-011: The prototype HUD shall show a home locator with a directional arrow and distance to the nearest built or in-progress home building.
+- FR-UI-012: The prototype map shall hide resource, loot, NPC, animal, and landmark markers by default, showing terrain, player, construction markers, home direction, and an optional player-pinned waypoint.
+- FR-UI-013: The prototype map shall allow placing and clearing a waypoint pin and shall show direction and distance to that pinned waypoint in the HUD.
 - FR-SETTINGS-001: The prototype shall allow changing Unity graphics quality from an in-game settings panel.
 - FR-SETTINGS-002: The prototype shall allow toggling sound on/off and changing master volume.
 - FR-SETTINGS-003: Prototype settings shall persist between play sessions on the local device.

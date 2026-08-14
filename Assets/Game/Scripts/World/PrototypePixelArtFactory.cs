@@ -17,6 +17,7 @@ namespace TheOldRoad.World
         public static Sprite Player() => PlayerWalk(0);
         public static Sprite PlayerWalk(int frame) => GetOrCreate("player.walk." + Mathf.Abs(frame % 4), 16, 24, pixels => PaintPlayer(pixels, Mathf.Abs(frame % 4)), new Vector2(0.5f, 0.18f));
         public static Sprite Villager(int variant, int frame) => GetOrCreate("villager." + Mathf.Abs(variant % 4) + "." + Mathf.Abs(frame % 4), 16, 22, pixels => PaintVillager(pixels, Mathf.Abs(variant % 4), Mathf.Abs(frame % 4)), new Vector2(0.5f, 0.16f));
+        public static Sprite Animal(int variant, int frame) => GetOrCreate("animal." + Mathf.Abs(variant % 4) + "." + Mathf.Abs(frame % 4), 18, 14, pixels => PaintAnimal(pixels, Mathf.Abs(variant % 4), Mathf.Abs(frame % 4)), new Vector2(0.5f, 0.14f));
         public static Sprite Tree() => GetOrCreate("tree", 24, 32, PaintTree, new Vector2(0.5f, 0.12f));
         public static Sprite Rock() => GetOrCreate("rock", 18, 14, PaintRock, new Vector2(0.5f, 0.18f));
         public static Sprite BerryBush() => GetOrCreate("berry.bush", 22, 20, PaintBerryBush, new Vector2(0.5f, 0.12f));
@@ -140,6 +141,37 @@ namespace TheOldRoad.World
             SetPixel(pixels, 16, 22, 6, 17, new Color32(46, 35, 29, 255));
             SetPixel(pixels, 16, 22, 9, 17, new Color32(46, 35, 29, 255));
             FillRect(pixels, 16, 22, 5, 20, 6, 1, new Color32(59, 39, 28, 255));
+        }
+
+        private static void PaintAnimal(Color32[] pixels, int variant, int frame)
+        {
+            int step = frame == 1 ? 1 : frame == 3 ? -1 : 0;
+            Color32 body = variant == 0 ? new Color32(238, 229, 197, 255)
+                : variant == 1 ? new Color32(116, 78, 46, 255)
+                : variant == 2 ? new Color32(72, 70, 66, 255)
+                : new Color32(204, 156, 86, 255);
+            Color32 bodyDark = variant == 0 ? new Color32(172, 160, 132, 255)
+                : variant == 1 ? new Color32(74, 48, 31, 255)
+                : variant == 2 ? new Color32(42, 42, 42, 255)
+                : new Color32(139, 96, 48, 255);
+            Color32 accent = variant == 0 ? new Color32(210, 58, 38, 255)
+                : variant == 1 ? new Color32(232, 221, 184, 255)
+                : variant == 2 ? new Color32(210, 210, 205, 255)
+                : new Color32(68, 42, 24, 255);
+
+            FillRect(pixels, 18, 14, 4, 4, 10, 5, body);
+            FillRect(pixels, 18, 14, 11, 7, 4, 3, bodyDark);
+            FillRect(pixels, 18, 14, 2, 6, 4, 4, body);
+            FillRect(pixels, 18, 14, 3, 9, 3, 2, bodyDark);
+            FillRect(pixels, 18, 14, 6, 2 + Mathf.Max(0, step), 2, 3, bodyDark);
+            FillRect(pixels, 18, 14, 11, 2 + Mathf.Max(0, -step), 2, 3, bodyDark);
+            SetPixel(pixels, 18, 14, 4, 8, new Color32(30, 24, 20, 255));
+            SetPixel(pixels, 18, 14, 14, 10, accent);
+            if (variant == 0)
+            {
+                FillRect(pixels, 18, 14, 1, 9, 3, 2, accent);
+                FillRect(pixels, 18, 14, 2, 11, 2, 1, new Color32(226, 142, 36, 255));
+            }
         }
 
         private static void PaintTree(Color32[] pixels)

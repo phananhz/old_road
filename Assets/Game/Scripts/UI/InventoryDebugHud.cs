@@ -51,6 +51,8 @@ namespace TheOldRoad.UI
         private float promptHideTime;
         private string buildCatalogMessage = string.Empty;
         private float buildCatalogMessageHideTime;
+        private bool hasWaypoint;
+        private Vector3 waypointWorldPosition;
         private float nextCacheRefreshTime;
         private PlayerVitals cachedVitals;
         private PlayerMovement cachedPlayer;
@@ -67,6 +69,7 @@ namespace TheOldRoad.UI
         private ResourceNode[] cachedResourceNodes = System.Array.Empty<ResourceNode>();
         private ConstructionSite[] cachedConstructionSites = System.Array.Empty<ConstructionSite>();
         private VillagerNpcController[] cachedNpcs = System.Array.Empty<VillagerNpcController>();
+        private AnimalNpcController[] cachedAnimalNpcs = System.Array.Empty<AnimalNpcController>();
         private AnimalPenController[] cachedAnimalPens = System.Array.Empty<AnimalPenController>();
 
         public void Configure(
@@ -106,6 +109,8 @@ namespace TheOldRoad.UI
             DrawStatusCard();
             DrawObjectiveCard();
             DrawMinimapCard();
+            DrawHomeLocatorCard();
+            DrawWaypointLocatorCard();
             DrawPromptRibbon();
             DrawHotbar();
             DrawOverlay();
@@ -172,6 +177,56 @@ namespace TheOldRoad.UI
             DrawControlPill(new Rect(card.x + 18, map.yMax + 12, 82, 22), "M", LocalizationRuntime.T("map"));
             DrawControlPill(new Rect(card.x + 106, map.yMax + 12, 44, 22), "I", LocalizationRuntime.T("bag"));
             DrawControlPill(new Rect(card.x + 156, map.yMax + 12, 44, 22), "J", LocalizationRuntime.T("log"));
+        }
+
+        private void DrawHomeLocatorCard()
+        {
+            const float width = 220f;
+            Rect card = new Rect(Screen.width - width - 18f, 300f, width, 74f);
+            DrawCard(card, new Color(0.045f, 0.034f, 0.024f, 0.90f));
+            DrawCornerAccents(card, GoldDim);
+
+            ConstructionSite home = FindHomeSite();
+            PlayerMovement player = cachedPlayer;
+            GUI.Label(new Rect(card.x + 14f, card.y + 8f, card.width - 28f, 20f), LocalizationRuntime.T("home_locator"), labelStyle);
+
+            if (home == null || player == null)
+            {
+                GUI.Label(new Rect(card.x + 14f, card.y + 34f, card.width - 28f, 22f), LocalizationRuntime.T("no_home_built"), smallStyle);
+                return;
+            }
+
+            Vector2 delta = home.transform.position - player.transform.position;
+            float distance = delta.magnitude;
+            string arrow = GetDirectionArrow(delta);
+            string status = home.IsCompleted ? LocalizationRuntime.T("home") : LocalizationRuntime.T("home_site");
+
+            GUI.Label(new Rect(card.x + 16f, card.y + 31f, 44f, 34f), arrow, titleStyle);
+            GUI.Label(new Rect(card.x + 60f, card.y + 34f, card.width - 74f, 18f), status + "  " + Mathf.RoundToInt(distance) + "m", smallStyle);
+            GUI.Label(new Rect(card.x + 60f, card.y + 51f, card.width - 74f, 16f), LocalizationRuntime.T("follow_arrow_home"), smallStyle);
+        }
+
+        private void DrawWaypointLocatorCard()
+        {
+            const float width = 220f;
+            Rect card = new Rect(Screen.width - width - 18f, 386f, width, 82f);
+            DrawCard(card, new Color(0.042f, 0.032f, 0.045f, 0.90f));
+            DrawCornerAccents(card, new Color(0.64f, 0.48f, 0.86f, 1f));
+
+            PlayerMovement player = cachedPlayer;
+            GUI.Label(new Rect(card.x + 14f, card.y + 8f, card.width - 28f, 20f), LocalizationRuntime.T("waypoint"), labelStyle);
+
+            if (!hasWaypoint || player == null)
+            {
+                GUI.Label(new Rect(card.x + 14f, card.y + 34f, card.width - 28f, 34f), LocalizationRuntime.T("no_waypoint"), smallStyle);
+                return;
+            }
+
+            Vector2 delta = waypointWorldPosition - player.transform.position;
+            float distance = delta.magnitude;
+            GUI.Label(new Rect(card.x + 16f, card.y + 31f, 44f, 34f), GetDirectionArrow(delta), titleStyle);
+            GUI.Label(new Rect(card.x + 60f, card.y + 34f, card.width - 74f, 18f), LocalizationRuntime.T("waypoint") + "  " + Mathf.RoundToInt(distance) + "m", smallStyle);
+            GUI.Label(new Rect(card.x + 60f, card.y + 51f, card.width - 74f, 16f), LocalizationRuntime.T("follow_arrow_waypoint"), smallStyle);
         }
 
         private void DrawObjectiveCard()
@@ -640,6 +695,7 @@ namespace TheOldRoad.UI
             buildCatalogMessageHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
             activePromptText = message;
             promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+            PlayerSpeechBubble.Say("speech.build_blocked");
         }
 
         private void DrawBuildingGlyph(Rect rect, string glyph)
@@ -696,7 +752,9 @@ namespace TheOldRoad.UI
             float legendWidth = panel.width > 760f ? 220f : 0f;
             Rect mapRect = new Rect(panel.x + 26, panel.y + 72, panel.width - 52 - legendWidth, panel.height - 102);
             DrawRect(new Rect(mapRect.x - 6, mapRect.y - 6, mapRect.width + 12, mapRect.height + 12), new Color(0.02f, 0.018f, 0.015f, 1f));
+            HandleMapPinInput(mapRect);
             DrawMinimap(mapRect);
+            GUI.Label(new Rect(mapRect.x, mapRect.yMax + 8f, mapRect.width, 18f), LocalizationRuntime.T("map_pin_hint"), centerStyle);
 
             if (legendWidth > 0f)
             {
@@ -763,31 +821,16 @@ namespace TheOldRoad.UI
             DrawRoad(map);
             DrawBorder(map, new Color(0.01f, 0.012f, 0.01f, 1f), 2f);
 
-            DrawLandmarkDots(map);
-
-            foreach (LootChest chest in cachedLootChests)
-            {
-                if (chest == null || chest.IsOpened) continue;
-                DrawMapDot(map, chest.transform.position, new Color(1f, 0.78f, 0.24f, 1f), map.width > 220f ? 9f : 5f);
-            }
-
-            foreach (ResourceNode node in cachedResourceNodes)
-            {
-                if (node == null || node.IsHarvested) continue;
-                DrawMapDot(map, node.transform.position, GetResourceMapColor(node.ResourceItemId), map.width > 220f ? 9f : 5f);
-            }
-
             foreach (ConstructionSite site in cachedConstructionSites)
             {
                 if (site == null) continue;
-                DrawMapDot(map, site.transform.position, new Color(0.95f, 0.62f, 0.22f, 1f), map.width > 220f ? 10f : 6f);
+                Color color = IsHomeBuilding(site.BuildingId)
+                    ? new Color(1f, 0.82f, 0.24f, 1f)
+                    : new Color(0.95f, 0.62f, 0.22f, 1f);
+                DrawMapDot(map, site.transform.position, color, map.width > 220f ? 10f : 6f);
             }
 
-            foreach (VillagerNpcController npc in cachedNpcs)
-            {
-                if (npc == null) continue;
-                DrawMapDot(map, npc.transform.position, new Color(0.92f, 0.78f, 0.42f, 1f), map.width > 220f ? 8f : 5f);
-            }
+            if (hasWaypoint) DrawWaypointMarker(map, waypointWorldPosition, map.width > 220f ? 14f : 9f);
 
             PlayerMovement player = cachedPlayer;
             if (player != null) DrawMapDot(map, player.transform.position, new Color(0.25f, 0.62f, 1f, 1f), map.width > 220f ? 11f : 7f);
@@ -1194,15 +1237,41 @@ namespace TheOldRoad.UI
             DrawBorder(rect, GoldDim, 1f);
             GUI.Label(new Rect(rect.x + 14, rect.y + 12, rect.width - 28, 24), LocalizationRuntime.T("legend"), titleStyle);
             DrawLegendRow(rect.x + 16, rect.y + 54, new Color(0.25f, 0.62f, 1f, 1f), LocalizationRuntime.T("legend_player"));
-            DrawLegendRow(rect.x + 16, rect.y + 84, GetResourceMapColor("item.wood"), LocalizationRuntime.T("legend_wood"));
-            DrawLegendRow(rect.x + 16, rect.y + 114, GetResourceMapColor("item.stone"), LocalizationRuntime.T("legend_stone"));
-            DrawLegendRow(rect.x + 16, rect.y + 144, GetResourceMapColor("item.wild-berries"), LocalizationRuntime.T("legend_food"));
-            DrawLegendRow(rect.x + 16, rect.y + 174, GetResourceMapColor("item.iron-ore"), LocalizationRuntime.T("legend_ore"));
-            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(0.95f, 0.62f, 0.22f, 1f), LocalizationRuntime.T("legend_cabin_site"));
-            DrawLegendRow(rect.x + 16, rect.y + 234, new Color(0.68f, 0.42f, 0.92f, 1f), LocalizationRuntime.T("legend_landmark"));
-            DrawLegendRow(rect.x + 16, rect.y + 264, new Color(1f, 0.78f, 0.24f, 1f), LocalizationRuntime.T("legend_loot"));
-            DrawLegendRow(rect.x + 16, rect.y + 294, new Color(0.92f, 0.78f, 0.42f, 1f), LocalizationRuntime.T("legend_npc"));
-            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), LocalizationRuntime.T("legend_hint"), smallStyle);
+            DrawLegendRow(rect.x + 16, rect.y + 84, new Color(1f, 0.82f, 0.24f, 1f), LocalizationRuntime.T("legend_home"));
+            DrawLegendRow(rect.x + 16, rect.y + 114, new Color(0.95f, 0.62f, 0.22f, 1f), LocalizationRuntime.T("legend_building"));
+            DrawLegendRow(rect.x + 16, rect.y + 144, new Color(0.86f, 0.42f, 1f, 1f), LocalizationRuntime.T("legend_waypoint"));
+
+            GUI.Label(new Rect(rect.x + 14, rect.y + 178f, rect.width - 28, 62f), LocalizationRuntime.T("map_pin_hint"), smallStyle);
+            if (hasWaypoint && GUI.Button(new Rect(rect.x + 22f, rect.y + 250f, rect.width - 44f, 32f), LocalizationRuntime.T("clear_waypoint")))
+            {
+                hasWaypoint = false;
+            }
+
+            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), LocalizationRuntime.T("legend_clean_map_hint"), smallStyle);
+        }
+
+        private void HandleMapPinInput(Rect mapRect)
+        {
+            Event current = Event.current;
+            if (current == null || current.type != EventType.MouseDown || !mapRect.Contains(current.mousePosition)) return;
+
+            if (current.button == 0)
+            {
+                waypointWorldPosition = MapToWorld(mapRect, current.mousePosition);
+                hasWaypoint = true;
+                activePromptText = LocalizationRuntime.T("waypoint_set");
+                promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+                current.Use();
+                return;
+            }
+
+            if (current.button == 1)
+            {
+                hasWaypoint = false;
+                activePromptText = LocalizationRuntime.T("waypoint_cleared");
+                promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+                current.Use();
+            }
         }
 
         private void RefreshHudCache(bool force)
@@ -1226,6 +1295,7 @@ namespace TheOldRoad.UI
             cachedResourceNodes = FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude);
             cachedConstructionSites = FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude);
             cachedNpcs = FindObjectsByType<VillagerNpcController>(FindObjectsInactive.Exclude);
+            cachedAnimalNpcs = FindObjectsByType<AnimalNpcController>(FindObjectsInactive.Exclude);
             cachedAnimalPens = FindObjectsByType<AnimalPenController>(FindObjectsInactive.Exclude);
         }
 
@@ -1251,6 +1321,60 @@ namespace TheOldRoad.UI
             GUI.Label(new Rect(x + 24, y, 150, 22), text, smallStyle);
         }
 
+        private ConstructionSite FindHomeSite()
+        {
+            ConstructionSite bestCompleted = null;
+            ConstructionSite bestAny = null;
+            float completedDistance = float.MaxValue;
+            float anyDistance = float.MaxValue;
+            Vector3 playerPosition = cachedPlayer != null ? cachedPlayer.transform.position : Vector3.zero;
+
+            foreach (ConstructionSite site in cachedConstructionSites)
+            {
+                if (site == null || !IsHomeBuilding(site.BuildingId)) continue;
+
+                float distance = Vector2.Distance(playerPosition, site.transform.position);
+                if (site.IsCompleted && distance < completedDistance)
+                {
+                    completedDistance = distance;
+                    bestCompleted = site;
+                }
+
+                if (distance < anyDistance)
+                {
+                    anyDistance = distance;
+                    bestAny = site;
+                }
+            }
+
+            return bestCompleted != null ? bestCompleted : bestAny;
+        }
+
+        private static bool IsHomeBuilding(string buildingId)
+        {
+            return buildingId == "building.cabin" || buildingId == "building.stone-cottage";
+        }
+
+        private static string GetDirectionArrow(Vector2 delta)
+        {
+            if (delta.sqrMagnitude <= 0.01f) return "●";
+
+            float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+            if (angle < 0f) angle += 360f;
+            int sector = Mathf.RoundToInt(angle / 45f) % 8;
+            switch (sector)
+            {
+                case 0: return "→";
+                case 1: return "↗";
+                case 2: return "↑";
+                case 3: return "↖";
+                case 4: return "←";
+                case 5: return "↙";
+                case 6: return "↓";
+                default: return "↘";
+            }
+        }
+
         private void DrawMapDot(Rect map, Vector3 worldPosition, Color color, float size)
         {
             Vector2 mapPoint = WorldToMap(map, worldPosition);
@@ -1263,6 +1387,16 @@ namespace TheOldRoad.UI
 
             DrawRect(dot, color);
             DrawBorder(dot, Color.black, 1f);
+        }
+
+        private void DrawWaypointMarker(Rect map, Vector3 worldPosition, float size)
+        {
+            Vector2 mapPoint = WorldToMap(map, worldPosition);
+            float half = size * 0.5f;
+            DrawRect(new Rect(mapPoint.x - half, mapPoint.y - 2f, size, 4f), new Color(0.86f, 0.42f, 1f, 1f));
+            DrawRect(new Rect(mapPoint.x - 2f, mapPoint.y - half, 4f, size), new Color(0.86f, 0.42f, 1f, 1f));
+            DrawRect(new Rect(mapPoint.x - 3f, mapPoint.y - 3f, 6f, 6f), new Color(1f, 0.88f, 0.34f, 1f));
+            DrawBorder(new Rect(mapPoint.x - half, mapPoint.y - half, size, size), new Color(0.07f, 0.04f, 0.08f, 0.9f), 1f);
         }
 
         private Vector2 WorldToMap(Rect map, Vector3 worldPosition)
@@ -1278,6 +1412,17 @@ namespace TheOldRoad.UI
             return new Vector2(
                 map.x + Mathf.Clamp01(normalized.x) * map.width,
                 map.y + (1f - Mathf.Clamp01(normalized.y)) * map.height);
+        }
+
+        private Vector3 MapToWorld(Rect map, Vector2 mapPoint)
+        {
+            Vector3 center = GetMapCenter();
+            float mapRange = GetMapRange();
+            float normalizedX = Mathf.Clamp01((mapPoint.x - map.x) / map.width);
+            float normalizedY = 1f - Mathf.Clamp01((mapPoint.y - map.y) / map.height);
+            float worldX = Mathf.Lerp(center.x - mapRange * 0.5f, center.x + mapRange * 0.5f, normalizedX);
+            float worldY = Mathf.Lerp(center.y - mapRange * 0.5f, center.y + mapRange * 0.5f, normalizedY);
+            return new Vector3(worldX, worldY, 0f);
         }
 
         private Vector3 GetMapCenter()

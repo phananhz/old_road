@@ -22,6 +22,7 @@ It contains:
 - seeded harvestable tree, stone, berry, herb, mushroom, and iron-ore nodes spread across the map;
 - one-time loot chests placed near road, camp, shrine, ruin, and bell marker locations;
 - prototype landmarks such as a waystone, signpost, ruined arch, footbridge, and abandoned camp.
+- early story-hook landmarks such as a cave mouth and a dragon-scarred ridge.
 
 The original Valen Outskirts map remains as the authored starting area. Beyond it, `InfiniteWorldStreamer` creates deterministic 32 x 32 Unity-unit chunks around the player and unloads far chunks. This is a prototype infinite-world approach: terrain, decorative resources, villages, and NPCs are regenerated from stable coordinates and seed values rather than authored as final content.
 
@@ -29,7 +30,7 @@ Streamed resource decorations are gameplay `ResourceNode` objects with determini
 
 ## Prototype Villages
 
-Streamed chunks can contain small deterministic villages. Villages currently include placeholder houses, a storehouse, a campfire, a sign, and harmless NPC villagers. NPCs have visible job labels such as Miller, Woodcutter, and Herbalist, walk between local work points, highlight when the player is close, and provide a short prototype interaction line.
+Streamed chunks can contain deterministic villages. Villages currently include multiple placeholder houses, a hall, a storehouse, a hearth, a blacksmith area, an animal yard, a sign, harmless NPC villagers, and harmless animal NPCs. NPCs have visible job labels such as Miller, Woodcutter, Herbalist, Blacksmith, Guard, and Stablehand, walk between local work points, highlight when the player is close, and provide a short prototype interaction line. Animals wander locally for atmosphere and do not attack the player.
 
 ## Landmark Discovery
 
@@ -45,6 +46,8 @@ Current discoverable landmarks:
 - Eastern Bell Marker
 - Hunter Shrine
 - South Ruin Gate
+- Blackwood Cave Mouth
+- Dragon-Scarred Ridge
 
 ## Prototype Loot
 

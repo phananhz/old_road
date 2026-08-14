@@ -3,6 +3,7 @@ using TheOldRoad.Construction;
 using TheOldRoad.Input;
 using TheOldRoad.Player;
 using TheOldRoad.Time;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.World
 {
@@ -112,6 +113,7 @@ namespace TheOldRoad.World
                 interior.Exit(player);
                 hasInteriorValidPosition = false;
                 InteractionHint = interior.Status;
+                PlayerSpeechBubble.Say("speech.exit_home");
                 return;
             }
 
@@ -122,6 +124,7 @@ namespace TheOldRoad.World
             lastInteriorValidPosition = player.transform.position;
             hasInteriorValidPosition = true;
             InteractionHint = interior.Status;
+            PlayerSpeechBubble.Say("speech.enter_home");
         }
 
         private void OpenSleepConfirmation()
@@ -130,6 +133,7 @@ namespace TheOldRoad.World
             CanUseAction = false;
             ActionButtonLabel = "Sleep";
             InteractionHint = "Sleep for 8 hours? Press Y to confirm or N/Esc to cancel.";
+            PlayerSpeechBubble.Say("speech.sleep_prompt", 3.2f);
         }
 
         private void HandleSleepConfirmationInput()
@@ -154,12 +158,14 @@ namespace TheOldRoad.World
             sleepConfirmationOpen = false;
             if (interior != null) interior.SleepEightHours(gameTime);
             InteractionHint = interior != null ? interior.Status : "Slept 8 hours.";
+            PlayerSpeechBubble.Say("speech.sleep_done");
         }
 
         private void CancelSleep()
         {
             sleepConfirmationOpen = false;
             InteractionHint = "Sleep cancelled.";
+            PlayerSpeechBubble.Say("speech.sleep_cancelled");
         }
 
         private ConstructionSite FindNearestCompletedCabin()

@@ -301,13 +301,23 @@ namespace TheOldRoad.Core
                 ("Find the first bell fragment", inventory != null && inventory.GetQuantity("item.bell-fragment") > 0),
                 ("Build a campfire", HasCompletedBuilding(CampfireId)),
                 ("Cook one meal", inventory != null && inventory.GetQuantity("item.cooked-meal") > 0),
-                ("Build an animal pen", HasCompletedBuilding(AnimalPenSmallId) || HasCompletedBuilding(AnimalPenLongId))
+                ("Build an animal pen", HasCompletedBuilding(AnimalPenSmallId) || HasCompletedBuilding(AnimalPenLongId)),
+                ("Find a cave entrance", HasDiscoveredLandmark("landmark.cave.blackwood")),
+                ("Read the dragon-scarred ridge", HasDiscoveredLandmark("landmark.dragon.ridge"))
             };
         }
 
         private bool HasCompletedBuilding(string buildingId)
         {
             return constructionJobs.Values.Any(job => job != null && job.buildingId == buildingId && job.state == ConstructionState.Completed);
+        }
+
+        private bool HasDiscoveredLandmark(string landmarkId)
+        {
+            return !string.IsNullOrWhiteSpace(landmarkId)
+                && landmarks.TryGetValue(landmarkId, out DiscoverableLandmark landmark)
+                && landmark != null
+                && landmark.IsDiscovered;
         }
 
         private static bool HasAnyForagedItem(InventoryRuntime inventory)
@@ -755,6 +765,22 @@ namespace TheOldRoad.Core
                 "Broken stones mark a ruined southern gate. The road once continued beyond it.",
                 PrototypePixelArtFactory.RuinedArch(),
                 new Vector3(34f, -25f, 0f));
+
+            EnsureLandmark(
+                "landmark.cave.blackwood",
+                "Blackwood Cave Mouth",
+                "Blackwood Cave Mouth",
+                "Cold air moves from the cave as if the hill is breathing. Old Roadwarden marks warn that deeper tunnels connect to ruins below the forest.",
+                PrototypePixelArtFactory.RuinedArch(),
+                new Vector3(-48f, 18f, 0f));
+
+            EnsureLandmark(
+                "landmark.dragon.ridge",
+                "Dragon-Scarred Ridge",
+                "Dragon-Scarred Ridge",
+                "The stone is glassy and black where something vast burned across it. Villagers call this proof that an ancient dragon still sleeps beyond the northern road.",
+                PrototypePixelArtFactory.Waystone(),
+                new Vector3(52f, 25f, 0f));
         }
 
         private InventorySession EnsureInventorySession()
@@ -814,6 +840,10 @@ namespace TheOldRoad.Core
             PlayerPixelAnimator animator = player.GetComponent<PlayerPixelAnimator>();
             if (animator == null) animator = player.AddComponent<PlayerPixelAnimator>();
             animator.Configure(movement, 0.14f);
+
+            PlayerSpeechBubble speechBubble = player.GetComponent<PlayerSpeechBubble>();
+            if (speechBubble == null) speechBubble = player.AddComponent<PlayerSpeechBubble>();
+            speechBubble.Configure(Camera.main);
 
             PlayerVitals vitals = player.GetComponent<PlayerVitals>();
             if (vitals == null) vitals = player.AddComponent<PlayerVitals>();

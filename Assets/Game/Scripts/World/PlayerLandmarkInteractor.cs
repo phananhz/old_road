@@ -62,10 +62,12 @@ namespace TheOldRoad.World
                 activeLandmark.SetHighlighted(false);
                 activeLandmark = null;
                 InteractionHint = "Finish the current action first.";
+                PlayerSpeechBubble.Say("speech.action_busy");
                 return;
             }
 
             InteractionHint = "Inspecting " + activeLandmark.Title + "...";
+            PlayerSpeechBubble.Say("speech.landmark_start");
         }
 
         private void UpdateActiveInspect()
@@ -97,6 +99,7 @@ namespace TheOldRoad.World
                 sliceController?.NotifyLandmarkDiscovered(landmark);
                 landmark.SetHighlighted(false);
                 if (nearestLandmark == landmark) nearestLandmark = null;
+                PlayerSpeechBubble.Say("speech.landmark_done");
             }
         }
 

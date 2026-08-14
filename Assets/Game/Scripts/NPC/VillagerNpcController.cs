@@ -154,6 +154,12 @@ namespace TheOldRoad.NPC
                     return "Trees past the village are fair game. If the bark glows, your axe-hand is close enough.";
                 case "Herbalist":
                     return "Berries, herbs, and mushrooms grow far from Valen. Gather them before night falls.";
+                case "Blacksmith":
+                    return "Iron from cave mouths carries old heat. Bring enough and better tools become possible.";
+                case "Guard":
+                    return "Travellers whisper about claw marks on the northern ridge. Not wolves. Bigger.";
+                case "Stablehand":
+                    return "The animals are harmless. They know which roads still feel safe.";
                 default:
                     return "No one here means you harm. Roads bring trouble, but also trade.";
             }

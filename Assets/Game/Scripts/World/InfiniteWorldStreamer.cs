@@ -178,14 +178,18 @@ namespace TheOldRoad.World
             string villageName = GetVillageName(coord);
             GameObject village = new GameObject("Village - " + villageName);
             village.transform.SetParent(parent, false);
-            village.transform.position = ChunkCenter(coord) + new Vector3(-6f, -2f, 0f);
+            village.transform.position = ChunkCenter(coord) + new Vector3(-7f, -3f, 0f);
 
             Vector3 origin = village.transform.position;
             CreateVillageBuilding(village.transform, villageName + " Hall", PrototypePixelArtFactory.StoneCottage(), origin + new Vector3(0f, 2.4f, 0f), 4);
             CreateVillageBuilding(village.transform, villageName + " Cabin", PrototypePixelArtFactory.CabinComplete(), origin + new Vector3(-5.3f, -1.2f, 0f), 3);
             CreateVillageBuilding(village.transform, villageName + " Storehouse", PrototypePixelArtFactory.StorageShed(), origin + new Vector3(5.3f, -1.5f, 0f), 3);
             CreateVillageBuilding(village.transform, villageName + " Hearth", PrototypePixelArtFactory.Campfire(), origin + new Vector3(0.6f, -3.7f, 0f), 5);
-            CreateVillageSign(village.transform, villageName, origin + new Vector3(-7.3f, 3.2f, 0f));
+            CreateVillageBuilding(village.transform, villageName + " Blacksmith", PrototypePixelArtFactory.CookingHearthOutdoor(), origin + new Vector3(8.2f, 2.8f, 0f), 4);
+            CreateVillageBuilding(village.transform, villageName + " South Cabin", PrototypePixelArtFactory.CabinComplete(), origin + new Vector3(-8.6f, -4.8f, 0f), 3);
+            CreateVillageBuilding(village.transform, villageName + " Animal Yard", PrototypePixelArtFactory.AnimalPenSmall(), origin + new Vector3(6.8f, -5.2f, 0f), 2);
+            CreateVillageBuilding(village.transform, villageName + " Watch Cottage", PrototypePixelArtFactory.StoneCottage(), origin + new Vector3(-9.4f, 4.8f, 0f), 4);
+            CreateVillageSign(village.transform, villageName, origin + new Vector3(-11.5f, 6.2f, 0f));
 
             AddVillageNpc(village.transform, villageName, "Miller", origin + new Vector3(-2f, -3.2f, 0f), new[]
             {
@@ -205,6 +209,29 @@ namespace TheOldRoad.World
                 origin + new Vector3(-3.6f, 4.5f, 0f),
                 origin + new Vector3(-5.3f, -1.2f, 0f)
             });
+            AddVillageNpc(village.transform, villageName, "Blacksmith", origin + new Vector3(8.2f, 0.7f, 0f), new[]
+            {
+                origin + new Vector3(8.2f, 0.7f, 0f),
+                origin + new Vector3(8.2f, 2.8f, 0f),
+                origin + new Vector3(5.3f, -1.5f, 0f)
+            });
+            AddVillageNpc(village.transform, villageName, "Guard", origin + new Vector3(-10.4f, 4.6f, 0f), new[]
+            {
+                origin + new Vector3(-10.4f, 4.6f, 0f),
+                origin + new Vector3(-11.5f, 6.2f, 0f),
+                origin + new Vector3(-5.3f, -1.2f, 0f)
+            });
+            AddVillageNpc(village.transform, villageName, "Stablehand", origin + new Vector3(5.7f, -6.8f, 0f), new[]
+            {
+                origin + new Vector3(5.7f, -6.8f, 0f),
+                origin + new Vector3(6.8f, -5.2f, 0f),
+                origin + new Vector3(0.6f, -3.7f, 0f)
+            });
+
+            AddAnimalNpc(village.transform, "Chicken", origin + new Vector3(5.4f, -4.7f, 0f), 0.55f);
+            AddAnimalNpc(village.transform, "Goat", origin + new Vector3(7.8f, -5.8f, 0f), 0.50f);
+            AddAnimalNpc(village.transform, "Sheep", origin + new Vector3(4.7f, -6.3f, 0f), 0.45f);
+            AddAnimalNpc(village.transform, "Dog", origin + new Vector3(-1.4f, -4.4f, 0f), 0.75f);
         }
 
         private void CreateVillageBuilding(Transform parent, string name, Sprite sprite, Vector3 position, int sortingOffset)
@@ -226,6 +253,21 @@ namespace TheOldRoad.World
             npc.transform.SetParent(parent, true);
             VillagerNpcController controller = npc.AddComponent<VillagerNpcController>();
             controller.Configure(npcName, job, points, 0.75f + Hash01(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y), 7) * 0.35f);
+        }
+
+        private void AddAnimalNpc(Transform parent, string animalName, Vector3 position, float speed)
+        {
+            string uniqueName = animalName + " " + Mathf.Abs(StableStringHash(parent.name + animalName + position)).ToString("000");
+            GameObject animal = CreateSprite(uniqueName, PrototypePixelArtFactory.Animal(Mathf.Abs(StableStringHash(uniqueName)) % 4, 0), position, 38);
+            animal.transform.SetParent(parent, true);
+            AnimalNpcController controller = animal.AddComponent<AnimalNpcController>();
+            controller.Configure(uniqueName, new[]
+            {
+                position,
+                position + new Vector3(1.4f, 0.6f, 0f),
+                position + new Vector3(-1.2f, 0.8f, 0f),
+                position + new Vector3(0.4f, -1.1f, 0f)
+            }, speed);
         }
 
         private GameObject CreateSprite(string name, Sprite sprite, Vector3 position, int sortingOffset)
@@ -256,9 +298,9 @@ namespace TheOldRoad.World
         private bool ShouldSpawnVillage(Vector2Int coord)
         {
             if (Mathf.Abs(coord.x) <= 1 && Mathf.Abs(coord.y) <= 1) return false;
-            int regionX = Mathf.FloorToInt(coord.x / 4f);
-            int regionY = Mathf.FloorToInt(coord.y / 4f);
-            Vector2Int villageCoord = new Vector2Int(regionX * 4 + Mathf.FloorToInt(Hash01(regionX, regionY, 4) * 4f), regionY * 4 + Mathf.FloorToInt(Hash01(regionX, regionY, 9) * 4f));
+            int regionX = Mathf.FloorToInt(coord.x / 3f);
+            int regionY = Mathf.FloorToInt(coord.y / 3f);
+            Vector2Int villageCoord = new Vector2Int(regionX * 3 + Mathf.FloorToInt(Hash01(regionX, regionY, 4) * 3f), regionY * 3 + Mathf.FloorToInt(Hash01(regionX, regionY, 9) * 3f));
             return coord == villageCoord;
         }
 

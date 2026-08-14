@@ -4,6 +4,7 @@ using TheOldRoad.Core;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Player;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.Crafting
 {
@@ -67,6 +68,7 @@ namespace TheOldRoad.Crafting
             if (!usedMushroom && !usedHerb)
             {
                 CookingHint = "Need berries plus mushroom or herb to cook.";
+                PlayerSpeechBubble.Say("speech.cook_blocked");
                 return;
             }
 
@@ -75,6 +77,7 @@ namespace TheOldRoad.Crafting
             if (vitals != null) vitals.Heal(4);
             CookingHint = "Cooked meal prepared. Health restored.";
             sliceController?.NotifyPrototypeStateChanged(CookingHint);
+            PlayerSpeechBubble.Say("speech.cook_done");
         }
 
         private bool HasCookingIngredients()

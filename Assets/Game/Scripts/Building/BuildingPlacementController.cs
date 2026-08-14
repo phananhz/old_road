@@ -1,6 +1,7 @@
 using UnityEngine;
 using TheOldRoad.Core;
 using TheOldRoad.Inventory;
+using TheOldRoad.UI;
 using TheOldRoad.World;
 
 namespace TheOldRoad.Building
@@ -64,12 +65,14 @@ namespace TheOldRoad.Building
             if (buildingDefinition == null)
             {
                 LastStatus = "No building definition selected.";
+                PlayerSpeechBubble.Say("speech.build_blocked");
                 return;
             }
 
             placementMode = true;
             CreatePreview();
             LastStatus = "Select a valid grid cell, then left click. Right click cancels.";
+            PlayerSpeechBubble.Say("speech.build_begin");
         }
 
         public void CancelPlacement()
@@ -107,7 +110,17 @@ namespace TheOldRoad.Building
                 return;
             }
 
-            if (sliceController.TryBeginConstruction(buildingDefinition, currentCell, out string status)) CancelPlacement();
+            bool started = sliceController.TryBeginConstruction(buildingDefinition, currentCell, out string status);
+            if (started)
+            {
+                CancelPlacement();
+                PlayerSpeechBubble.Say("speech.build_started");
+            }
+            else
+            {
+                PlayerSpeechBubble.Say(status == "Invalid placement." ? "speech.build_invalid" : "speech.build_blocked");
+            }
+
             LastStatus = status;
         }
 
