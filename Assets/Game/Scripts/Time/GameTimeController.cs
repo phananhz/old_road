@@ -18,12 +18,31 @@ namespace TheOldRoad.Time
         public int Hour => Mathf.FloorToInt(TotalMinutes % MinutesPerDay) / 60;
         public int Minute => Mathf.FloorToInt(TotalMinutes % 60);
         public string ClockText => "Day " + Day + "  " + Hour.ToString("00") + ":" + Minute.ToString("00");
+        public float DayFraction => Mathf.Repeat(TotalMinutes, MinutesPerDay) / MinutesPerDay;
+        public float SunlightIntensity => EvaluateSunlight(DayFraction);
 
         private float TotalMinutes => startHour * 60f + startMinute + elapsedGameMinutes;
 
         private void Update()
         {
             elapsedGameMinutes += UnityEngine.Time.deltaTime * gameMinutesPerRealSecond;
+        }
+
+        public void AdvanceHours(float hours)
+        {
+            elapsedGameMinutes += Mathf.Max(0f, hours) * 60f;
+        }
+
+        private static float EvaluateSunlight(float dayFraction)
+        {
+            float hour = dayFraction * 24f;
+            if (hour < 5f) return 0.12f;
+            if (hour < 7f) return Mathf.Lerp(0.12f, 0.78f, (hour - 5f) / 2f);
+            if (hour < 11f) return Mathf.Lerp(0.78f, 1f, (hour - 7f) / 4f);
+            if (hour < 15f) return 1f;
+            if (hour < 19f) return Mathf.Lerp(1f, 0.18f, (hour - 15f) / 4f);
+            if (hour < 21f) return Mathf.Lerp(0.18f, 0.12f, (hour - 19f) / 2f);
+            return 0.12f;
         }
     }
 }

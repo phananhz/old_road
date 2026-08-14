@@ -42,6 +42,12 @@ Player launches game -> walks around Valen Outskirts -> finds Tree -> harvests T
 - VS-AC-029: Opened loot chest state persists through reload.
 - VS-AC-030: Gathering, chest opening, and landmark inspection show a short countdown bar above the target and complete only after the countdown finishes.
 - VS-AC-031: Active construction sites show a progress bar above the building footprint until construction completes.
+- VS-AC-032: The prototype includes varied resource and loot item types beyond wood and stone.
+- VS-AC-033: The river shows visible animated ripple motion.
+- VS-AC-034: A completed cabin can be entered and exited through a nearby interaction.
+- VS-AC-035: The cabin interior fills the gameplay camera and contains a bed.
+- VS-AC-036: Using the bed advances the in-game clock by 8 hours.
+- VS-AC-037: Outdoor brightness changes by time of day and a torch item provides a small local glow at night.
 
 ## Manual Test VS-001
 
@@ -74,12 +80,18 @@ Steps:
 20. Move near a Tree and confirm it shows a glow outline with an `E` prompt.
 21. Press `E` or tap `Gather` to gather Tree, and confirm the reward is granted only after the countdown bar completes.
 22. Move near a Rock and press `E` or tap `Gather`, and confirm walking away before the countdown completes cancels the action.
-23. Confirm the hotbar shows enough wood and stone and objective progress updates.
-24. Press `C` or tap `Craft` and confirm Cabin Plank increases while Wood decreases.
-25. Press `B` or tap `Build`.
-26. Move the mouse to a valid grid cell.
-27. Left-click to start cabin construction and confirm a construction progress bar appears above the cabin site.
-28. Stop Play, then press Play again.
+23. Move near berries, herbs, mushrooms, or iron ore and confirm the gathered item appears in the hotbar and inventory.
+24. Confirm the hotbar shows enough wood and stone and objective progress updates.
+25. Press `C` or tap `Craft` and confirm Cabin Plank increases while Wood decreases.
+26. Press `B` or tap `Build`.
+27. Move the mouse to a valid grid cell.
+28. Left-click to start cabin construction and confirm a construction progress bar appears above the cabin site.
+29. Wait for the cabin to complete, stand near it, and press `F` or tap the contextual `Enter` button.
+30. Confirm the camera shows the full cabin interior with bed, hearth, table, and exit marker.
+31. Stand near the bed and press `F` or tap `Sleep`; confirm the clock advances 8 hours.
+32. Press `F` or tap `Exit` away from the bed and confirm the player returns outside.
+33. Open a torch chest, wait for evening/night, and confirm a warm glow follows the player.
+34. Stop Play, then press Play again.
 
 Expected result:
 

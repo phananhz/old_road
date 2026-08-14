@@ -17,9 +17,9 @@ Valen Outskirts is now generated at runtime as a wider deterministic procedural 
 It contains:
 
 - a winding old road through the center;
-- a longer river section on the western/southern side;
+- a longer river section on the western/southern side with lightweight animated ripple overlays;
 - darker forest edges to frame the playable area;
-- seeded harvestable tree and stone nodes spread across the map;
+- seeded harvestable tree, stone, berry, herb, mushroom, and iron-ore nodes spread across the map;
 - one-time loot chests placed near road, camp, shrine, ruin, and bell marker locations;
 - prototype landmarks such as a waystone, signpost, ruined arch, footbridge, and abandoned camp.
 
@@ -49,5 +49,15 @@ One-time loot chests use stable IDs and can be opened with the same interaction 
 - South Ruin Chest: stone
 - Hunter Shrine Cache: wood
 - Bell Marker Cache: stone
+- Forager's Hidden Pouch: medicinal herb
+- Bridge Toll Box: old coin
+- Collapsed Mine Crate: iron ore
+- Camp Torch Bundle: torch
 
 Opened chest state is saved with the rest of the vertical-slice state.
+
+## Day and Night Prototype
+
+The runtime world now applies a camera-following tint overlay based on the in-game clock. Daylight is strongest around midday, fades through evening, and becomes darkest overnight. This is a prototype rendering layer for readability testing; final production lighting can replace it later.
+
+The `item.torch` prototype item enables a small warm glow around the player during darker hours.

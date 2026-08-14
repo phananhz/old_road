@@ -11,4 +11,13 @@ The resource node does not reference or update inventory UI.
 
 The prototype player gather action is timed. Pressing the gather input near a highlighted node starts a short world-space countdown above that node. The reward is granted only when the countdown completes. Moving out of interaction range cancels the action. The current 1.2 second duration is a prototype value for manual testing only.
 
+Current prototype harvestable resources:
+
+- pine/tree nodes: `item.wood`;
+- field stones: `item.stone`;
+- berry bushes: `item.wild-berries`;
+- herb patches: `item.medicinal-herb`;
+- mushroom clusters: `item.mushroom`;
+- iron veins: `item.iron-ore`.
+
 Future expansion may add node health, required tools, drop tables, respawn, and regrowth.

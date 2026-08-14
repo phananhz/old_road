@@ -14,6 +14,7 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 - bottom-center: 9-slot hotbar for key materials and build actions;
 - bottom-left: virtual joystick for mobile-style movement testing;
 - bottom-right: mobile-style action buttons for `Gather`, `Craft`, `Build`, `Bag`, `Map`, and `Log`;
+- contextual mobile `F` action button for cabin `Enter`, `Exit`, and `Sleep` interactions;
 - top-center: temporary contextual prompts for gathering, inspecting, crafting, and building.
 - `I`: inventory overlay with all current prototype item stacks.
 - `M`: expanded map overlay with player, resources, construction sites, landmarks, road, and river markers.
@@ -39,7 +40,11 @@ The UI is implemented as runtime `OnGUI` prototype code so it can be iterated wi
 1. Wood
 2. Stone
 3. Cabin Plank
-4. Cabin/build plan
-5-9. Reserved
+4. Wild Berries
+5. Medicinal Herb
+6. Mushroom
+7. Iron Ore
+8. Torch
+9. Cabin/build plan
 
 This is not the final inventory UX. It is the first testable gameplay HUD.

@@ -6,6 +6,7 @@ using TheOldRoad.Crafting;
 using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
+using TheOldRoad.Items;
 using TheOldRoad.Player;
 using TheOldRoad.Time;
 using TheOldRoad.World;
@@ -113,9 +114,10 @@ namespace TheOldRoad.UI
             }
 
             float chipY = card.y + 113;
-            DrawResourceChip(new Rect(card.x + 16, chipY, 96, 18), "Wood", GetQuantity("item.wood"), new Color(0.48f, 0.28f, 0.12f, 1f));
-            DrawResourceChip(new Rect(card.x + 122, chipY, 96, 18), "Stone", GetQuantity("item.stone"), new Color(0.48f, 0.50f, 0.54f, 1f));
-            DrawResourceChip(new Rect(card.x + 228, chipY, 96, 18), "Plank", GetQuantity("item.cabin-plank"), new Color(0.72f, 0.48f, 0.24f, 1f));
+            DrawResourceChip(new Rect(card.x + 16, chipY, 72, 18), "Wood", GetQuantity("item.wood"), PrototypeItemCatalog.Get("item.wood").Color);
+            DrawResourceChip(new Rect(card.x + 96, chipY, 74, 18), "Stone", GetQuantity("item.stone"), PrototypeItemCatalog.Get("item.stone").Color);
+            DrawResourceChip(new Rect(card.x + 178, chipY, 70, 18), "Food", GetForageQuantity(), PrototypeItemCatalog.Get("item.wild-berries").Color);
+            DrawResourceChip(new Rect(card.x + 256, chipY, 70, 18), "Ore", GetQuantity("item.iron-ore"), PrototypeItemCatalog.Get("item.iron-ore").Color);
         }
 
         private void DrawMinimapCard()
@@ -213,7 +215,7 @@ namespace TheOldRoad.UI
                 DrawHotbarSlot(new Rect(startX + i * (slotSize + gap), y, slotSize, slotSize), i);
             }
 
-            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), "E Gather/Inspect    C Craft    B Build    I Bag    M Map    J Journal", centerStyle);
+            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), "E Gather/Inspect    F Use/Enter/Sleep    C Craft    B Build    I Bag    M Map    J Journal", centerStyle);
         }
 
         private void DrawHotbarSlot(Rect slot, int index)
@@ -261,6 +263,11 @@ namespace TheOldRoad.UI
             DrawMobileActionButton(new Rect(right - 92f, bottom - 168f, 78f, 58f), "E", "Gather", KeyCode.E, new Color(0.22f, 0.44f, 0.18f, 0.96f));
             DrawMobileActionButton(new Rect(right - 178f, bottom - 112f, 74f, 52f), "C", "Craft", KeyCode.C, new Color(0.45f, 0.31f, 0.12f, 0.96f));
             DrawMobileActionButton(new Rect(right - 92f, bottom - 102f, 78f, 58f), "B", "Build", KeyCode.B, new Color(0.45f, 0.21f, 0.12f, 0.96f));
+            PlayerCabinInteractor cabin = FindAnyObjectByType<PlayerCabinInteractor>();
+            if (cabin != null && cabin.CanUseAction)
+            {
+                DrawMobileActionButton(new Rect(right - 178f, bottom - 176f, 74f, 52f), "F", cabin.ActionButtonLabel, KeyCode.F, new Color(0.36f, 0.20f, 0.42f, 0.96f));
+            }
             DrawMobileActionButton(new Rect(right - 260f, bottom - 100f, 68f, 46f), "I", "Bag", KeyCode.I, new Color(0.15f, 0.22f, 0.33f, 0.96f));
             DrawMobileActionButton(new Rect(right - 260f, bottom - 154f, 68f, 46f), "M", "Map", KeyCode.M, new Color(0.18f, 0.27f, 0.23f, 0.96f));
             DrawMobileActionButton(new Rect(right - 260f, bottom - 208f, 68f, 46f), "J", "Log", KeyCode.J, new Color(0.22f, 0.18f, 0.32f, 0.96f));
@@ -316,32 +323,26 @@ namespace TheOldRoad.UI
             DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.64f));
             DrawBorder(rect, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
 
-            string[] itemIds = { "item.wood", "item.stone", "item.cabin-plank" };
-            string[] itemNames = { "Wood", "Stone", "Cabin Plank" };
-            Color[] colors =
-            {
-                new Color(0.47f, 0.29f, 0.12f, 1f),
-                new Color(0.45f, 0.48f, 0.52f, 1f),
-                new Color(0.74f, 0.50f, 0.25f, 1f)
-            };
+            PrototypeItemInfo[] items = PrototypeItemCatalog.All;
 
             const float slotWidth = 176f;
             const float slotHeight = 96f;
             const float gap = 14f;
             int columns = Mathf.Max(1, Mathf.FloorToInt((rect.width - 24f) / (slotWidth + gap)));
 
-            for (int i = 0; i < itemIds.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
+                PrototypeItemInfo item = items[i];
                 int column = i % columns;
                 int row = i / columns;
                 Rect slot = new Rect(rect.x + 14 + column * (slotWidth + gap), rect.y + 14 + row * (slotHeight + gap), slotWidth, slotHeight);
                 DrawRect(slot, InkSoft);
                 DrawBorder(slot, GoldDim, 1f);
                 Rect icon = new Rect(slot.x + 15, slot.y + 18, 44, 40);
-                DrawItemGlyph(icon, new HotbarItem(itemNames[i], itemNames[i].Substring(0, 1), GetQuantity(itemIds[i]), colors[i]));
-                GUI.Label(new Rect(slot.x + 72, slot.y + 16, slot.width - 86, 24), itemNames[i], labelStyle);
-                GUI.Label(new Rect(slot.x + 72, slot.y + 42, slot.width - 86, 26), "x" + GetQuantity(itemIds[i]), titleStyle);
-                GUI.Label(new Rect(slot.x + 15, slot.y + 68, slot.width - 30, 18), GetItemUseText(itemIds[i]), smallStyle);
+                DrawItemGlyph(icon, new HotbarItem(item.DisplayName, item.Icon, GetQuantity(item.ItemId), item.Color));
+                GUI.Label(new Rect(slot.x + 72, slot.y + 16, slot.width - 86, 24), item.DisplayName, labelStyle);
+                GUI.Label(new Rect(slot.x + 72, slot.y + 42, slot.width - 86, 26), "x" + GetQuantity(item.ItemId), titleStyle);
+                GUI.Label(new Rect(slot.x + 15, slot.y + 68, slot.width - 30, 18), item.UseText, smallStyle);
             }
         }
 
@@ -445,10 +446,7 @@ namespace TheOldRoad.UI
             foreach (ResourceNode node in FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude))
             {
                 if (node == null || node.IsHarvested) continue;
-                Color color = node.ResourceItemId == "item.wood"
-                    ? new Color(0.34f, 0.90f, 0.30f, 1f)
-                    : new Color(0.68f, 0.70f, 0.73f, 1f);
-                DrawMapDot(map, node.transform.position, color, map.width > 220f ? 9f : 5f);
+                DrawMapDot(map, node.transform.position, GetResourceMapColor(node.ResourceItemId), map.width > 220f ? 9f : 5f);
             }
 
             foreach (ConstructionSite site in FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude))
@@ -517,6 +515,9 @@ namespace TheOldRoad.UI
             PlayerLootInteractor loot = FindAnyObjectByType<PlayerLootInteractor>();
             if (loot != null && !string.IsNullOrWhiteSpace(loot.InteractionHint)) AppendPrompt(ref prompt, loot.InteractionHint);
 
+            PlayerCabinInteractor cabin = FindAnyObjectByType<PlayerCabinInteractor>();
+            if (cabin != null && !string.IsNullOrWhiteSpace(cabin.InteractionHint)) AppendPrompt(ref prompt, cabin.InteractionHint);
+
             if (placementController != null && !string.IsNullOrWhiteSpace(placementController.LastStatus)) AppendPrompt(ref prompt, placementController.LastStatus);
 
             return prompt;
@@ -535,15 +536,33 @@ namespace TheOldRoad.UI
                 case 0: return new HotbarItem("Wood", "W", GetQuantity("item.wood"), new Color(0.47f, 0.29f, 0.12f, 1f));
                 case 1: return new HotbarItem("Stone", "S", GetQuantity("item.stone"), new Color(0.45f, 0.48f, 0.52f, 1f));
                 case 2: return new HotbarItem("Plank", "P", GetQuantity("item.cabin-plank"), new Color(0.74f, 0.50f, 0.25f, 1f));
-                case 3: return new HotbarItem("Cabin", "B", 1, new Color(0.65f, 0.38f, 0.18f, 1f));
+                case 3: return ToHotbarItem("item.wild-berries");
+                case 4: return ToHotbarItem("item.medicinal-herb");
+                case 5: return ToHotbarItem("item.mushroom");
+                case 6: return ToHotbarItem("item.iron-ore");
+                case 7: return ToHotbarItem("item.torch");
+                case 8: return new HotbarItem("Cabin", "B", 1, new Color(0.65f, 0.38f, 0.18f, 1f));
                 default: return HotbarItem.Empty;
             }
+        }
+
+        private HotbarItem ToHotbarItem(string itemId)
+        {
+            PrototypeItemInfo item = PrototypeItemCatalog.Get(itemId);
+            return new HotbarItem(item.DisplayName, item.Icon, GetQuantity(item.ItemId), item.Color);
         }
 
         private int GetQuantity(string itemId)
         {
             if (inventorySession == null || inventorySession.Runtime == null) return 0;
             return inventorySession.Runtime.GetQuantity(itemId);
+        }
+
+        private int GetForageQuantity()
+        {
+            return GetQuantity("item.wild-berries")
+                + GetQuantity("item.medicinal-herb")
+                + GetQuantity("item.mushroom");
         }
 
         private void DrawHealthBar(Rect rect, int currentHealth, int maxHealth)
@@ -571,13 +590,7 @@ namespace TheOldRoad.UI
 
         private static string GetItemUseText(string itemId)
         {
-            switch (itemId)
-            {
-                case "item.wood": return "Build material";
-                case "item.stone": return "Foundation material";
-                case "item.cabin-plank": return "Crafted component";
-                default: return "Prototype item";
-            }
+            return PrototypeItemCatalog.Get(itemId).UseText;
         }
 
         private void DrawScreenVignette()
@@ -650,6 +663,59 @@ namespace TheOldRoad.UI
                 return;
             }
 
+            if (item.Name == "Wild Berries")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.48f, rect.width * 0.56f, rect.height * 0.28f), new Color(0.18f, 0.48f, 0.20f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.30f, rect.y + rect.height * 0.26f, rect.width * 0.13f, rect.height * 0.13f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.50f, rect.y + rect.height * 0.32f, rect.width * 0.13f, rect.height * 0.13f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.62f, rect.y + rect.height * 0.46f, rect.width * 0.13f, rect.height * 0.13f), item.Color);
+                return;
+            }
+
+            if (item.Name == "Medicinal Herb")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.46f, rect.y + rect.height * 0.22f, rect.width * 0.08f, rect.height * 0.60f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.26f, rect.y + rect.height * 0.40f, rect.width * 0.24f, rect.height * 0.10f), new Color(0.50f, 0.90f, 0.42f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.52f, rect.y + rect.height * 0.30f, rect.width * 0.25f, rect.height * 0.10f), new Color(0.62f, 1f, 0.52f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.36f, rect.y + rect.height * 0.58f, rect.width * 0.30f, rect.height * 0.10f), new Color(0.38f, 0.78f, 0.34f, 1f));
+                return;
+            }
+
+            if (item.Name == "Mushroom")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.34f, rect.y + rect.height * 0.48f, rect.width * 0.12f, rect.height * 0.30f), new Color(0.86f, 0.76f, 0.58f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.52f, rect.y + rect.height * 0.52f, rect.width * 0.10f, rect.height * 0.25f), new Color(0.82f, 0.70f, 0.52f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.23f, rect.y + rect.height * 0.34f, rect.width * 0.34f, rect.height * 0.18f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.46f, rect.y + rect.height * 0.40f, rect.width * 0.28f, rect.height * 0.16f), new Color(0.62f, 0.22f, 0.18f, 1f));
+                return;
+            }
+
+            if (item.Name == "Iron Ore")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.18f, rect.y + rect.height * 0.40f, rect.width * 0.64f, rect.height * 0.34f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.34f, rect.y + rect.height * 0.30f, rect.width * 0.40f, rect.height * 0.20f), new Color(0.30f, 0.33f, 0.38f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.30f, rect.y + rect.height * 0.48f, rect.width * 0.18f, 3f), new Color(0.72f, 0.56f, 0.36f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.56f, rect.y + rect.height * 0.42f, rect.width * 0.18f, 3f), new Color(0.86f, 0.68f, 0.44f, 1f));
+                return;
+            }
+
+            if (item.Name == "Old Coin")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.30f, rect.y + rect.height * 0.24f, rect.width * 0.40f, rect.height * 0.46f), item.Color);
+                DrawBorder(new Rect(rect.x + rect.width * 0.30f, rect.y + rect.height * 0.24f, rect.width * 0.40f, rect.height * 0.46f), new Color(0.46f, 0.28f, 0.07f, 1f), 2f);
+                DrawRect(new Rect(rect.x + rect.width * 0.44f, rect.y + rect.height * 0.38f, rect.width * 0.12f, rect.height * 0.18f), new Color(1f, 0.89f, 0.48f, 1f));
+                return;
+            }
+
+            if (item.Name == "Torch")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.45f, rect.y + rect.height * 0.40f, rect.width * 0.12f, rect.height * 0.38f), new Color(0.45f, 0.24f, 0.10f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.36f, rect.y + rect.height * 0.24f, rect.width * 0.30f, rect.height * 0.22f), new Color(0.92f, 0.24f, 0.08f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.43f, rect.y + rect.height * 0.18f, rect.width * 0.16f, rect.height * 0.24f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.48f, rect.y + rect.height * 0.22f, rect.width * 0.06f, rect.height * 0.12f), new Color(1f, 0.93f, 0.40f, 1f));
+                return;
+            }
+
             DrawRect(new Rect(rect.x + 7, rect.y + 7, rect.width - 14, rect.height - 14), item.Color);
             GUI.Label(rect, item.Icon, centerStyle);
         }
@@ -660,12 +726,28 @@ namespace TheOldRoad.UI
             DrawBorder(rect, GoldDim, 1f);
             GUI.Label(new Rect(rect.x + 14, rect.y + 12, rect.width - 28, 24), "Legend", titleStyle);
             DrawLegendRow(rect.x + 16, rect.y + 54, new Color(0.25f, 0.62f, 1f, 1f), "Player");
-            DrawLegendRow(rect.x + 16, rect.y + 84, new Color(0.34f, 0.90f, 0.30f, 1f), "Wood nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 114, new Color(0.68f, 0.70f, 0.73f, 1f), "Stone nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 144, new Color(0.95f, 0.62f, 0.22f, 1f), "Cabin site");
-            DrawLegendRow(rect.x + 16, rect.y + 174, new Color(0.68f, 0.42f, 0.92f, 1f), "Landmark");
-            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(1f, 0.78f, 0.24f, 1f), "Loot chest");
-            GUI.Label(new Rect(rect.x + 14, rect.yMax - 78, rect.width - 28, 60), "Explore by following the road. The map uses prototype markers for testing.", smallStyle);
+            DrawLegendRow(rect.x + 16, rect.y + 84, GetResourceMapColor("item.wood"), "Wood nodes");
+            DrawLegendRow(rect.x + 16, rect.y + 114, GetResourceMapColor("item.stone"), "Stone nodes");
+            DrawLegendRow(rect.x + 16, rect.y + 144, GetResourceMapColor("item.wild-berries"), "Food/herb nodes");
+            DrawLegendRow(rect.x + 16, rect.y + 174, GetResourceMapColor("item.iron-ore"), "Ore nodes");
+            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(0.95f, 0.62f, 0.22f, 1f), "Cabin site");
+            DrawLegendRow(rect.x + 16, rect.y + 234, new Color(0.68f, 0.42f, 0.92f, 1f), "Landmark");
+            DrawLegendRow(rect.x + 16, rect.y + 264, new Color(1f, 0.78f, 0.24f, 1f), "Loot chest");
+            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), "Explore by following the road. Markers are prototype testing aids.", smallStyle);
+        }
+
+        private static Color GetResourceMapColor(string itemId)
+        {
+            switch (itemId)
+            {
+                case "item.wood": return new Color(0.34f, 0.90f, 0.30f, 1f);
+                case "item.stone": return new Color(0.68f, 0.70f, 0.73f, 1f);
+                case "item.wild-berries": return new Color(0.92f, 0.24f, 0.30f, 1f);
+                case "item.medicinal-herb": return new Color(0.38f, 0.96f, 0.42f, 1f);
+                case "item.mushroom": return new Color(0.84f, 0.58f, 0.36f, 1f);
+                case "item.iron-ore": return new Color(0.82f, 0.66f, 0.42f, 1f);
+                default: return PrototypeItemCatalog.Get(itemId).Color;
+            }
         }
 
         private void DrawLegendRow(float x, float y, Color color, string text)

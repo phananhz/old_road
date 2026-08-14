@@ -8,6 +8,7 @@ using TheOldRoad.Crafting;
 using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
+using TheOldRoad.Items;
 using TheOldRoad.Player;
 using TheOldRoad.Save;
 using TheOldRoad.Time;
@@ -174,10 +175,18 @@ namespace TheOldRoad.Core
                 ("Open an old chest", OpenedLootChestCount > 0),
                 ("Gather 3 wood", inventory != null && inventory.GetQuantity("item.wood") >= 3),
                 ("Gather 2 stone", inventory != null && inventory.GetQuantity("item.stone") >= 2),
+                ("Forage any wild food or herb", inventory != null && HasAnyForagedItem(inventory)),
                 ("Craft 1 cabin plank", inventory != null && inventory.GetQuantity("item.cabin-plank") >= 1),
                 ("Start cabin construction", constructionJobs.Count > 0),
                 ("Complete the first cabin", constructionJobs.Values.Any(job => job != null && job.state == ConstructionState.Completed))
             };
+        }
+
+        private static bool HasAnyForagedItem(InventoryRuntime inventory)
+        {
+            return inventory.GetQuantity("item.wild-berries") > 0
+                || inventory.GetQuantity("item.medicinal-herb") > 0
+                || inventory.GetQuantity("item.mushroom") > 0;
         }
 
         private void RefreshConstructionJobs()
@@ -193,25 +202,29 @@ namespace TheOldRoad.Core
         private void BuildRuntimeScene()
         {
             EnsureInputBridge();
-            EnsureGameTime();
+            GameTimeController gameTime = EnsureGameTime();
             Camera mainCamera = EnsureCamera();
             EnsureGround();
+            EnsureRiverFlow();
             EnsureLandmarks();
             EnsureLootChests();
             inventorySession = EnsureInventorySession();
-            EnsurePlayer(inventorySession);
+            CabinInteriorController cabinInterior = EnsureCabinInterior();
+            EnsurePlayer(inventorySession, cabinInterior, gameTime);
             EnsureCameraFollow(mainCamera);
+            EnsureDayNightLighting(mainCamera, gameTime, inventorySession);
             EnsureProceduralResourceNodes();
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
             EnsureHud(inventorySession, placement);
         }
 
-        private void EnsureGameTime()
+        private GameTimeController EnsureGameTime()
         {
-            if (FindAnyObjectByType<GameTimeController>() != null) return;
+            GameTimeController existing = FindAnyObjectByType<GameTimeController>();
+            if (existing != null) return existing;
 
             GameObject timeObject = new GameObject("Game Time");
-            timeObject.AddComponent<GameTimeController>();
+            return timeObject.AddComponent<GameTimeController>();
         }
 
         private void EnsureInputBridge()
@@ -355,6 +368,18 @@ namespace TheOldRoad.Core
             renderer.sortingOrder = -10000;
         }
 
+        private void EnsureRiverFlow()
+        {
+            RiverFlowAnimator river = FindAnyObjectByType<RiverFlowAnimator>();
+            if (river == null)
+            {
+                GameObject riverObject = new GameObject("Animated River Flow");
+                river = riverObject.AddComponent<RiverFlowAnimator>();
+            }
+
+            river.Configure();
+        }
+
         private void EnsureLandmarks()
         {
             EnsureLandmark(
@@ -431,7 +456,20 @@ namespace TheOldRoad.Core
             return sessionObject.AddComponent<InventorySession>();
         }
 
-        private void EnsurePlayer(InventorySession session)
+        private CabinInteriorController EnsureCabinInterior()
+        {
+            CabinInteriorController interior = FindAnyObjectByType<CabinInteriorController>(FindObjectsInactive.Include);
+            if (interior == null)
+            {
+                GameObject interiorObject = new GameObject("Cabin Interior Controller");
+                interior = interiorObject.AddComponent<CabinInteriorController>();
+            }
+
+            interior.EnsureBuilt();
+            return interior;
+        }
+
+        private void EnsurePlayer(InventorySession session, CabinInteriorController cabinInterior, GameTimeController gameTime)
         {
             PlayerMovement movement = FindAnyObjectByType<PlayerMovement>();
             GameObject player;
@@ -482,6 +520,19 @@ namespace TheOldRoad.Core
             PlayerLootInteractor lootInteractor = player.GetComponent<PlayerLootInteractor>();
             if (lootInteractor == null) lootInteractor = player.AddComponent<PlayerLootInteractor>();
             lootInteractor.Configure(session, this, 1.25f);
+
+            PlayerCabinInteractor cabinInteractor = player.GetComponent<PlayerCabinInteractor>();
+            if (cabinInteractor == null) cabinInteractor = player.AddComponent<PlayerCabinInteractor>();
+            cabinInteractor.Configure(cabinInterior, gameTime, 2.25f);
+        }
+
+        private void EnsureDayNightLighting(Camera mainCamera, GameTimeController gameTime, InventorySession session)
+        {
+            if (mainCamera == null) return;
+
+            DayNightLightingController lighting = mainCamera.GetComponent<DayNightLightingController>();
+            if (lighting == null) lighting = mainCamera.gameObject.AddComponent<DayNightLightingController>();
+            lighting.Configure(gameTime, session);
         }
 
         private void EnsureResourceNode(string nodeId, string displayName, Vector3 position, string itemId, int amount, Color color)
@@ -495,12 +546,28 @@ namespace TheOldRoad.Core
                 return;
             }
 
-            Sprite sprite = itemId == "item.wood" ? PrototypePixelArtFactory.Tree() : PrototypePixelArtFactory.Rock();
+            Sprite sprite = GetResourceSprite(itemId);
             GameObject nodeObject = CreateSpriteObject(displayName, sprite, position, 0);
+            SpriteRenderer renderer = nodeObject.GetComponent<SpriteRenderer>();
+            if (renderer != null) renderer.color = color;
 
             ResourceNode node = nodeObject.AddComponent<ResourceNode>();
             node.Configure(nodeId, itemId, amount);
             resourceNodes[nodeId] = node;
+        }
+
+        private static Sprite GetResourceSprite(string itemId)
+        {
+            switch (itemId)
+            {
+                case "item.wood": return PrototypePixelArtFactory.Tree();
+                case "item.stone": return PrototypePixelArtFactory.Rock();
+                case "item.wild-berries": return PrototypePixelArtFactory.BerryBush();
+                case "item.medicinal-herb": return PrototypePixelArtFactory.HerbPatch();
+                case "item.mushroom": return PrototypePixelArtFactory.MushroomCluster();
+                case "item.iron-ore": return PrototypePixelArtFactory.IronOre();
+                default: return PrototypePixelArtFactory.Rock();
+            }
         }
 
         private void EnsureProceduralResourceNodes()
@@ -510,6 +577,10 @@ namespace TheOldRoad.Core
             System.Random random = new System.Random(WorldSeed);
             SpawnProceduralResources(random, 44, "node.tree.proc.", "Forest Pine", "item.wood", 3);
             SpawnProceduralResources(random, 32, "node.rock.proc.", "Field Stone", "item.stone", 2);
+            SpawnProceduralResources(random, 20, "node.berry.proc.", "Wild Berry Bush", "item.wild-berries", 2);
+            SpawnProceduralResources(random, 18, "node.herb.proc.", "Medicinal Herb Patch", "item.medicinal-herb", 1);
+            SpawnProceduralResources(random, 14, "node.mushroom.proc.", "Forest Mushroom Cluster", "item.mushroom", 2);
+            SpawnProceduralResources(random, 12, "node.iron.proc.", "Iron Vein", "item.iron-ore", 1);
         }
 
         private void EnsureLegacyResourceNodes()
@@ -527,6 +598,10 @@ namespace TheOldRoad.Core
             EnsureResourceNode("node.rock.04", "Old Wall Stone", new Vector3(12f, 3f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
             EnsureResourceNode("node.rock.05", "East Pass Stone", new Vector3(23f, -12f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
             EnsureResourceNode("node.rock.06", "North Ridge Stone", new Vector3(-22f, 7f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.berry.01", "Roadside Berry Bush", new Vector3(-10f, -2.8f, 0f), "item.wild-berries", 2, PrototypeItemCatalog.Get("item.wild-berries").Color);
+            EnsureResourceNode("node.herb.01", "Valen Mint Patch", new Vector3(11.5f, 5.6f, 0f), "item.medicinal-herb", 1, PrototypeItemCatalog.Get("item.medicinal-herb").Color);
+            EnsureResourceNode("node.mushroom.01", "Old Stump Mushrooms", new Vector3(-26f, 12f, 0f), "item.mushroom", 2, PrototypeItemCatalog.Get("item.mushroom").Color);
+            EnsureResourceNode("node.iron.01", "Exposed Iron Vein", new Vector3(28f, -18f, 0f), "item.iron-ore", 1, PrototypeItemCatalog.Get("item.iron-ore").Color);
         }
 
         private void SpawnProceduralResources(System.Random random, int count, string idPrefix, string displayPrefix, string itemId, int amount)
@@ -561,6 +636,10 @@ namespace TheOldRoad.Core
             EnsureLootChest("chest.ruin.01", "South Ruin Chest", new Vector3(36f, -24.2f, 0f), "item.stone", 3);
             EnsureLootChest("chest.shrine.01", "Hunter Shrine Cache", new Vector3(-40f, 24f, 0f), "item.wood", 3);
             EnsureLootChest("chest.bell.01", "Bell Marker Cache", new Vector3(44.2f, 7.4f, 0f), "item.stone", 2);
+            EnsureLootChest("chest.grove.01", "Forager's Hidden Pouch", new Vector3(-30f, 14.5f, 0f), "item.medicinal-herb", 2);
+            EnsureLootChest("chest.bridge.01", "Bridge Toll Box", new Vector3(-11.4f, -5.6f, 0f), "item.old-coin", 4);
+            EnsureLootChest("chest.mine.01", "Collapsed Mine Crate", new Vector3(31.5f, -19.5f, 0f), "item.iron-ore", 2);
+            EnsureLootChest("chest.camp.torch", "Camp Torch Bundle", new Vector3(6.4f, -10.2f, 0f), "item.torch", 1);
         }
 
         private void EnsureLootChest(string chestId, string displayName, Vector3 position, string itemId, int quantity)

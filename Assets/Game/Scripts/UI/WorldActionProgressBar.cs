@@ -80,7 +80,7 @@ namespace TheOldRoad.UI
                 return;
             }
 
-            elapsedSeconds += Time.deltaTime;
+            elapsedSeconds += UnityEngine.Time.deltaTime;
             if (elapsedSeconds >= durationSeconds) Complete();
         }
 

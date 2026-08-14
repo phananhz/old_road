@@ -16,7 +16,10 @@
 - FR-VISUAL-002: Prototype sprites shall use point filtering and deterministic Y sorting for top-down readability.
 - FR-WORLD-001: Valen Outskirts prototype world shall support a wider finite exploration map.
 - FR-WORLD-002: Prototype terrain and resource placement may be generated from a deterministic seed for repeatable testing.
+- FR-WORLD-003: The river shall include lightweight animated visual motion in the prototype scene.
 - FR-ITEM-001: Static item data shall use stable item IDs.
+- FR-ITEM-002: The prototype shall include multiple material, forage, ore, and currency item IDs for inventory testing.
+- FR-ITEM-003: The prototype shall include a torch item that can provide a small local light radius.
 - FR-LOOT-001: Prototype loot containers shall use stable chest IDs.
 - FR-LOOT-002: Opening a loot container shall reward inventory through gameplay logic and shall not update UI directly.
 - FR-LOOT-003: Opened loot container state shall persist through save/load.
@@ -27,6 +30,7 @@
 - FR-GATHER-002: Harvesting shall reward inventory through gameplay logic and shall not update UI directly.
 - FR-GATHER-003: Harvested node state shall be explicit.
 - FR-GATHER-004: Gathering shall show a short world-space progress countdown above the target resource before rewards are granted.
+- FR-GATHER-005: The prototype map shall include multiple harvestable resource categories beyond wood and stone.
 - FR-EXPLORE-001: Prototype landmarks shall use stable landmark IDs.
 - FR-EXPLORE-002: Player shall be able to inspect undiscovered landmarks through gameplay input.
 - FR-EXPLORE-003: Discovered landmarks shall appear in a journal-style UI.
@@ -44,6 +48,11 @@
 - FR-CONST-003: Construction progress shall be derived from current time minus start time.
 - FR-CONST-004: Construction shall not depend on a coroutine continuing while the app is closed.
 - FR-CONST-005: Active construction sites shall show a world-space progress bar above the building footprint.
+- FR-HOUSE-001: Completed cabins shall expose an enter interaction when the player is nearby.
+- FR-HOUSE-002: The prototype shall provide a full-screen cabin interior with visible furniture.
+- FR-HOUSE-003: The cabin interior shall include a bed interaction that advances time by 8 in-game hours.
+- FR-TIME-001: The prototype shall simulate day and night through the in-game clock.
+- FR-TIME-002: Outdoor brightness shall change according to the current in-game time.
 - FR-SAVE-001: Save data shall contain `saveVersion`.
 - FR-SAVE-002: Save data shall persist inventory.
 - FR-SAVE-003: Save data shall persist construction jobs and placement.
