@@ -7,6 +7,7 @@ using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Items;
+using TheOldRoad.NPC;
 using TheOldRoad.Player;
 using TheOldRoad.Time;
 using TheOldRoad.World;
@@ -48,6 +49,8 @@ namespace TheOldRoad.UI
         private int selectedBuildCategory;
         private string activePromptText = string.Empty;
         private float promptHideTime;
+        private string buildCatalogMessage = string.Empty;
+        private float buildCatalogMessageHideTime;
 
         public void Configure(
             InventorySession inventorySession,
@@ -346,25 +349,39 @@ namespace TheOldRoad.UI
 
             PrototypeItemInfo[] items = PrototypeItemCatalog.All;
 
-            const float slotWidth = 176f;
-            const float slotHeight = 96f;
-            const float gap = 14f;
-            int columns = Mathf.Max(1, Mathf.FloorToInt((rect.width - 24f) / (slotWidth + gap)));
+            const float slotSize = 76f;
+            const float gap = 10f;
+            int columns = Mathf.Max(1, Mathf.FloorToInt((rect.width - 24f + gap) / (slotSize + gap)));
 
             for (int i = 0; i < items.Length; i++)
             {
                 PrototypeItemInfo item = items[i];
                 int column = i % columns;
                 int row = i / columns;
-                Rect slot = new Rect(rect.x + 14 + column * (slotWidth + gap), rect.y + 14 + row * (slotHeight + gap), slotWidth, slotHeight);
-                DrawRect(slot, InkSoft);
-                DrawBorder(slot, GoldDim, 1f);
-                Rect icon = new Rect(slot.x + 15, slot.y + 18, 44, 40);
-                DrawItemGlyph(icon, new HotbarItem(item.DisplayName, item.Icon, GetQuantity(item.ItemId), item.Color));
-                GUI.Label(new Rect(slot.x + 72, slot.y + 16, slot.width - 86, 24), item.DisplayName, labelStyle);
-                GUI.Label(new Rect(slot.x + 72, slot.y + 42, slot.width - 86, 26), "x" + GetQuantity(item.ItemId), titleStyle);
-                GUI.Label(new Rect(slot.x + 15, slot.y + 68, slot.width - 30, 18), item.UseText, smallStyle);
+                Rect slot = new Rect(rect.x + 14 + column * (slotSize + gap), rect.y + 14 + row * (slotSize + gap), slotSize, slotSize);
+                DrawInventorySlot(slot, item);
             }
+        }
+
+        private void DrawInventorySlot(Rect slot, PrototypeItemInfo item)
+        {
+            int quantity = GetQuantity(item.ItemId);
+            bool hasItem = quantity > 0;
+            DrawRect(slot, hasItem ? InkSoft : new Color(0.045f, 0.041f, 0.037f, 0.88f));
+            DrawBorder(slot, hasItem ? GoldDim : new Color(0.20f, 0.18f, 0.15f, 1f), 1f);
+
+            Rect icon = new Rect(slot.x + 13f, slot.y + 8f, slot.width - 26f, 38f);
+            Color previous = GUI.color;
+            GUI.color = hasItem ? Color.white : new Color(1f, 1f, 1f, 0.42f);
+            DrawItemGlyph(icon, new HotbarItem(item.DisplayName, item.Icon, quantity, item.Color));
+            GUI.color = previous;
+
+            Rect quantityBadge = new Rect(slot.xMax - 34f, slot.yMax - 25f, 27f, 18f);
+            DrawRect(quantityBadge, hasItem ? new Color(0.02f, 0.018f, 0.015f, 0.92f) : new Color(0.02f, 0.018f, 0.015f, 0.55f));
+            DrawBorder(quantityBadge, hasItem ? GoldDim : new Color(0.18f, 0.16f, 0.14f, 1f), 1f);
+            GUI.Label(quantityBadge, quantity.ToString(), centerStyle);
+
+            GUI.Label(new Rect(slot.x + 5f, slot.yMax - 43f, slot.width - 10f, 18f), GetShortItemName(item.DisplayName), centerStyle);
         }
 
         private void DrawBuildCatalogOverlay()
@@ -423,6 +440,13 @@ namespace TheOldRoad.UI
 
             string heading = selectedBuildCategory == 0 ? "Housing" : selectedBuildCategory == 1 ? "Fire & Light" : "Animal Pens";
             GUI.Label(new Rect(rect.x + 18f, rect.y + 14f, rect.width - 36f, 24f), heading, titleStyle);
+            if (!string.IsNullOrWhiteSpace(buildCatalogMessage) && UnityEngine.Time.unscaledTime <= buildCatalogMessageHideTime)
+            {
+                Rect message = new Rect(rect.x + 150f, rect.y + 12f, rect.width - 168f, 26f);
+                DrawRect(message, new Color(0.20f, 0.055f, 0.035f, 0.88f));
+                DrawBorder(message, new Color(0.84f, 0.28f, 0.18f, 1f), 1f);
+                GUI.Label(message, buildCatalogMessage, centerStyle);
+            }
 
             Rect grid = new Rect(rect.x + 18f, rect.y + 52f, rect.width - 36f, rect.height - 72f);
             const float cardWidth = 220f;
@@ -467,9 +491,10 @@ namespace TheOldRoad.UI
 
         private void DrawBuildCatalogCard(Rect rect, string name, string description, string category, BuildingDefinition definition, string glyph, bool buildable)
         {
-            bool canBuild = buildable && definition != null && placementController != null;
+            bool hasMaterials = HasBuildMaterials(definition);
+            bool canBuild = buildable && definition != null && placementController != null && hasMaterials;
             DrawRect(rect, buildable ? InkSoft : new Color(0.055f, 0.052f, 0.048f, 0.86f));
-            DrawBorder(rect, buildable ? GoldDim : new Color(0.20f, 0.18f, 0.16f, 1f), 1f);
+            DrawBorder(rect, canBuild ? GoldDim : new Color(0.34f, 0.22f, 0.16f, 1f), canBuild ? 1f : 2f);
 
             Rect icon = new Rect(rect.x + 18f, rect.y + 18f, 70f, 62f);
             DrawBuildingGlyph(icon, glyph);
@@ -497,10 +522,18 @@ namespace TheOldRoad.UI
             {
                 if (GUI.Button(action, "Select & Place"))
                 {
+                    buildCatalogMessage = string.Empty;
                     placementController.BeginPlacement(definition);
                     overlayMode = OverlayMode.None;
                     activePromptText = name + " selected. Move cursor to a valid grid cell, then left click.";
                     promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+                }
+            }
+            else if (buildable && definition != null && placementController != null)
+            {
+                if (GUI.Button(action, "Not enough items"))
+                {
+                    ShowBuildCatalogMessage("Cannot build " + name + ". " + GetMissingBuildMaterialsText(definition));
                 }
             }
             else
@@ -533,6 +566,50 @@ namespace TheOldRoad.UI
                 GUI.Label(new Rect(row.x + 16f, row.y - 1f, row.width - 16f, row.height), item.DisplayName + " " + owned + "/" + cost.quantity, smallStyle);
                 GUI.color = previous;
             }
+        }
+
+        private bool HasBuildMaterials(BuildingDefinition definition)
+        {
+            if (definition == null) return false;
+            BuildCostEntry[] costs = definition.ConstructionCosts;
+            if (costs == null || costs.Length == 0) return true;
+
+            for (int i = 0; i < costs.Length; i++)
+            {
+                BuildCostEntry cost = costs[i];
+                if (GetQuantity(cost.itemId) < cost.quantity) return false;
+            }
+
+            return true;
+        }
+
+        private string GetMissingBuildMaterialsText(BuildingDefinition definition)
+        {
+            if (definition == null || definition.ConstructionCosts == null) return "Missing building definition.";
+
+            string message = "Missing: ";
+            bool hasMissing = false;
+            for (int i = 0; i < definition.ConstructionCosts.Length; i++)
+            {
+                BuildCostEntry cost = definition.ConstructionCosts[i];
+                int owned = GetQuantity(cost.itemId);
+                if (owned >= cost.quantity) continue;
+
+                PrototypeItemInfo item = PrototypeItemCatalog.Get(cost.itemId);
+                if (hasMissing) message += ", ";
+                message += item.DisplayName + " " + owned + "/" + cost.quantity;
+                hasMissing = true;
+            }
+
+            return hasMissing ? message : "Materials are ready.";
+        }
+
+        private void ShowBuildCatalogMessage(string message)
+        {
+            buildCatalogMessage = message;
+            buildCatalogMessageHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+            activePromptText = message;
+            promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
         }
 
         private void DrawBuildingGlyph(Rect rect, string glyph)
@@ -683,6 +760,12 @@ namespace TheOldRoad.UI
                 DrawMapDot(map, site.transform.position, new Color(0.95f, 0.62f, 0.22f, 1f), map.width > 220f ? 10f : 6f);
             }
 
+            foreach (VillagerNpcController npc in FindObjectsByType<VillagerNpcController>(FindObjectsInactive.Exclude))
+            {
+                if (npc == null) continue;
+                DrawMapDot(map, npc.transform.position, new Color(0.92f, 0.78f, 0.42f, 1f), map.width > 220f ? 8f : 5f);
+            }
+
             PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
             if (player != null) DrawMapDot(map, player.transform.position, new Color(0.25f, 0.62f, 1f, 1f), map.width > 220f ? 11f : 7f);
         }
@@ -696,7 +779,9 @@ namespace TheOldRoad.UI
             {
                 float t = i / (float)(segments - 1);
                 float nextT = Mathf.Min(1f, (i + 1) / (float)(segments - 1));
-                float worldX = Mathf.Lerp(WorldMin.x, WorldMax.x, t);
+                Vector3 center = GetMapCenter();
+                float mapRange = GetMapRange();
+                float worldX = Mathf.Lerp(center.x - mapRange * 0.5f, center.x + mapRange * 0.5f, t);
                 float roadY = 1.4f * Mathf.Sin(worldX * 0.34f) + 0.8f * Mathf.Sin(worldX * 0.11f);
                 Vector2 mapPoint = WorldToMap(map, new Vector3(worldX, roadY, 0f));
                 float segmentWidth = Mathf.Max(3f, map.width * (nextT - t) + 2f);
@@ -713,7 +798,9 @@ namespace TheOldRoad.UI
             for (int i = 0; i < segments; i++)
             {
                 float t = i / (float)(segments - 1);
-                float worldX = Mathf.Lerp(WorldMin.x, 28f, t);
+                Vector3 center = GetMapCenter();
+                float mapRange = GetMapRange();
+                float worldX = Mathf.Lerp(center.x - mapRange * 0.5f, center.x + mapRange * 0.5f, t);
                 float riverY = -12.5f - Mathf.Sin(worldX * 0.16f) * 2.0f;
                 Vector2 mapPoint = WorldToMap(map, new Vector3(worldX, riverY, 0f));
                 DrawRect(new Rect(mapPoint.x - 4f, mapPoint.y - riverHeight * 0.5f, 8f, riverHeight), new Color(0.16f, 0.35f, 0.45f, 1f));
@@ -790,6 +877,26 @@ namespace TheOldRoad.UI
         {
             PrototypeItemInfo item = PrototypeItemCatalog.Get(itemId);
             return new HotbarItem(item.DisplayName, item.Icon, GetQuantity(item.ItemId), item.Color);
+        }
+
+        private static string GetShortItemName(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName)) return string.Empty;
+            if (displayName.Length <= 10) return displayName;
+
+            string[] words = displayName.Split(' ');
+            if (words.Length > 1)
+            {
+                string initials = string.Empty;
+                for (int i = 0; i < words.Length; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(words[i])) initials += words[i][0];
+                }
+
+                return initials.ToUpperInvariant();
+            }
+
+            return displayName.Substring(0, 9) + ".";
         }
 
         private int GetQuantity(string itemId)
@@ -973,6 +1080,7 @@ namespace TheOldRoad.UI
             DrawLegendRow(rect.x + 16, rect.y + 204, new Color(0.95f, 0.62f, 0.22f, 1f), "Cabin site");
             DrawLegendRow(rect.x + 16, rect.y + 234, new Color(0.68f, 0.42f, 0.92f, 1f), "Landmark");
             DrawLegendRow(rect.x + 16, rect.y + 264, new Color(1f, 0.78f, 0.24f, 1f), "Loot chest");
+            DrawLegendRow(rect.x + 16, rect.y + 294, new Color(0.92f, 0.78f, 0.42f, 1f), "Villager NPC");
             GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), "Explore by following the road. Markers are prototype testing aids.", smallStyle);
         }
 
@@ -1012,16 +1120,28 @@ namespace TheOldRoad.UI
             DrawBorder(dot, Color.black, 1f);
         }
 
-        private static Vector2 WorldToMap(Rect map, Vector3 worldPosition)
+        private Vector2 WorldToMap(Rect map, Vector3 worldPosition)
         {
+            Vector3 center = GetMapCenter();
+            float mapRange = GetMapRange();
+            Vector2 min = new Vector2(center.x - mapRange * 0.5f, center.y - mapRange * 0.5f);
+            Vector2 max = new Vector2(center.x + mapRange * 0.5f, center.y + mapRange * 0.5f);
             Vector2 normalized = new Vector2(
-                Mathf.InverseLerp(WorldMin.x, WorldMax.x, worldPosition.x),
-                Mathf.InverseLerp(WorldMin.y, WorldMax.y, worldPosition.y));
+                Mathf.InverseLerp(min.x, max.x, worldPosition.x),
+                Mathf.InverseLerp(min.y, max.y, worldPosition.y));
 
             return new Vector2(
                 map.x + Mathf.Clamp01(normalized.x) * map.width,
                 map.y + (1f - Mathf.Clamp01(normalized.y)) * map.height);
         }
+
+        private static Vector3 GetMapCenter()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            return player != null ? player.transform.position : Vector3.zero;
+        }
+
+        private static float GetMapRange() => 96f;
 
         private void DrawCard(Rect rect, Color color)
         {
@@ -1120,6 +1240,7 @@ namespace TheOldRoad.UI
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
+                clipping = TextClipping.Clip,
                 normal = { textColor = Parchment }
             };
 

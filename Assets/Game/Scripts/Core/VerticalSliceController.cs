@@ -39,8 +39,8 @@ namespace TheOldRoad.Core
         [SerializeField] private BuildingDefinition storageShedDefinition;
         [SerializeField] private BuildingDefinition stoneCottageDefinition;
         [SerializeField] private RecipeDefinition cabinPlankRecipe;
-        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-50, -28);
-        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(50, 28);
+        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-100000, -100000);
+        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(100000, 100000);
         [SerializeField, Min(1f)] private float autosaveIntervalSeconds = 10f;
 
         private readonly Dictionary<string, ResourceNode> resourceNodes = new Dictionary<string, ResourceNode>();
@@ -285,6 +285,7 @@ namespace TheOldRoad.Core
             CabinInteriorController cabinInterior = EnsureCabinInterior();
             EnsurePlayer(inventorySession, cabinInterior, gameTime);
             EnsureCameraFollow(mainCamera);
+            EnsureInfiniteWorldStreamer();
             EnsureDayNightLighting(mainCamera, gameTime, inventorySession);
             EnsureProceduralResourceNodes();
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
@@ -556,7 +557,22 @@ namespace TheOldRoad.Core
 
             CameraFollow2D follow = mainCamera.GetComponent<CameraFollow2D>();
             if (follow == null) follow = mainCamera.gameObject.AddComponent<CameraFollow2D>();
-            follow.Configure(player.transform, new Vector2(WorldMin.x + 7f, WorldMin.y + 5f), new Vector2(WorldMax.x - 7f, WorldMax.y - 5f), 0.12f);
+            follow.Configure(player.transform, new Vector2(-100000f, -100000f), new Vector2(100000f, 100000f), 0.12f);
+        }
+
+        private void EnsureInfiniteWorldStreamer()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player == null) return;
+
+            InfiniteWorldStreamer streamer = FindAnyObjectByType<InfiniteWorldStreamer>();
+            if (streamer == null)
+            {
+                GameObject streamerObject = new GameObject("Infinite World Streamer");
+                streamer = streamerObject.AddComponent<InfiniteWorldStreamer>();
+            }
+
+            streamer.Configure(player.transform, WorldSeed, 32f, 2, 3);
         }
 
         private void EnsureGround()
@@ -911,6 +927,17 @@ namespace TheOldRoad.Core
                 CampfireLightController light = site.GetComponent<CampfireLightController>();
                 if (light == null) light = site.AddComponent<CampfireLightController>();
                 light.Configure(constructionSite, FindAnyObjectByType<GameTimeController>());
+            }
+
+            if (job.buildingId == CabinId || job.buildingId == StoneCottageId)
+            {
+                HouseLightController houseLight = site.GetComponent<HouseLightController>();
+                if (houseLight == null) houseLight = site.AddComponent<HouseLightController>();
+                Vector3 chimneyOffset = job.buildingId == StoneCottageId
+                    ? new Vector3(1.20f, 2.75f, 0f)
+                    : new Vector3(1.00f, 2.60f, 0f);
+                float glowScale = job.buildingId == StoneCottageId ? 1.15f : 0.95f;
+                houseLight.Configure(constructionSite, FindAnyObjectByType<GameTimeController>(), chimneyOffset, glowScale);
             }
 
             if (job.buildingId == AnimalPenSmallId || job.buildingId == AnimalPenLongId)

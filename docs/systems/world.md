@@ -9,7 +9,7 @@ The world is semi-open and should be discovered through roads, landmarks, enviro
 
 Possible regions include Valen, Old Forest, Blackwood, Riverlands, Marshlands, Northern Pass, Frosthold, Sun Coast, Ancient Ruins, and Old Capital.
 
-The current prototype represents Valen Outskirts only.
+The current prototype starts in Valen Outskirts and now supports chunk-streamed exploration beyond the original map.
 
 ## Current Prototype Map
 
@@ -23,7 +23,13 @@ It contains:
 - one-time loot chests placed near road, camp, shrine, ruin, and bell marker locations;
 - prototype landmarks such as a waystone, signpost, ruined arch, footbridge, and abandoned camp.
 
-This is a finite procedural prototype, not an infinite Minecraft-style chunk world yet. These are still placeholder pixel-art assets. They exist to validate exploration scale, camera follow, minimap readability, gathering, and construction placement before production maps are authored.
+The original Valen Outskirts map remains as the authored starting area. Beyond it, `InfiniteWorldStreamer` creates deterministic 32 x 32 Unity-unit chunks around the player and unloads far chunks. This is a prototype infinite-world approach: terrain, decorative resources, villages, and NPCs are regenerated from stable coordinates and seed values rather than authored as final content.
+
+The current chunk-streaming prototype intentionally does not persist every streamed decoration or NPC. Persistent gameplay state still lives in the save system for the vertical-slice authored objects and player-built construction.
+
+## Prototype Villages
+
+Streamed chunks can contain small deterministic villages. Villages currently include placeholder houses, a storehouse, a campfire, a sign, and harmless NPC villagers. NPCs have visible job labels such as Miller, Woodcutter, and Herbalist and walk between local work points to make villages feel active.
 
 ## Landmark Discovery
 

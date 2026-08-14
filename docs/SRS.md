@@ -18,6 +18,10 @@
 - FR-WORLD-001: Valen Outskirts prototype world shall support a wider finite exploration map.
 - FR-WORLD-002: Prototype terrain and resource placement may be generated from a deterministic seed for repeatable testing.
 - FR-WORLD-003: The river shall include lightweight animated visual motion in the prototype scene.
+- FR-WORLD-004: The prototype shall stream deterministic world chunks around the player so exploration can continue beyond the original Valen Outskirts map.
+- FR-WORLD-005: Streamed world chunks may contain deterministic prototype villages.
+- FR-NPC-001: Prototype village NPCs shall be harmless and shall not attack the player.
+- FR-NPC-002: Prototype village NPCs shall have simple visible jobs and movement loops.
 - FR-ITEM-001: Static item data shall use stable item IDs.
 - FR-ITEM-002: The prototype shall include multiple material, forage, ore, and currency item IDs for inventory testing.
 - FR-ITEM-003: The prototype shall include a torch item that can provide a small local light radius.
@@ -51,6 +55,9 @@
 - FR-BUILD-005: The prototype shall allow placing and constructing multiple building categories from the catalog, including cabin, campfire, cooking hearth, storage shed, stone cottage, and animal pens.
 - FR-BUILD-006: Completed campfire and cooking hearth buildings shall emit a small animated warm light.
 - FR-BUILD-007: Completed animal pen buildings shall produce prototype animal-product items over time.
+- FR-BUILD-008: Completed fire buildings shall show prototype flame flicker and smoke.
+- FR-BUILD-009: Completed house buildings shall show warm night window light and chimney smoke.
+- FR-BUILD-010: The build catalog shall prevent entering placement mode when the player lacks required materials and shall show a clear missing-material message.
 - FR-CONST-001: Construction shall create a stable construction instance ID.
 - FR-CONST-002: Construction shall store building ID, start timestamp, duration, state, and placement.
 - FR-CONST-003: Construction progress shall be derived from current time minus start time.
@@ -63,6 +70,7 @@
 - FR-HOUSE-005: The cabin interior shall visually separate sleeping, living, and kitchen areas with partition walls.
 - FR-TIME-001: The prototype shall simulate day and night through the in-game clock.
 - FR-TIME-002: Outdoor brightness shall change according to the current in-game time.
+- FR-TIME-003: Night shall strongly darken the outdoor map while prototype house and fire lights remain visible as small local light pools.
 - FR-SAVE-001: Save data shall contain `saveVersion`.
 - FR-SAVE-002: Save data shall persist inventory.
 - FR-SAVE-003: Save data shall persist construction jobs and placement.
@@ -77,6 +85,7 @@
 - FR-UI-005: The prototype HUD shall allow hotbar slot selection by click or tap.
 - FR-UI-006: The prototype HUD shall expose mobile-style action buttons for gather, craft, build, inventory, and map.
 - FR-UI-007: The prototype HUD shall expose a journal/log overlay for discovered landmarks.
+- FR-UI-008: The bag overlay shall display items as compact square slots so item labels and counts stay inside their cells.
 
 ## Non-Functional Requirements
 

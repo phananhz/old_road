@@ -9,7 +9,7 @@
 
 `GridPlacementValidator` is independent from UI. It validates buildable area, positive footprint, and overlap state.
 
-The HUD build action opens a prototype construction catalog before placement. The catalog shows a large panel with category tabs such as Housing, Fire & Light, and Animal Pens. Each card shows a prototype building preview and required material information. Selecting a buildable card enters placement mode.
+The HUD build action opens a prototype construction catalog before placement. The catalog shows a large panel with category tabs such as Housing, Fire & Light, and Animal Pens. Each card shows a prototype building preview and required material information. Selecting a buildable card enters placement mode only when the player has the required materials; otherwise the catalog stays open and shows which materials are missing.
 
 Current buildable prototype buildings:
 

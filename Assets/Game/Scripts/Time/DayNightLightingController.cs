@@ -47,7 +47,7 @@ namespace TheOldRoad.Time
             }
 
             worldCamera.backgroundColor = background;
-            RenderSettings.ambientLight = Color.Lerp(new Color(0.18f, 0.20f, 0.28f, 1f), Color.white, sunlight);
+            RenderSettings.ambientLight = Color.Lerp(new Color(0.03f, 0.035f, 0.055f, 1f), Color.white, sunlight);
 
             UpdateNightOverlay(nightAmount);
             UpdateTorchGlow(nightAmount);
@@ -61,7 +61,8 @@ namespace TheOldRoad.Time
             float width = height * worldCamera.aspect;
             nightOverlay.transform.position = new Vector3(transform.position.x, transform.position.y, -0.5f);
             nightOverlay.transform.localScale = new Vector3(width, height, 1f);
-            nightOverlay.color = new Color(0.02f, 0.03f, 0.07f, Mathf.Clamp01(nightAmount * 0.56f));
+            float darkness = Mathf.Clamp01(Mathf.InverseLerp(0.08f, 0.88f, nightAmount));
+            nightOverlay.color = new Color(0.004f, 0.006f, 0.014f, Mathf.Lerp(0.08f, 0.91f, darkness));
         }
 
         private void UpdateTorchGlow(float nightAmount)

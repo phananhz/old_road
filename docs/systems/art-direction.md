@@ -31,5 +31,7 @@ Current prototype visual upgrades:
 - the player has a simple four-frame walk cycle and horizontal flip for left/right movement;
 - the completed cabin sprite has a more detailed medieval pixel-art silhouette with roof, windows, door, stone base, chimney, and wood planks;
 - the cabin interior is divided into sleeping, living, and kitchen areas with visible partition walls and room-specific furniture.
+- completed fires use a tight animated warm glow, flickering flame, ember pulse, and rising smoke;
+- completed houses use small warm night window glow and chimney smoke so the house area remains readable in very dark nights without lighting the whole map.
 
 Production art should eventually replace the placeholders under `Assets/Game/Art` and prefabs under `Assets/Game/Prefabs`.

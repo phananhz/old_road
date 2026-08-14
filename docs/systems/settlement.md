@@ -7,4 +7,4 @@
 
 Valen begins as a small medieval village. Player actions can gradually develop it. Future NPC specialists may unlock systems such as carpentry, blacksmithing, tailoring, alchemy, and advanced construction.
 
-The current prototype only validates the first cabin construction loop. Recruitment, housing rules, and upgrades are future scope.
+The current prototype validates the first cabin construction loop and now includes streamed prototype villages outside the starting map. These villages are deterministic placeholders: they contain harmless NPCs with simple work loops, but recruitment, trading, housing rules, dialogue, and settlement upgrades remain future scope.

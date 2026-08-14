@@ -10,7 +10,7 @@
 The current prototype HUD uses a Minecraft-like readable layout with a medieval dark-fantasy skin:
 
 - top-left: game title, player health, day/time, and save status;
-- top-right: in-game day/time and minimap scaled to the expanded Valen Outskirts prototype map;
+- top-right: in-game day/time and a local minimap centered around the player for chunk-streamed exploration;
 - bottom-center: 9-slot hotbar for key materials and build actions;
 - bottom-left: virtual joystick for mobile-style movement testing;
 - bottom-right: mobile-style action buttons for `Gather`, `Craft`, `Build`, `Bag`, `Map`, and `Log`;
@@ -27,9 +27,9 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 
 The visual skin uses dark panels, gold trim, parchment text, subtle shadows, corner accents, compact control pills, item glyphs, virtual joystick movement controls, and map legends to avoid covering the play field while looking closer to a real game HUD than a debug overlay.
 
-Hotbar slots can be selected with number keys or by clicking/tapping directly on the slot. Build catalog cards can be selected by click or tap.
+Hotbar slots can be selected with number keys or by clicking/tapping directly on the slot. The bag overlay uses compact square item cells with quantity badges to avoid text spilling outside slots. Build catalog cards can be selected by click or tap.
 
-The build catalog now exposes multiple buildable prototype buildings: Cabin, Stone Cottage, Storage Shed, Campfire, Cooking Hearth, Small Animal Pen, and Long Animal Pen. Fire buildings support cooking and warm light; animal pens produce prototype animal-product items over time.
+The build catalog now exposes multiple buildable prototype buildings: Cabin, Stone Cottage, Storage Shed, Campfire, Cooking Hearth, Small Animal Pen, and Long Animal Pen. Fire buildings support cooking and warm light; animal pens produce prototype animal-product items over time. If the player lacks required materials, the catalog does not enter placement mode and shows the missing materials.
 
 The mobile action buttons emit the same prototype input events as keyboard controls so gathering, crafting, building, inventory, map, and journal logic remain outside the UI layer.
 

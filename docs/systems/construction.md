@@ -23,4 +23,4 @@ In the prototype, every active construction site draws a world-space progress ba
 
 Completed cabin sites expose an enter interaction when the player stands nearby. The current prototype interior is generated at runtime and contains three visible areas: sleeping nook, living room, and kitchen. Partition walls visually divide those areas. Standing near the bed and using the cabin action opens a confirmation prompt; confirming advances the in-game clock by 8 hours.
 
-Completed campfire and cooking hearth buildings emit a small warm light and support prototype cooking. Completed animal pen buildings produce prototype animal products over time. These values are prototype-only and exist to test the broader build loop.
+Completed campfire and cooking hearth buildings emit a tight local warm light, flickering flame, ember pulse, rising smoke, and support prototype cooking. Completed cabin-style houses emit a small local warm window light and chimney smoke. Completed animal pen buildings produce prototype animal products over time. These values are prototype-only and exist to test the broader build loop.
