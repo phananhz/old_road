@@ -1,60 +1,55 @@
 using UnityEngine;
-using TheOldRoad.Inventory;
 
-namespace TheOldRoad.Gathering
+namespace TheOldRoad.World
 {
-    /// <summary>Configurable resource node. It rewards inventory through gameplay API only.</summary>
-    public sealed class ResourceNode : MonoBehaviour
+    /// <summary>Small exploration target for the prototype map.</summary>
+    public sealed class DiscoverableLandmark : MonoBehaviour
     {
-        [SerializeField] private string nodeId;
-        [SerializeField] private string resourceItemId = "wood";
-        [SerializeField, Min(1)] private int resourceAmount = 1;
-        private bool harvested;
+        [SerializeField] private string landmarkId;
+        [SerializeField] private string title;
+        [SerializeField, TextArea] private string journalText;
+
+        private bool discovered;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer glowRenderer;
         private Vector3 baseScale;
         private Color baseColor = Color.white;
 
-        public string NodeId => nodeId;
-        public string ResourceItemId => resourceItemId;
-        public int ResourceAmount => resourceAmount;
-        public bool IsHarvested => harvested;
-        public string DisplayName => gameObject.name;
+        public string LandmarkId => landmarkId;
+        public string Title => string.IsNullOrWhiteSpace(title) ? gameObject.name : title;
+        public string JournalText => journalText;
+        public bool IsDiscovered => discovered;
 
         private void Awake()
         {
             CaptureVisualState();
         }
 
-        public void Configure(string nodeId, string resourceItemId, int resourceAmount, bool harvested = false)
+        public void Configure(string landmarkId, string title, string journalText, bool discovered = false)
         {
-            this.nodeId = nodeId;
-            this.resourceItemId = resourceItemId;
-            this.resourceAmount = Mathf.Max(1, resourceAmount);
+            this.landmarkId = landmarkId;
+            this.title = title;
+            this.journalText = journalText;
             CaptureVisualState();
-            SetHarvested(harvested);
+            SetDiscovered(discovered);
         }
 
-        public bool TryHarvest(InventoryRuntime inventory)
+        public bool Discover()
         {
-            if (harvested || inventory == null || string.IsNullOrWhiteSpace(resourceItemId) || resourceAmount <= 0)
-                return false;
-
-            inventory.Add(resourceItemId, resourceAmount);
-            SetHarvested(true);
+            if (discovered || string.IsNullOrWhiteSpace(landmarkId)) return false;
+            SetDiscovered(true);
             return true;
         }
 
-        public void SetHarvested(bool harvested)
+        public void SetDiscovered(bool discovered)
         {
-            this.harvested = harvested;
+            this.discovered = discovered;
             CaptureVisualState();
-            if (spriteRenderer != null)
-            {
-                Color color = baseColor;
-                color.a = harvested ? 0.35f : 1f;
-                spriteRenderer.color = color;
-            }
+            if (spriteRenderer == null) return;
+
+            spriteRenderer.color = discovered
+                ? new Color(baseColor.r * 1.12f, baseColor.g * 1.12f, baseColor.b * 1.12f, 1f)
+                : baseColor;
 
             SetGlowVisible(false);
         }
@@ -64,11 +59,11 @@ namespace TheOldRoad.Gathering
             CaptureVisualState();
             if (spriteRenderer == null) return;
 
-            transform.localScale = highlighted && !harvested ? baseScale * 1.08f : baseScale;
-            if (harvested) return;
+            transform.localScale = highlighted && !discovered ? baseScale * 1.08f : baseScale;
+            if (discovered) return;
 
             spriteRenderer.color = highlighted
-                ? new Color(1f, 0.95f, 0.62f, 1f)
+                ? new Color(0.72f, 0.86f, 1f, 1f)
                 : baseColor;
 
             SetGlowVisible(highlighted);
@@ -94,11 +89,11 @@ namespace TheOldRoad.Gathering
             glowObject.transform.SetParent(transform, false);
             glowObject.transform.localPosition = Vector3.zero;
             glowObject.transform.localRotation = Quaternion.identity;
-            glowObject.transform.localScale = new Vector3(1.22f, 1.22f, 1f);
+            glowObject.transform.localScale = new Vector3(1.20f, 1.20f, 1f);
 
             glowRenderer = glowObject.AddComponent<SpriteRenderer>();
             glowRenderer.sprite = spriteRenderer.sprite;
-            glowRenderer.color = new Color(1f, 0.86f, 0.28f, 0.58f);
+            glowRenderer.color = new Color(0.42f, 0.78f, 1f, 0.52f);
             glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
             glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
             glowRenderer.enabled = false;
@@ -115,7 +110,7 @@ namespace TheOldRoad.Gathering
                 glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
                 glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
             }
-            glowRenderer.enabled = visible && !harvested;
+            glowRenderer.enabled = visible && !discovered;
         }
     }
 }

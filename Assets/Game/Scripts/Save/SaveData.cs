@@ -16,6 +16,8 @@ namespace TheOldRoad.Save
         public InventorySaveEntry[] inventory = Array.Empty<InventorySaveEntry>();
         public ConstructionSaveEntry[] constructionJobs = Array.Empty<ConstructionSaveEntry>();
         public ResourceNodeSaveEntry[] resourceNodes = Array.Empty<ResourceNodeSaveEntry>();
+        public LandmarkSaveEntry[] landmarks = Array.Empty<LandmarkSaveEntry>();
+        public LootChestSaveEntry[] lootChests = Array.Empty<LootChestSaveEntry>();
     }
 
     [Serializable]
@@ -35,5 +37,19 @@ namespace TheOldRoad.Save
     {
         public string nodeId;
         public bool harvested;
+    }
+
+    [Serializable]
+    public sealed class LandmarkSaveEntry
+    {
+        public string landmarkId;
+        public bool discovered;
+    }
+
+    [Serializable]
+    public sealed class LootChestSaveEntry
+    {
+        public string chestId;
+        public bool opened;
     }
 }

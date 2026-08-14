@@ -7,7 +7,7 @@
 
 The player uses 8-direction real-time movement for a fixed top-down or top-down-oblique 2D perspective. Diagonal input is clamped to prevent faster diagonal movement.
 
-Input is supplied through `IPlayerInputSource`. `KeyboardPlayerInputSource` is the development adapter. `MobileJoystickInputSource` is the current prototype mobile adapter. `CompositePlayerInputSource` allows joystick movement to override keyboard movement while preserving WASD/editor testing.
+Input is supplied through `IPlayerInputSource`. `KeyboardPlayerInputSource` is the development adapter. `MobileJoystickInputSource` is the current prototype virtual joystick adapter. `CompositePlayerInputSource` allows joystick movement to override keyboard movement while preserving WASD/editor testing.
 
 `PlayerMovement` owns locomotion only. Combat, gathering, UI, and save logic remain separate.
 

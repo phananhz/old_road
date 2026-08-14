@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TheOldRoad.Input
@@ -9,6 +10,7 @@ namespace TheOldRoad.Input
     /// </summary>
     public static class PrototypeInput
     {
+        private static readonly Dictionary<KeyCode, int> VirtualKeyDownFrames = new Dictionary<KeyCode, int>();
         private static string lastBackendStatus = "legacy=unknown";
 
         public static bool GetKey(KeyCode key)
@@ -30,6 +32,7 @@ namespace TheOldRoad.Input
 
         public static bool GetKeyDown(KeyCode key)
         {
+            if (VirtualKeyDownFrames.TryGetValue(key, out int virtualFrame) && virtualFrame == UnityEngine.Time.frameCount) return true;
             if (ImGuiPrototypeInputBridge.GetKeyDown(key)) return true;
 
             try
@@ -106,6 +109,12 @@ namespace TheOldRoad.Input
                 string guiStatus = ImGuiPrototypeInputBridge.HasRecentEvents ? " imgui=on" : " imgui=waiting";
                 return "Input: " + lastBackendStatus + guiStatus + " anyKey=" + SafeAnyKey();
             }
+        }
+
+        public static void QueueKeyDown(KeyCode key)
+        {
+            VirtualKeyDownFrames[key] = UnityEngine.Time.frameCount + 1;
+            lastBackendStatus = "virtual=on";
         }
 
         private static string SafeAnyKey()

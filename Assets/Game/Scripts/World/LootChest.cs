@@ -1,62 +1,68 @@
 using UnityEngine;
 using TheOldRoad.Inventory;
 
-namespace TheOldRoad.Gathering
+namespace TheOldRoad.World
 {
-    /// <summary>Configurable resource node. It rewards inventory through gameplay API only.</summary>
-    public sealed class ResourceNode : MonoBehaviour
+    /// <summary>Prototype one-time loot container with stable save identity.</summary>
+    public sealed class LootChest : MonoBehaviour
     {
-        [SerializeField] private string nodeId;
-        [SerializeField] private string resourceItemId = "wood";
-        [SerializeField, Min(1)] private int resourceAmount = 1;
-        private bool harvested;
+        [SerializeField] private string chestId;
+        [SerializeField] private string displayName;
+        [SerializeField] private string itemId = "item.wood";
+        [SerializeField, Min(1)] private int quantity = 1;
+
+        private bool opened;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer glowRenderer;
         private Vector3 baseScale;
         private Color baseColor = Color.white;
 
-        public string NodeId => nodeId;
-        public string ResourceItemId => resourceItemId;
-        public int ResourceAmount => resourceAmount;
-        public bool IsHarvested => harvested;
-        public string DisplayName => gameObject.name;
+        public string ChestId => chestId;
+        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? gameObject.name : displayName;
+        public string ItemId => itemId;
+        public int Quantity => quantity;
+        public bool IsOpened => opened;
 
         private void Awake()
         {
             CaptureVisualState();
         }
 
-        public void Configure(string nodeId, string resourceItemId, int resourceAmount, bool harvested = false)
+        public void Configure(string chestId, string displayName, string itemId, int quantity, bool opened = false)
         {
-            this.nodeId = nodeId;
-            this.resourceItemId = resourceItemId;
-            this.resourceAmount = Mathf.Max(1, resourceAmount);
+            this.chestId = chestId;
+            this.displayName = displayName;
+            this.itemId = itemId;
+            this.quantity = Mathf.Max(1, quantity);
             CaptureVisualState();
-            SetHarvested(harvested);
+            SetOpened(opened);
         }
 
-        public bool TryHarvest(InventoryRuntime inventory)
+        public bool TryOpen(InventoryRuntime inventory)
         {
-            if (harvested || inventory == null || string.IsNullOrWhiteSpace(resourceItemId) || resourceAmount <= 0)
-                return false;
+            if (opened || inventory == null || string.IsNullOrWhiteSpace(itemId) || quantity <= 0) return false;
 
-            inventory.Add(resourceItemId, resourceAmount);
-            SetHarvested(true);
+            inventory.Add(itemId, quantity);
+            SetOpened(true);
             return true;
         }
 
-        public void SetHarvested(bool harvested)
+        public void SetOpened(bool opened)
         {
-            this.harvested = harvested;
+            this.opened = opened;
             CaptureVisualState();
+
             if (spriteRenderer != null)
             {
-                Color color = baseColor;
-                color.a = harvested ? 0.35f : 1f;
-                spriteRenderer.color = color;
+                spriteRenderer.sprite = opened
+                    ? PrototypePixelArtFactory.ChestOpen()
+                    : PrototypePixelArtFactory.ChestClosed();
+                spriteRenderer.color = opened
+                    ? new Color(baseColor.r * 0.75f, baseColor.g * 0.75f, baseColor.b * 0.75f, 1f)
+                    : baseColor;
             }
 
-            SetGlowVisible(false);
+            SetHighlighted(false);
         }
 
         public void SetHighlighted(bool highlighted)
@@ -64,12 +70,13 @@ namespace TheOldRoad.Gathering
             CaptureVisualState();
             if (spriteRenderer == null) return;
 
-            transform.localScale = highlighted && !harvested ? baseScale * 1.08f : baseScale;
-            if (harvested) return;
-
-            spriteRenderer.color = highlighted
-                ? new Color(1f, 0.95f, 0.62f, 1f)
-                : baseColor;
+            transform.localScale = highlighted && !opened ? baseScale * 1.08f : baseScale;
+            if (!opened)
+            {
+                spriteRenderer.color = highlighted
+                    ? new Color(1f, 0.90f, 0.45f, 1f)
+                    : baseColor;
+            }
 
             SetGlowVisible(highlighted);
         }
@@ -94,11 +101,11 @@ namespace TheOldRoad.Gathering
             glowObject.transform.SetParent(transform, false);
             glowObject.transform.localPosition = Vector3.zero;
             glowObject.transform.localRotation = Quaternion.identity;
-            glowObject.transform.localScale = new Vector3(1.22f, 1.22f, 1f);
+            glowObject.transform.localScale = new Vector3(1.24f, 1.24f, 1f);
 
             glowRenderer = glowObject.AddComponent<SpriteRenderer>();
             glowRenderer.sprite = spriteRenderer.sprite;
-            glowRenderer.color = new Color(1f, 0.86f, 0.28f, 0.58f);
+            glowRenderer.color = new Color(1f, 0.74f, 0.18f, 0.58f);
             glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
             glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
             glowRenderer.enabled = false;
@@ -115,7 +122,8 @@ namespace TheOldRoad.Gathering
                 glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
                 glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
             }
-            glowRenderer.enabled = visible && !harvested;
+
+            glowRenderer.enabled = visible && !opened;
         }
     }
 }

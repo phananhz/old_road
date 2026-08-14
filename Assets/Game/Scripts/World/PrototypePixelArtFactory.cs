@@ -17,6 +17,8 @@ namespace TheOldRoad.World
         public static Sprite Player() => GetOrCreate("player", 16, 24, PaintPlayer, new Vector2(0.5f, 0.18f));
         public static Sprite Tree() => GetOrCreate("tree", 24, 32, PaintTree, new Vector2(0.5f, 0.12f));
         public static Sprite Rock() => GetOrCreate("rock", 18, 14, PaintRock, new Vector2(0.5f, 0.18f));
+        public static Sprite ChestClosed() => GetOrCreate("chest.closed", 22, 18, PaintChestClosed, new Vector2(0.5f, 0.12f));
+        public static Sprite ChestOpen() => GetOrCreate("chest.open", 22, 18, PaintChestOpen, new Vector2(0.5f, 0.12f));
         public static Sprite Waystone() => GetOrCreate("waystone", 18, 28, PaintWaystone, new Vector2(0.5f, 0.12f));
         public static Sprite RoadSign() => GetOrCreate("road.sign", 22, 22, PaintRoadSign, new Vector2(0.5f, 0.12f));
         public static Sprite RuinedArch() => GetOrCreate("ruined.arch", 46, 36, PaintRuinedArch, new Vector2(0.5f, 0.08f));
@@ -25,7 +27,7 @@ namespace TheOldRoad.World
         public static Sprite CabinComplete() => GetOrCreate("cabin.complete", 36, 32, pixels => PaintCabin(pixels, 36, 32, 1f), new Vector2(0.5f, 0.12f));
         public static Sprite CabinConstruction(int stage) => GetOrCreate("cabin.stage." + Mathf.Clamp(stage, 0, 4), 36, 32, pixels => PaintCabin(pixels, 36, 32, Mathf.Clamp01(stage / 4f)), new Vector2(0.5f, 0.12f));
         public static Sprite PlacementPreview() => GetOrCreate("placement.preview", 32, 32, PaintPlacementPreview, new Vector2(0.5f, 0.5f));
-        public static Sprite ValenOutskirtsGround() => GetOrCreate("valen.outskirts.ground.large", 960, 576, PaintValenOutskirtsGround, new Vector2(0.5f, 0.5f));
+        public static Sprite ValenOutskirtsGround() => GetOrCreate("valen.outskirts.ground.seeded.120x72", 1920, 1152, PaintValenOutskirtsGround, new Vector2(0.5f, 0.5f));
 
         private static Sprite GetOrCreate(string key, int width, int height, Action<Color32[]> paint, Vector2 pivot)
         {
@@ -80,6 +82,24 @@ namespace TheOldRoad.World
             FillRect(pixels, 18, 14, 5, 7, 9, 4, new Color32(112, 116, 122, 255));
             FillRect(pixels, 18, 14, 3, 3, 4, 2, new Color32(139, 143, 148, 255));
             FillRect(pixels, 18, 14, 10, 2, 5, 2, new Color32(52, 53, 58, 255));
+        }
+
+        private static void PaintChestClosed(Color32[] pixels)
+        {
+            FillRect(pixels, 22, 18, 3, 3, 16, 9, new Color32(92, 55, 28, 255));
+            FillRect(pixels, 22, 18, 2, 9, 18, 5, new Color32(128, 76, 36, 255));
+            FillRect(pixels, 22, 18, 4, 11, 14, 2, new Color32(178, 120, 48, 255));
+            FillRect(pixels, 22, 18, 9, 7, 4, 4, new Color32(210, 164, 62, 255));
+            DrawRect(pixels, 22, 18, 2, 3, 19, 14, new Color32(48, 30, 21, 255));
+        }
+
+        private static void PaintChestOpen(Color32[] pixels)
+        {
+            FillRect(pixels, 22, 18, 3, 2, 16, 8, new Color32(82, 48, 26, 255));
+            FillRect(pixels, 22, 18, 2, 11, 18, 4, new Color32(110, 62, 30, 255));
+            FillRect(pixels, 22, 18, 5, 10, 12, 2, new Color32(232, 184, 72, 255));
+            FillRect(pixels, 22, 18, 9, 5, 4, 3, new Color32(178, 130, 46, 255));
+            DrawRect(pixels, 22, 18, 2, 2, 19, 15, new Color32(43, 27, 19, 255));
         }
 
         private static void PaintWaystone(Color32[] pixels)
@@ -167,8 +187,8 @@ namespace TheOldRoad.World
 
         private static void PaintValenOutskirtsGround(Color32[] pixels)
         {
-            const int width = 960;
-            const int height = 576;
+            const int width = 1920;
+            const int height = 1152;
             Color32 grassA = new Color32(50, 82, 45, 255);
             Color32 grassB = new Color32(61, 94, 50, 255);
             Color32 forestA = new Color32(25, 52, 38, 255);
@@ -183,30 +203,43 @@ namespace TheOldRoad.World
             {
                 for (int x = 0; x < width; x++)
                 {
-                    float worldX = (x / 16f) - 30f;
-                    float worldY = (y / 16f) - 18f;
+                    float worldX = (x / 16f) - 60f;
+                    float worldY = (y / 16f) - 36f;
                     float roadCenter = 1.4f * Mathf.Sin(worldX * 0.34f) + 0.8f * Mathf.Sin(worldX * 0.11f);
+                    float regionNoise = Hash01((x / 32) + 43129, (y / 32) - 43129);
                     bool path = Mathf.Abs(worldY - roadCenter) < 2.0f;
-                    bool river = Mathf.Abs(worldY + 7.5f + Mathf.Sin(worldX * 0.22f) * 1.2f) < 0.9f && worldX < -5f;
-                    bool forest = worldY > 11.5f || worldY < -14f || worldX < -26f || worldX > 26f;
+                    bool river = Mathf.Abs(worldY + 12.5f + Mathf.Sin(worldX * 0.16f) * 2.0f) < 1.05f && worldX < 28f;
+                    bool forest = worldY > 22.5f || worldY < -28f || worldX < -54f || worldX > 54f || regionNoise > 0.76f;
                     bool dither = ((x / 4) + (y / 4)) % 2 == 0;
 
                     Color32 color = forest ? (dither ? forestA : forestB) : (dither ? grassA : grassB);
                     if (river) color = dither ? riverA : riverB;
                     if (path) color = dither ? pathA : pathB;
+                    if (!path && !river && regionNoise < 0.055f) color = dither ? new Color32(71, 83, 48, 255) : new Color32(82, 91, 55, 255);
                     pixels[y * width + x] = color;
                 }
             }
 
-            FillRect(pixels, width, height, 0, height - 68, width, 68, new Color32(28, 48, 41, 255));
-            FillRect(pixels, width, height, 0, 0, width, 16, new Color32(25, 36, 32, 255));
+            FillRect(pixels, width, height, 0, height - 96, width, 96, new Color32(28, 48, 41, 255));
+            FillRect(pixels, width, height, 0, 0, width, 24, new Color32(25, 36, 32, 255));
 
-            PaintPebbleCluster(pixels, width, height, 205, 450, stone);
-            PaintPebbleCluster(pixels, width, height, 730, 350, stone);
-            PaintPebbleCluster(pixels, width, height, 360, 120, stone);
-            PaintFlowerPatch(pixels, width, height, 520, 405);
-            PaintFlowerPatch(pixels, width, height, 625, 205);
-            PaintFlowerPatch(pixels, width, height, 120, 265);
+            for (int i = 0; i < 54; i++)
+            {
+                int px = 24 + Mathf.FloorToInt(Hash01(i * 17 + 3, i * 31 + 7) * (width - 48));
+                int py = 24 + Mathf.FloorToInt(Hash01(i * 23 + 11, i * 47 + 13) * (height - 48));
+                if (i % 3 == 0) PaintPebbleCluster(pixels, width, height, px, py, stone);
+                else PaintFlowerPatch(pixels, width, height, px, py);
+            }
+        }
+
+        private static float Hash01(int x, int y)
+        {
+            unchecked
+            {
+                int hash = x * 374761393 + y * 668265263;
+                hash = (hash ^ (hash >> 13)) * 1274126177;
+                return ((hash ^ (hash >> 16)) & 0x7fffffff) / 2147483647f;
+            }
         }
 
         private static void PaintPebbleCluster(Color32[] pixels, int width, int height, int x, int y, Color32 color)

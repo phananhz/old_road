@@ -19,15 +19,18 @@ namespace TheOldRoad.Core
     public sealed class VerticalSliceController : MonoBehaviour
     {
         private const string CabinId = "building.cabin";
-        private static readonly Vector2 WorldMin = new Vector2(-30f, -18f);
-        private static readonly Vector2 WorldMax = new Vector2(30f, 18f);
+        private const int WorldSeed = 43129;
+        private static readonly Vector2 WorldMin = new Vector2(-60f, -36f);
+        private static readonly Vector2 WorldMax = new Vector2(60f, 36f);
 
         [SerializeField] private BuildingDefinition cabinDefinition;
         [SerializeField] private RecipeDefinition cabinPlankRecipe;
-        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-20, -11);
-        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(20, 11);
+        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-50, -28);
+        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(50, 28);
 
         private readonly Dictionary<string, ResourceNode> resourceNodes = new Dictionary<string, ResourceNode>();
+        private readonly Dictionary<string, DiscoverableLandmark> landmarks = new Dictionary<string, DiscoverableLandmark>();
+        private readonly Dictionary<string, LootChest> lootChests = new Dictionary<string, LootChest>();
         private readonly Dictionary<string, ConstructionJob> constructionJobs = new Dictionary<string, ConstructionJob>();
         private readonly HashSet<Vector2Int> occupiedCells = new HashSet<Vector2Int>();
 
@@ -36,11 +39,24 @@ namespace TheOldRoad.Core
         private IClock clock;
         private string saveStatus = "Save not initialized.";
 
-        public InventoryRuntime Inventory => inventorySession.Runtime;
+        public InventoryRuntime Inventory => inventorySession != null ? inventorySession.Runtime : null;
         public string SaveStatus => saveStatus;
         public int ActiveConstructionCount => constructionJobs.Count;
+        public int DiscoveredLandmarkCount => landmarks.Values.Count(landmark => landmark != null && landmark.IsDiscovered);
+        public int TotalLandmarkCount => landmarks.Count;
+        public int OpenedLootChestCount => lootChests.Values.Count(chest => chest != null && chest.IsOpened);
+        public int TotalLootChestCount => lootChests.Count;
+        public string LastDiscoveryStatus { get; private set; } = "Follow the old road and inspect landmarks.";
+        public int CompletedObjectiveCount => BuildObjectiveStates().Count(state => state.completed);
+        public int TotalObjectiveCount => BuildObjectiveStates().Length;
+        public string[] ObjectiveLines => BuildObjectiveStates()
+            .Select(state => (state.completed ? "✓ " : "□ ") + state.text)
+            .ToArray();
         public BuildingDefinition CabinDefinition => cabinDefinition;
         public RecipeDefinition CabinPlankRecipe => cabinPlankRecipe;
+        public string[] ObjectiveDisplayLines => BuildObjectiveStates()
+            .Select(state => (state.completed ? "[x] " : "[ ] ") + state.text)
+            .ToArray();
 
         private void Awake()
         {
@@ -117,6 +133,12 @@ namespace TheOldRoad.Core
                 constructionJobs = constructionJobs.Values.Select(job => job.ToSaveEntry()).ToArray(),
                 resourceNodes = resourceNodes.Values
                     .Select(node => new ResourceNodeSaveEntry { nodeId = node.NodeId, harvested = node.IsHarvested })
+                    .ToArray(),
+                landmarks = landmarks.Values
+                    .Select(landmark => new LandmarkSaveEntry { landmarkId = landmark.LandmarkId, discovered = landmark.IsDiscovered })
+                    .ToArray(),
+                lootChests = lootChests.Values
+                    .Select(chest => new LootChestSaveEntry { chestId = chest.ChestId, opened = chest.IsOpened })
                     .ToArray()
             };
         }
@@ -127,6 +149,47 @@ namespace TheOldRoad.Core
             saveRepository.TrySave(CreateSaveData(), out saveStatus);
         }
 
+        public void NotifyLandmarkDiscovered(DiscoverableLandmark landmark)
+        {
+            if (landmark == null) return;
+            LastDiscoveryStatus = "Journal updated: " + landmark.Title + ".";
+            SaveNow();
+        }
+
+        public void NotifyLootChestOpened(LootChest chest)
+        {
+            if (chest == null) return;
+            LastDiscoveryStatus = "Loot found: " + chest.DisplayName + ".";
+            SaveNow();
+        }
+
+        private (string text, bool completed)[] BuildObjectiveStates()
+        {
+            RefreshConstructionJobs();
+            InventoryRuntime inventory = Inventory;
+
+            return new[]
+            {
+                ("Inspect an old-road landmark", DiscoveredLandmarkCount > 0),
+                ("Open an old chest", OpenedLootChestCount > 0),
+                ("Gather 3 wood", inventory != null && inventory.GetQuantity("item.wood") >= 3),
+                ("Gather 2 stone", inventory != null && inventory.GetQuantity("item.stone") >= 2),
+                ("Craft 1 cabin plank", inventory != null && inventory.GetQuantity("item.cabin-plank") >= 1),
+                ("Start cabin construction", constructionJobs.Count > 0),
+                ("Complete the first cabin", constructionJobs.Values.Any(job => job != null && job.state == ConstructionState.Completed))
+            };
+        }
+
+        private void RefreshConstructionJobs()
+        {
+            if (clock == null) return;
+            long now = clock.NowUnixSeconds;
+            foreach (ConstructionJob job in constructionJobs.Values)
+            {
+                job?.Refresh(now);
+            }
+        }
+
         private void BuildRuntimeScene()
         {
             EnsureInputBridge();
@@ -134,22 +197,11 @@ namespace TheOldRoad.Core
             Camera mainCamera = EnsureCamera();
             EnsureGround();
             EnsureLandmarks();
+            EnsureLootChests();
             inventorySession = EnsureInventorySession();
             EnsurePlayer(inventorySession);
             EnsureCameraFollow(mainCamera);
-            EnsureResourceNode("node.tree.01", "Roadside Pine", new Vector3(-3.5f, 1.4f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.02", "Old Forest Pine", new Vector3(-18f, 9f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.03", "Valen Birch", new Vector3(-12f, -7f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.04", "Hill Pine", new Vector3(7f, 10f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.05", "South Pine", new Vector3(18f, -5f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.06", "Westwood Pine", new Vector3(-24f, -1f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.tree.07", "Eastwood Pine", new Vector3(22f, 8f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.rock.01", "Road Stone", new Vector3(3.5f, -1.4f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
-            EnsureResourceNode("node.rock.02", "River Stone", new Vector3(-15f, -10f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
-            EnsureResourceNode("node.rock.03", "Broken Road Stone", new Vector3(4f, -9f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
-            EnsureResourceNode("node.rock.04", "Old Wall Stone", new Vector3(12f, 3f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
-            EnsureResourceNode("node.rock.05", "East Pass Stone", new Vector3(23f, -12f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
-            EnsureResourceNode("node.rock.06", "North Ridge Stone", new Vector3(-22f, 7f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureProceduralResourceNodes();
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
             EnsureHud(inventorySession, placement);
         }
@@ -176,7 +228,7 @@ namespace TheOldRoad.Core
 
             Inventory.LoadFromSaveEntries(data.inventory);
 
-            foreach (ResourceNodeSaveEntry resourceSave in data.resourceNodes)
+            foreach (ResourceNodeSaveEntry resourceSave in data.resourceNodes ?? Array.Empty<ResourceNodeSaveEntry>())
             {
                 if (resourceSave == null || string.IsNullOrWhiteSpace(resourceSave.nodeId)) continue;
                 if (resourceNodes.TryGetValue(resourceSave.nodeId, out ResourceNode node))
@@ -186,7 +238,25 @@ namespace TheOldRoad.Core
                 }
             }
 
-            foreach (ConstructionSaveEntry constructionSave in data.constructionJobs)
+            foreach (LandmarkSaveEntry landmarkSave in data.landmarks ?? Array.Empty<LandmarkSaveEntry>())
+            {
+                if (landmarkSave == null || string.IsNullOrWhiteSpace(landmarkSave.landmarkId)) continue;
+                if (landmarks.TryGetValue(landmarkSave.landmarkId, out DiscoverableLandmark landmark))
+                {
+                    landmark.SetDiscovered(landmarkSave.discovered);
+                }
+            }
+
+            foreach (LootChestSaveEntry chestSave in data.lootChests ?? Array.Empty<LootChestSaveEntry>())
+            {
+                if (chestSave == null || string.IsNullOrWhiteSpace(chestSave.chestId)) continue;
+                if (lootChests.TryGetValue(chestSave.chestId, out LootChest chest))
+                {
+                    chest.SetOpened(chestSave.opened);
+                }
+            }
+
+            foreach (ConstructionSaveEntry constructionSave in data.constructionJobs ?? Array.Empty<ConstructionSaveEntry>())
             {
                 if (constructionSave == null || string.IsNullOrWhiteSpace(constructionSave.constructionId)) continue;
                 ConstructionJob job = ConstructionJob.FromSaveEntry(constructionSave);
@@ -287,11 +357,69 @@ namespace TheOldRoad.Core
 
         private void EnsureLandmarks()
         {
-            EnsureDecoration("Northern Waystone", PrototypePixelArtFactory.Waystone(), new Vector3(-21f, 13f, 0f), 10);
-            EnsureDecoration("Old Road Sign", PrototypePixelArtFactory.RoadSign(), new Vector3(-8f, 1.7f, 0f), 10);
-            EnsureDecoration("Broken Watch Arch", PrototypePixelArtFactory.RuinedArch(), new Vector3(16f, 8.5f, 0f), 10);
-            EnsureDecoration("River Footbridge", PrototypePixelArtFactory.Footbridge(), new Vector3(-14f, -4.2f, 0f), 10);
-            EnsureDecoration("Abandoned Camp", PrototypePixelArtFactory.Campfire(), new Vector3(8f, -11f, 0f), 10);
+            EnsureLandmark(
+                "landmark.waystone.north",
+                "Northern Waystone",
+                "Northern Waystone",
+                "A cold marker from the old road network. Its carved bell sigil still catches the morning light.",
+                PrototypePixelArtFactory.Waystone(),
+                new Vector3(-21f, 13f, 0f));
+
+            EnsureLandmark(
+                "landmark.sign.old-road",
+                "Old Road Sign",
+                "Old Road Sign",
+                "The sign points east toward a village name scratched away long ago.",
+                PrototypePixelArtFactory.RoadSign(),
+                new Vector3(-8f, 1.7f, 0f));
+
+            EnsureLandmark(
+                "landmark.arch.watch",
+                "Broken Watch Arch",
+                "Broken Watch Arch",
+                "A ruined watch arch from the Roadwarden days. Someone recently cleared moss from one stone.",
+                PrototypePixelArtFactory.RuinedArch(),
+                new Vector3(16f, 8.5f, 0f));
+
+            EnsureLandmark(
+                "landmark.bridge.river",
+                "River Footbridge",
+                "River Footbridge",
+                "An old timber bridge still holds over the shallow river bend. Fresh boot marks cross it.",
+                PrototypePixelArtFactory.Footbridge(),
+                new Vector3(-14f, -4.2f, 0f));
+
+            EnsureLandmark(
+                "landmark.camp.abandoned",
+                "Abandoned Camp",
+                "Abandoned Camp",
+                "The ashes are old, but the stones around the fire pit were set with care.",
+                PrototypePixelArtFactory.Campfire(),
+                new Vector3(8f, -11f, 0f));
+
+            EnsureLandmark(
+                "landmark.bell.east",
+                "Eastern Bell Marker",
+                "Eastern Bell Marker",
+                "A small bell marker stands far down the road. The metal is silent, but the air around it feels tense.",
+                PrototypePixelArtFactory.Waystone(),
+                new Vector3(46f, 9f, 0f));
+
+            EnsureLandmark(
+                "landmark.shrine.north",
+                "Hunter Shrine",
+                "Hunter Shrine",
+                "A weathered hunter shrine watches the northern tree line. Offerings have not fully rotted away.",
+                PrototypePixelArtFactory.RoadSign(),
+                new Vector3(-38f, 25f, 0f));
+
+            EnsureLandmark(
+                "landmark.ruin.south",
+                "South Ruin Gate",
+                "South Ruin Gate",
+                "Broken stones mark a ruined southern gate. The road once continued beyond it.",
+                PrototypePixelArtFactory.RuinedArch(),
+                new Vector3(34f, -25f, 0f));
         }
 
         private InventorySession EnsureInventorySession()
@@ -346,6 +474,14 @@ namespace TheOldRoad.Core
             PlayerCraftingInteractor crafting = player.GetComponent<PlayerCraftingInteractor>();
             if (crafting == null) crafting = player.AddComponent<PlayerCraftingInteractor>();
             crafting.Configure(session, this, cabinPlankRecipe);
+
+            PlayerLandmarkInteractor landmarkInteractor = player.GetComponent<PlayerLandmarkInteractor>();
+            if (landmarkInteractor == null) landmarkInteractor = player.AddComponent<PlayerLandmarkInteractor>();
+            landmarkInteractor.Configure(this, 1.35f);
+
+            PlayerLootInteractor lootInteractor = player.GetComponent<PlayerLootInteractor>();
+            if (lootInteractor == null) lootInteractor = player.AddComponent<PlayerLootInteractor>();
+            lootInteractor.Configure(session, this, 1.25f);
         }
 
         private void EnsureResourceNode(string nodeId, string displayName, Vector3 position, string itemId, int amount, Color color)
@@ -365,6 +501,79 @@ namespace TheOldRoad.Core
             ResourceNode node = nodeObject.AddComponent<ResourceNode>();
             node.Configure(nodeId, itemId, amount);
             resourceNodes[nodeId] = node;
+        }
+
+        private void EnsureProceduralResourceNodes()
+        {
+            EnsureLegacyResourceNodes();
+
+            System.Random random = new System.Random(WorldSeed);
+            SpawnProceduralResources(random, 44, "node.tree.proc.", "Forest Pine", "item.wood", 3);
+            SpawnProceduralResources(random, 32, "node.rock.proc.", "Field Stone", "item.stone", 2);
+        }
+
+        private void EnsureLegacyResourceNodes()
+        {
+            EnsureResourceNode("node.tree.01", "Roadside Pine", new Vector3(-3.5f, 1.4f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.02", "Old Forest Pine", new Vector3(-18f, 9f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.03", "Valen Birch", new Vector3(-12f, -7f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.04", "Hill Pine", new Vector3(7f, 10f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.05", "South Pine", new Vector3(18f, -5f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.06", "Westwood Pine", new Vector3(-24f, -1f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.07", "Eastwood Pine", new Vector3(22f, 8f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.rock.01", "Road Stone", new Vector3(3.5f, -1.4f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.02", "River Stone", new Vector3(-15f, -10f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.03", "Broken Road Stone", new Vector3(4f, -9f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.04", "Old Wall Stone", new Vector3(12f, 3f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.05", "East Pass Stone", new Vector3(23f, -12f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.06", "North Ridge Stone", new Vector3(-22f, 7f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+        }
+
+        private void SpawnProceduralResources(System.Random random, int count, string idPrefix, string displayPrefix, string itemId, int amount)
+        {
+            int created = 0;
+            int attempts = 0;
+            while (created < count && attempts < count * 18)
+            {
+                attempts++;
+                float x = Mathf.Lerp(WorldMin.x + 4f, WorldMax.x - 4f, (float)random.NextDouble());
+                float y = Mathf.Lerp(WorldMin.y + 4f, WorldMax.y - 4f, (float)random.NextDouble());
+                Vector3 position = new Vector3(x, y, 0f);
+
+                if (Vector2.Distance(position, Vector2.zero) < 5f) continue;
+                if (Mathf.Abs(y - RoadCenterY(x)) < 1.9f && random.NextDouble() < 0.65d) continue;
+
+                string id = idPrefix + created.ToString("00");
+                EnsureResourceNode(id, displayPrefix + " " + (created + 1), position, itemId, amount, Color.white);
+                created++;
+            }
+        }
+
+        private static float RoadCenterY(float worldX)
+        {
+            return 1.4f * Mathf.Sin(worldX * 0.34f) + 0.8f * Mathf.Sin(worldX * 0.11f);
+        }
+
+        private void EnsureLootChests()
+        {
+            EnsureLootChest("chest.road.01", "Roadside Cache", new Vector3(-6f, -2.2f, 0f), "item.wood", 2);
+            EnsureLootChest("chest.camp.01", "Abandoned Camp Chest", new Vector3(9.8f, -11.4f, 0f), "item.cabin-plank", 1);
+            EnsureLootChest("chest.ruin.01", "South Ruin Chest", new Vector3(36f, -24.2f, 0f), "item.stone", 3);
+            EnsureLootChest("chest.shrine.01", "Hunter Shrine Cache", new Vector3(-40f, 24f, 0f), "item.wood", 3);
+            EnsureLootChest("chest.bell.01", "Bell Marker Cache", new Vector3(44.2f, 7.4f, 0f), "item.stone", 2);
+        }
+
+        private void EnsureLootChest(string chestId, string displayName, Vector3 position, string itemId, int quantity)
+        {
+            if (lootChests.ContainsKey(chestId)) return;
+
+            GameObject chestObject = GameObject.Find(displayName);
+            if (chestObject == null) chestObject = CreateSpriteObject(displayName, PrototypePixelArtFactory.ChestClosed(), position, 8);
+
+            LootChest chest = chestObject.GetComponent<LootChest>();
+            if (chest == null) chest = chestObject.AddComponent<LootChest>();
+            chest.Configure(chestId, displayName, itemId, quantity);
+            lootChests[chestId] = chest;
         }
 
         private BuildingPlacementController EnsureBuildingPlacement(Camera mainCamera, InventorySession session)
@@ -449,6 +658,19 @@ namespace TheOldRoad.Core
         {
             if (GameObject.Find(name) != null) return;
             CreateSpriteObject(name, sprite, position, sortingOffset);
+        }
+
+        private void EnsureLandmark(string landmarkId, string objectName, string title, string journalText, Sprite sprite, Vector3 position)
+        {
+            if (landmarks.ContainsKey(landmarkId)) return;
+
+            GameObject landmarkObject = GameObject.Find(objectName);
+            if (landmarkObject == null) landmarkObject = CreateSpriteObject(objectName, sprite, position, 10);
+
+            DiscoverableLandmark landmark = landmarkObject.GetComponent<DiscoverableLandmark>();
+            if (landmark == null) landmark = landmarkObject.AddComponent<DiscoverableLandmark>();
+            landmark.Configure(landmarkId, title, journalText);
+            landmarks[landmarkId] = landmark;
         }
 
         private static void EnsurePlayerVisual(GameObject player)

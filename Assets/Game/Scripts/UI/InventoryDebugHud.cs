@@ -8,14 +8,15 @@ using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Player;
 using TheOldRoad.Time;
+using TheOldRoad.World;
 
 namespace TheOldRoad.UI
 {
     /// <summary>Polished prototype HUD: medieval panels, health, minimap, hotbar, overlays, and prompts.</summary>
     public sealed class InventoryDebugHud : MonoBehaviour
     {
-        private static readonly Vector2 WorldMin = new Vector2(-30f, -18f);
-        private static readonly Vector2 WorldMax = new Vector2(30f, 18f);
+        private static readonly Vector2 WorldMin = new Vector2(-60f, -36f);
+        private static readonly Vector2 WorldMax = new Vector2(60f, 36f);
         private static readonly Color Ink = new Color(0.05f, 0.045f, 0.04f, 0.94f);
         private static readonly Color InkSoft = new Color(0.08f, 0.07f, 0.06f, 0.88f);
         private static readonly Color Gold = new Color(0.95f, 0.74f, 0.34f, 1f);
@@ -26,6 +27,7 @@ namespace TheOldRoad.UI
         private static readonly Color Shadow = new Color(0f, 0f, 0f, 0.42f);
         private static readonly Color Blood = new Color(0.72f, 0.08f, 0.06f, 1f);
         private static readonly Color BloodDark = new Color(0.20f, 0.035f, 0.03f, 1f);
+        private const float PromptVisibleSeconds = 4f;
 
         [SerializeField] private InventorySession inventorySession;
         [SerializeField] private BuildingPlacementController placementController;
@@ -42,6 +44,8 @@ namespace TheOldRoad.UI
         private Texture2D pixel;
         private int selectedSlot;
         private OverlayMode overlayMode;
+        private string activePromptText = string.Empty;
+        private float promptHideTime;
 
         public void Configure(
             InventorySession inventorySession,
@@ -62,6 +66,7 @@ namespace TheOldRoad.UI
 
             if (PrototypeInput.GetKeyDown(KeyCode.I)) ToggleOverlay(OverlayMode.Inventory);
             if (PrototypeInput.GetKeyDown(KeyCode.M)) ToggleOverlay(OverlayMode.Map);
+            if (PrototypeInput.GetKeyDown(KeyCode.J)) ToggleOverlay(OverlayMode.Journal);
             if (PrototypeInput.GetKeyDown(KeyCode.Escape)) overlayMode = OverlayMode.None;
         }
 
@@ -71,15 +76,17 @@ namespace TheOldRoad.UI
 
             DrawScreenVignette();
             DrawStatusCard();
+            DrawObjectiveCard();
             DrawMinimapCard();
             DrawPromptRibbon();
             DrawHotbar();
             DrawOverlay();
+            DrawMobileActionButtons();
         }
 
         private void DrawStatusCard()
         {
-            Rect card = new Rect(18, 18, 344, 118);
+            Rect card = new Rect(18, 18, 344, 140);
             DrawCard(card, Ink);
             DrawCornerAccents(card, Gold);
             DrawHeaderStrip(new Rect(card.x, card.y, card.width, 32));
@@ -99,7 +106,13 @@ namespace TheOldRoad.UI
             DrawHealthBar(new Rect(card.x + 74, card.y + 65, 194, 16), currentHealth, maxHealth);
             GUI.Label(new Rect(card.x + 276, card.y + 59, 48, 24), currentHealth + "/" + maxHealth, labelStyle);
 
-            float chipY = card.y + 91;
+            if (sliceController != null)
+            {
+                string progress = "Landmarks " + sliceController.DiscoveredLandmarkCount + "/" + sliceController.TotalLandmarkCount;
+                GUI.Label(new Rect(card.x + 74, card.y + 91, 220, 18), progress, smallStyle);
+            }
+
+            float chipY = card.y + 113;
             DrawResourceChip(new Rect(card.x + 16, chipY, 96, 18), "Wood", GetQuantity("item.wood"), new Color(0.48f, 0.28f, 0.12f, 1f));
             DrawResourceChip(new Rect(card.x + 122, chipY, 96, 18), "Stone", GetQuantity("item.stone"), new Color(0.48f, 0.50f, 0.54f, 1f));
             DrawResourceChip(new Rect(card.x + 228, chipY, 96, 18), "Plank", GetQuantity("item.cabin-plank"), new Color(0.72f, 0.48f, 0.24f, 1f));
@@ -122,7 +135,34 @@ namespace TheOldRoad.UI
             DrawMinimap(map);
 
             DrawControlPill(new Rect(card.x + 18, map.yMax + 12, 82, 22), "M", "Map");
-            DrawControlPill(new Rect(card.x + 112, map.yMax + 12, 82, 22), "I", "Bag");
+            DrawControlPill(new Rect(card.x + 106, map.yMax + 12, 44, 22), "I", "Bag");
+            DrawControlPill(new Rect(card.x + 156, map.yMax + 12, 44, 22), "J", "Log");
+        }
+
+        private void DrawObjectiveCard()
+        {
+            if (sliceController == null || overlayMode != OverlayMode.None) return;
+
+            string[] objectives = sliceController.ObjectiveDisplayLines;
+            if (objectives == null || objectives.Length == 0) return;
+
+            Rect card = new Rect(18f, 170f, 344f, 34f + objectives.Length * 22f);
+            DrawCard(card, new Color(0.045f, 0.036f, 0.028f, 0.88f));
+            DrawCornerAccents(card, GoldDim);
+
+            GUI.Label(
+                new Rect(card.x + 16f, card.y + 8f, card.width - 32f, 20f),
+                "Current Roadwarden Tasks  " + sliceController.CompletedObjectiveCount + "/" + sliceController.TotalObjectiveCount,
+                labelStyle);
+
+            for (int i = 0; i < objectives.Length; i++)
+            {
+                bool done = objectives[i].StartsWith("[x]");
+                Color previous = GUI.color;
+                GUI.color = done ? new Color(0.70f, 0.92f, 0.58f, 1f) : Parchment;
+                GUI.Label(new Rect(card.x + 18f, card.y + 34f + i * 22f, card.width - 36f, 20f), objectives[i], smallStyle);
+                GUI.color = previous;
+            }
         }
 
         private void DrawPromptRibbon()
@@ -130,15 +170,28 @@ namespace TheOldRoad.UI
             if (overlayMode != OverlayMode.None) return;
 
             string prompt = BuildPromptText();
-            if (string.IsNullOrWhiteSpace(prompt)) return;
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                activePromptText = string.Empty;
+                return;
+            }
 
-            float width = Mathf.Min(820f, Screen.width - 60f);
-            Rect ribbon = new Rect((Screen.width - width) * 0.5f, Screen.height - 144f, width, 38f);
+            if (prompt != activePromptText)
+            {
+                activePromptText = prompt;
+                promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+            }
+
+            if (UnityEngine.Time.unscaledTime > promptHideTime) return;
+
+            float width = Mathf.Min(680f, Screen.width - 80f);
+            float y = Screen.width >= 1100f ? 24f : 166f;
+            Rect ribbon = new Rect((Screen.width - width) * 0.5f, y, width, 38f);
             DrawRect(new Rect(ribbon.x + 4, ribbon.y + 5, ribbon.width, ribbon.height), Shadow);
             DrawRect(ribbon, new Color(0.055f, 0.038f, 0.025f, 0.88f));
             DrawBorder(ribbon, GoldDim, 2f);
             DrawBorder(new Rect(ribbon.x + 5, ribbon.y + 5, ribbon.width - 10, ribbon.height - 10), new Color(0.22f, 0.15f, 0.08f, 1f), 1f);
-            GUI.Label(ribbon, prompt, promptStyle);
+            GUI.Label(ribbon, activePromptText, promptStyle);
         }
 
         private void DrawHotbar()
@@ -160,7 +213,7 @@ namespace TheOldRoad.UI
                 DrawHotbarSlot(new Rect(startX + i * (slotSize + gap), y, slotSize, slotSize), i);
             }
 
-            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), "E Gather    C Craft    B Build    I Inventory    M Map", centerStyle);
+            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), "E Gather/Inspect    C Craft    B Build    I Bag    M Map    J Journal", centerStyle);
         }
 
         private void DrawHotbarSlot(Rect slot, int index)
@@ -194,6 +247,42 @@ namespace TheOldRoad.UI
             if (item.Count > 0) GUI.Label(new Rect(slot.x + slot.width - 28f, slot.y + 39f, 23f, 18), item.Count.ToString(), numberStyle);
         }
 
+        private void DrawMobileActionButtons()
+        {
+            if (overlayMode != OverlayMode.None)
+            {
+                DrawMobileActionButton(new Rect(Screen.width - 112f, Screen.height - 122f, 82f, 54f), "Esc", "Close", KeyCode.Escape, new Color(0.50f, 0.18f, 0.14f, 0.96f));
+                return;
+            }
+
+            float right = Screen.width - 28f;
+            float bottom = Screen.height - 30f;
+
+            DrawMobileActionButton(new Rect(right - 92f, bottom - 168f, 78f, 58f), "E", "Gather", KeyCode.E, new Color(0.22f, 0.44f, 0.18f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 178f, bottom - 112f, 74f, 52f), "C", "Craft", KeyCode.C, new Color(0.45f, 0.31f, 0.12f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 92f, bottom - 102f, 78f, 58f), "B", "Build", KeyCode.B, new Color(0.45f, 0.21f, 0.12f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 100f, 68f, 46f), "I", "Bag", KeyCode.I, new Color(0.15f, 0.22f, 0.33f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 154f, 68f, 46f), "M", "Map", KeyCode.M, new Color(0.18f, 0.27f, 0.23f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 208f, 68f, 46f), "J", "Log", KeyCode.J, new Color(0.22f, 0.18f, 0.32f, 0.96f));
+        }
+
+        private void DrawMobileActionButton(Rect rect, string key, string label, KeyCode keyCode, Color color)
+        {
+            Event current = Event.current;
+            if (current != null && current.type == EventType.MouseDown && current.button == 0 && rect.Contains(current.mousePosition))
+            {
+                PrototypeInput.QueueKeyDown(keyCode);
+                current.Use();
+            }
+
+            DrawRect(new Rect(rect.x + 4f, rect.y + 5f, rect.width, rect.height), Shadow);
+            DrawRect(rect, color);
+            DrawBorder(rect, new Color(0.02f, 0.015f, 0.01f, 0.96f), 2f);
+            DrawBorder(new Rect(rect.x + 3f, rect.y + 3f, rect.width - 6f, rect.height - 6f), GoldDim, 1f);
+            GUI.Label(new Rect(rect.x, rect.y + 5f, rect.width, 22f), key, titleStyle);
+            GUI.Label(new Rect(rect.x, rect.y + 27f, rect.width, 18f), label, centerStyle);
+        }
+
         private void DrawOverlay()
         {
             if (overlayMode == OverlayMode.None) return;
@@ -202,6 +291,7 @@ namespace TheOldRoad.UI
 
             if (overlayMode == OverlayMode.Inventory) DrawInventoryOverlay();
             if (overlayMode == OverlayMode.Map) DrawMapOverlay();
+            if (overlayMode == OverlayMode.Journal) DrawJournalOverlay();
         }
 
         private void DrawInventoryOverlay()
@@ -279,6 +369,55 @@ namespace TheOldRoad.UI
             }
         }
 
+        private void DrawJournalOverlay()
+        {
+            float width = Mathf.Min(820f, Screen.width - 80f);
+            float height = Mathf.Min(560f, Screen.height - 100f);
+            Rect panel = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
+            DrawCard(panel, Ink);
+            DrawCornerAccents(panel, Gold);
+            DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 48));
+
+            GUI.Label(new Rect(panel.x + 24, panel.y + 10, panel.width - 48, 28), "Roadwarden Journal", gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 210, panel.y + 16, 190, 20), "J / Esc to close", smallStyle);
+
+            string status = sliceController != null
+                ? sliceController.LastDiscoveryStatus + "  " + sliceController.DiscoveredLandmarkCount + "/" + sliceController.TotalLandmarkCount
+                : "Inspect landmarks to fill the journal.";
+            GUI.Label(new Rect(panel.x + 26, panel.y + 60, panel.width - 52, 22), status, labelStyle);
+
+            Rect list = new Rect(panel.x + 24, panel.y + 92, panel.width - 48, panel.height - 120);
+            DrawRect(list, new Color(0.025f, 0.023f, 0.02f, 0.64f));
+            DrawBorder(list, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
+
+            DiscoverableLandmark[] landmarks = FindObjectsByType<DiscoverableLandmark>(FindObjectsInactive.Exclude);
+            if (landmarks.Length == 0)
+            {
+                GUI.Label(new Rect(list.x + 18, list.y + 18, list.width - 36, 24), "No landmarks found in this scene.", smallStyle);
+                return;
+            }
+
+            float rowY = list.y + 16f;
+            for (int i = 0; i < landmarks.Length; i++)
+            {
+                DiscoverableLandmark landmark = landmarks[i];
+                if (landmark == null) continue;
+
+                Rect row = new Rect(list.x + 14f, rowY, list.width - 28f, 72f);
+                DrawRect(row, landmark.IsDiscovered ? InkSoft : new Color(0.045f, 0.04f, 0.035f, 0.72f));
+                DrawBorder(row, landmark.IsDiscovered ? GoldDim : new Color(0.16f, 0.14f, 0.12f, 1f), 1f);
+                DrawRect(new Rect(row.x + 12f, row.y + 18f, 34f, 34f), landmark.IsDiscovered ? new Color(0.36f, 0.58f, 0.68f, 1f) : new Color(0.16f, 0.15f, 0.14f, 1f));
+                DrawBorder(new Rect(row.x + 12f, row.y + 18f, 34f, 34f), Color.black, 1f);
+                GUI.Label(new Rect(row.x + 58f, row.y + 10f, row.width - 72f, 22f), landmark.IsDiscovered ? landmark.Title : "Unknown landmark", labelStyle);
+                GUI.Label(
+                    new Rect(row.x + 58f, row.y + 34f, row.width - 72f, 28f),
+                    landmark.IsDiscovered ? landmark.JournalText : "Follow the road and inspect this place to record it.",
+                    smallStyle);
+                rowY += 82f;
+                if (rowY > list.yMax - 72f) break;
+            }
+        }
+
         private void DrawMinimap(Rect map)
         {
             DrawRect(map, new Color(0.08f, 0.17f, 0.10f, 1f));
@@ -293,6 +432,15 @@ namespace TheOldRoad.UI
             DrawLandmarkDot(map, "Broken Watch Arch");
             DrawLandmarkDot(map, "River Footbridge");
             DrawLandmarkDot(map, "Abandoned Camp");
+            DrawLandmarkDot(map, "Eastern Bell Marker");
+            DrawLandmarkDot(map, "Hunter Shrine");
+            DrawLandmarkDot(map, "South Ruin Gate");
+
+            foreach (LootChest chest in FindObjectsByType<LootChest>(FindObjectsInactive.Exclude))
+            {
+                if (chest == null || chest.IsOpened) continue;
+                DrawMapDot(map, chest.transform.position, new Color(1f, 0.78f, 0.24f, 1f), map.width > 220f ? 9f : 5f);
+            }
 
             foreach (ResourceNode node in FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude))
             {
@@ -339,8 +487,8 @@ namespace TheOldRoad.UI
             for (int i = 0; i < segments; i++)
             {
                 float t = i / (float)(segments - 1);
-                float worldX = Mathf.Lerp(WorldMin.x, -5f, t);
-                float riverY = -7.5f - Mathf.Sin(worldX * 0.22f) * 1.2f;
+                float worldX = Mathf.Lerp(WorldMin.x, 28f, t);
+                float riverY = -12.5f - Mathf.Sin(worldX * 0.16f) * 2.0f;
                 Vector2 mapPoint = WorldToMap(map, new Vector3(worldX, riverY, 0f));
                 DrawRect(new Rect(mapPoint.x - 4f, mapPoint.y - riverHeight * 0.5f, 8f, riverHeight), new Color(0.16f, 0.35f, 0.45f, 1f));
             }
@@ -362,6 +510,12 @@ namespace TheOldRoad.UI
 
             PlayerCraftingInteractor crafting = FindAnyObjectByType<PlayerCraftingInteractor>();
             if (crafting != null && !string.IsNullOrWhiteSpace(crafting.CraftingHint)) AppendPrompt(ref prompt, crafting.CraftingHint);
+
+            PlayerLandmarkInteractor landmark = FindAnyObjectByType<PlayerLandmarkInteractor>();
+            if (landmark != null && !string.IsNullOrWhiteSpace(landmark.InteractionHint)) AppendPrompt(ref prompt, landmark.InteractionHint);
+
+            PlayerLootInteractor loot = FindAnyObjectByType<PlayerLootInteractor>();
+            if (loot != null && !string.IsNullOrWhiteSpace(loot.InteractionHint)) AppendPrompt(ref prompt, loot.InteractionHint);
 
             if (placementController != null && !string.IsNullOrWhiteSpace(placementController.LastStatus)) AppendPrompt(ref prompt, placementController.LastStatus);
 
@@ -510,6 +664,7 @@ namespace TheOldRoad.UI
             DrawLegendRow(rect.x + 16, rect.y + 114, new Color(0.68f, 0.70f, 0.73f, 1f), "Stone nodes");
             DrawLegendRow(rect.x + 16, rect.y + 144, new Color(0.95f, 0.62f, 0.22f, 1f), "Cabin site");
             DrawLegendRow(rect.x + 16, rect.y + 174, new Color(0.68f, 0.42f, 0.92f, 1f), "Landmark");
+            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(1f, 0.78f, 0.24f, 1f), "Loot chest");
             GUI.Label(new Rect(rect.x + 14, rect.yMax - 78, rect.width - 28, 60), "Explore by following the road. The map uses prototype markers for testing.", smallStyle);
         }
 
@@ -692,7 +847,8 @@ namespace TheOldRoad.UI
         {
             None,
             Inventory,
-            Map
+            Map,
+            Journal
         }
 
         private void ToggleOverlay(OverlayMode mode)

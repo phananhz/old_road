@@ -25,13 +25,23 @@ Player launches game -> walks around Valen Outskirts -> finds Tree -> harvests T
 - VS-AC-012: Save file persists inventory, harvested resources, and construction jobs.
 - VS-AC-013: Reload recalculates elapsed construction time from timestamps.
 - VS-AC-014: Camera follows the player while keeping a fixed orthographic orientation.
-- VS-AC-015: Nearby gatherable resources show a clear interaction hint and visual highlight.
+- VS-AC-015: Nearby gatherable resources show a clear interaction hint and glow outline.
 - VS-AC-016: Player can craft one Cabin Plank from Wood using the prototype crafting recipe.
 - VS-AC-017: HUD shows health, hotbar, minimap, and in-game time in a Minecraft-like layout.
 - VS-AC-018: Player can open and close inventory and expanded map overlays.
-- VS-AC-019: Valen Outskirts provides a larger prototype exploration area with multiple resource nodes and visible landmarks.
+- VS-AC-019: Valen Outskirts provides a wider seeded prototype exploration area with many resource nodes and visible landmarks.
+- VS-AC-027: The prototype map is generated from a deterministic seed so layout remains repeatable during testing.
 - VS-AC-020: Player can move with the on-screen virtual joystick.
 - VS-AC-021: Player can select hotbar items by clicking or tapping slots.
+- VS-AC-022: Player can trigger gather, craft, build, inventory, and map through on-screen mobile action buttons.
+- VS-AC-023: Player can inspect landmarks and add them to the Roadwarden Journal.
+- VS-AC-024: Discovered landmark state persists through reload.
+- VS-AC-025: HUD shows objective progress for landmark inspection, gathering, crafting, and cabin construction.
+- VS-AC-026: Nearby interactable objects show a glow outline while in range.
+- VS-AC-028: Player can open one-time loot chests and receive prototype item rewards.
+- VS-AC-029: Opened loot chest state persists through reload.
+- VS-AC-030: Gathering, chest opening, and landmark inspection show a short countdown bar above the target and complete only after the countdown finishes.
+- VS-AC-031: Active construction sites show a progress bar above the building footprint until construction completes.
 
 ## Manual Test VS-001
 
@@ -44,29 +54,41 @@ Steps:
 
 1. Press Play.
 2. Confirm the HUD shows health, minimap, time, and bottom hotbar.
-3. Press `I`, confirm inventory overlay opens, then press `Esc` to close.
-4. Press `M`, confirm expanded map opens, then press `Esc` to close.
-5. Move the player with `WASD` or arrow keys.
-6. Drag the bottom-left virtual joystick and confirm the player moves.
-7. Confirm the camera follows the player and the minimap marker moves.
-8. Click or tap a hotbar slot and confirm the selected slot highlight changes.
-9. Walk along the road and confirm the camera continues following across the larger map.
-10. Press `M` and confirm the expanded map shows the road, river, resources, landmarks, and player marker.
-11. Move near a Tree and confirm it highlights with an `E` prompt.
-12. Press `E` to gather Tree.
-13. Move near a Rock and press `E`.
-14. Confirm the hotbar shows enough wood and stone.
-15. Press `C` and confirm Cabin Plank increases while Wood decreases.
-16. Press `B`.
-17. Move the mouse to a valid grid cell.
-18. Left-click to start cabin construction.
-19. Stop Play, then press Play again.
+3. Confirm the objective tracker is visible under the status panel.
+4. Press `I`, confirm inventory overlay opens, then press `Esc` to close.
+5. Press `M`, confirm expanded map opens, then press `Esc` to close.
+6. Move the player with `WASD` or arrow keys.
+7. Drag the bottom-left virtual joystick and confirm the player moves in that direction.
+8. Confirm the camera follows the player and the minimap marker moves.
+9. Click or tap a hotbar slot and confirm the selected slot highlight changes.
+10. Tap the `Map` action button and confirm the expanded map opens, then tap `Close`.
+11. Tap the `Bag` action button and confirm inventory opens, then tap `Close`.
+12. Press `J`, confirm the Roadwarden Journal opens, then press `Esc` to close.
+13. Walk along the road and confirm the camera continues following across the wider map.
+14. Move near a landmark such as Old Road Sign and confirm an inspect prompt appears.
+15. Press `E` or tap `Gather` to inspect it, confirm a countdown bar appears above the landmark, then confirm the objective tracker updates after the countdown completes.
+16. Open `J` and confirm the journal entry appears.
+17. Press `M` and confirm the expanded map shows the road, river, resources, landmarks, and player marker.
+18. Move near a loot chest and confirm it shows a glow outline with an `E` prompt.
+19. Press `E` or tap `Gather` to open it, confirm a countdown bar appears above the chest, then confirm item quantities update after the countdown completes.
+20. Move near a Tree and confirm it shows a glow outline with an `E` prompt.
+21. Press `E` or tap `Gather` to gather Tree, and confirm the reward is granted only after the countdown bar completes.
+22. Move near a Rock and press `E` or tap `Gather`, and confirm walking away before the countdown completes cancels the action.
+23. Confirm the hotbar shows enough wood and stone and objective progress updates.
+24. Press `C` or tap `Craft` and confirm Cabin Plank increases while Wood decreases.
+25. Press `B` or tap `Build`.
+26. Move the mouse to a valid grid cell.
+27. Left-click to start cabin construction and confirm a construction progress bar appears above the cabin site.
+28. Stop Play, then press Play again.
 
 Expected result:
 
 - Inventory persists through reload.
 - Crafted Cabin Plank persists through reload.
 - Resource nodes remain harvested.
+- Opened loot chests remain open.
+- Discovered landmarks remain recorded in the journal.
+- Objective tracker reflects restored inventory, landmark, and construction state.
 - Cabin construction is restored.
 - Construction progress reflects elapsed real time.
 - Cabin completes when elapsed time is greater than or equal to duration.
@@ -84,4 +106,5 @@ These are documented here because the current Unity Test Framework assembly refe
 
 - Art is runtime-generated pixel-art placeholder sprites for camera, scale, and readability testing. It is not final production art.
 - Collision is represented by placement occupancy, not final character collision.
-- Combat, NPC, dialogue, quests, and weather are intentionally excluded.
+- The map is wide and seeded, but it is not an infinite chunk-streaming world yet.
+- Combat, NPC, dialogue, full authored quests, and weather are intentionally excluded.

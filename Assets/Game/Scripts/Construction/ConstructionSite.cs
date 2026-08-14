@@ -8,11 +8,17 @@ namespace TheOldRoad.Construction
 {
     public sealed class ConstructionSite : MonoBehaviour
     {
+        private const float ProgressYOffset = 1.55f;
+        private const float BarWidth = 108f;
+        private const float BarHeight = 16f;
+
         [SerializeField] private ConstructionJob job;
         [SerializeField] private BuildingDefinition buildingDefinition;
 
         private SpriteRenderer siteRenderer;
         private IClock clock;
+        private static Texture2D pixel;
+        private static GUIStyle labelStyle;
 
         public ConstructionJob Job => job;
 
@@ -62,6 +68,60 @@ namespace TheOldRoad.Construction
             string[] stages = buildingDefinition != null ? buildingDefinition.ConstructionStages : null;
             if (stages == null || stages.Length == 0) return job.GetDefaultVisualStage(nowUnixSeconds).ToString();
             return stages[job.GetStageIndex(nowUnixSeconds, stages.Length)];
+        }
+
+        private void OnGUI()
+        {
+            if (job == null || job.state == ConstructionState.Completed) return;
+
+            Camera worldCamera = Camera.main;
+            if (worldCamera == null) return;
+
+            long now = clock?.NowUnixSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            float progress = job.GetProgress(now);
+            long remainingSeconds = Math.Max(0, job.durationSeconds - Math.Max(0, now - job.startUnixSeconds));
+
+            EnsureStyles();
+
+            Vector3 screenPosition = worldCamera.WorldToScreenPoint(transform.position + Vector3.up * ProgressYOffset);
+            if (screenPosition.z < 0f) return;
+
+            float x = screenPosition.x - (BarWidth * 0.5f);
+            float y = Screen.height - screenPosition.y - 28f;
+            Rect shadow = new Rect(x - 2f, y - 2f, BarWidth + 4f, BarHeight + 4f);
+            Rect frame = new Rect(x, y, BarWidth, BarHeight);
+            Rect fill = new Rect(x + 2f, y + 2f, (BarWidth - 4f) * progress, BarHeight - 4f);
+            Rect text = new Rect(x - 28f, y - 18f, BarWidth + 56f, 16f);
+
+            DrawRect(shadow, new Color(0.02f, 0.02f, 0.02f, 0.72f));
+            DrawRect(frame, new Color(0.12f, 0.09f, 0.06f, 0.92f));
+            DrawRect(fill, new Color(0.62f, 0.84f, 1f, 0.96f));
+            GUI.Label(text, GetStageName(now) + " " + Mathf.RoundToInt(progress * 100f) + "% / " + remainingSeconds + "s", labelStyle);
+        }
+
+        private static void EnsureStyles()
+        {
+            if (pixel == null)
+            {
+                pixel = new Texture2D(1, 1) { filterMode = FilterMode.Point };
+                pixel.SetPixel(0, 0, Color.white);
+                pixel.Apply();
+            }
+
+            labelStyle ??= new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 12,
+                normal = { textColor = new Color(0.86f, 0.94f, 1f, 1f) }
+            };
+        }
+
+        private static void DrawRect(Rect rect, Color color)
+        {
+            Color previous = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(rect, pixel);
+            GUI.color = previous;
         }
     }
 }

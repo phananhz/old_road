@@ -2,6 +2,7 @@ using UnityEngine;
 using TheOldRoad.Inventory;
 using TheOldRoad.Core;
 using TheOldRoad.Input;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.Gathering
 {
@@ -12,7 +13,12 @@ namespace TheOldRoad.Gathering
         [SerializeField] private InventorySession inventorySession;
         [SerializeField] private VerticalSliceController sliceController;
 
+        private const float GatherDurationSeconds = 1.2f;
+        private const float CancelDistancePadding = 0.35f;
+
         private ResourceNode nearestNode;
+        private ResourceNode activeNode;
+        private WorldActionProgressBar activeProgress;
 
         public string InteractionHint { get; private set; } = "No nearby resource.";
 
@@ -25,22 +31,86 @@ namespace TheOldRoad.Gathering
 
         private void Update()
         {
+            if (activeProgress != null)
+            {
+                UpdateActiveGather();
+                return;
+            }
+
             UpdateNearestNode();
 
             if (!PrototypeInput.GetKeyDown(KeyCode.E) || inventorySession == null) return;
             if (nearestNode == null)
             {
-                InteractionHint = "No resource in range.";
                 return;
             }
 
-            if (nearestNode.TryHarvest(inventorySession.Runtime))
+            BeginGather(nearestNode);
+        }
+
+        private void BeginGather(ResourceNode node)
+        {
+            if (node == null || node.IsHarvested) return;
+
+            activeNode = node;
+            activeNode.SetHighlighted(true);
+            if (!WorldActionProgressBar.TryStart(
+                    gameObject,
+                    Camera.main,
+                    activeNode.transform,
+                    "Gathering",
+                    GatherDurationSeconds,
+                    CompleteGather,
+                    CancelGather,
+                    out activeProgress))
             {
-                InteractionHint = "Gathered " + nearestNode.ResourceAmount + " " + nearestNode.ResourceItemId + ".";
-                sliceController?.NotifyResourceHarvested(nearestNode);
-                nearestNode.SetHighlighted(false);
-                nearestNode = null;
+                activeNode.SetHighlighted(false);
+                activeNode = null;
+                InteractionHint = "Finish the current action first.";
+                return;
             }
+
+            InteractionHint = "Gathering " + activeNode.DisplayName + "...";
+        }
+
+        private void UpdateActiveGather()
+        {
+            if (activeNode == null || activeNode.IsHarvested)
+            {
+                activeProgress.Cancel();
+                return;
+            }
+
+            activeNode.SetHighlighted(true);
+            float distance = Vector2.Distance(transform.position, activeNode.transform.position);
+            if (distance > interactionRadius + CancelDistancePadding)
+            {
+                activeProgress.Cancel();
+            }
+        }
+
+        private void CompleteGather()
+        {
+            ResourceNode node = activeNode;
+            activeProgress = null;
+            activeNode = null;
+
+            if (node == null || inventorySession == null) return;
+            if (node.TryHarvest(inventorySession.Runtime))
+            {
+                InteractionHint = "Gathered " + node.ResourceAmount + " " + node.ResourceItemId + ".";
+                sliceController?.NotifyResourceHarvested(node);
+                node.SetHighlighted(false);
+                if (nearestNode == node) nearestNode = null;
+            }
+        }
+
+        private void CancelGather()
+        {
+            if (activeNode != null) activeNode.SetHighlighted(false);
+            activeNode = null;
+            activeProgress = null;
+            InteractionHint = "Gather cancelled.";
         }
 
         private void UpdateNearestNode()
