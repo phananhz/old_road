@@ -1,5 +1,6 @@
 using UnityEngine;
 using TheOldRoad.Inventory;
+using TheOldRoad.Items;
 using TheOldRoad.Core;
 using TheOldRoad.Input;
 using TheOldRoad.UI;
@@ -19,6 +20,7 @@ namespace TheOldRoad.Gathering
         private ResourceNode nearestNode;
         private ResourceNode activeNode;
         private WorldActionProgressBar activeProgress;
+        private float nextScanTime;
 
         public string InteractionHint { get; private set; } = "No nearby resource.";
 
@@ -37,11 +39,17 @@ namespace TheOldRoad.Gathering
                 return;
             }
 
-            UpdateNearestNode();
+            UpdateNearestNode(false);
 
             if (!PrototypeInput.GetKeyDown(KeyCode.E) || inventorySession == null) return;
             if (nearestNode == null)
             {
+                return;
+            }
+
+            if (!nearestNode.CanHarvest(inventorySession.Runtime))
+            {
+                InteractionHint = FormatBlockedHint(nearestNode);
                 return;
             }
 
@@ -103,6 +111,11 @@ namespace TheOldRoad.Gathering
                 node.SetHighlighted(false);
                 if (nearestNode == node) nearestNode = null;
             }
+            else
+            {
+                InteractionHint = FormatBlockedHint(node);
+                node.SetHighlighted(false);
+            }
         }
 
         private void CancelGather()
@@ -113,8 +126,11 @@ namespace TheOldRoad.Gathering
             InteractionHint = "Gather cancelled.";
         }
 
-        private void UpdateNearestNode()
+        private void UpdateNearestNode(bool force)
         {
+            if (!force && UnityEngine.Time.unscaledTime < nextScanTime) return;
+            nextScanTime = UnityEngine.Time.unscaledTime + 0.16f;
+
             ResourceNode previousNode = nearestNode;
             nearestNode = null;
             float nearestDistance = float.MaxValue;
@@ -135,12 +151,26 @@ namespace TheOldRoad.Gathering
             if (nearestNode != null)
             {
                 nearestNode.SetHighlighted(true);
-                InteractionHint = "Press E to gather " + nearestNode.DisplayName + ".";
+                InteractionHint = nearestNode.CanHarvest(inventorySession != null ? inventorySession.Runtime : null)
+                    ? "Press E to gather " + nearestNode.DisplayName + "."
+                    : FormatBlockedHint(nearestNode);
             }
             else if (previousNode != null)
             {
                 InteractionHint = "No nearby resource.";
             }
+        }
+
+        private static string FormatBlockedHint(ResourceNode node)
+        {
+            if (node == null) return "No nearby resource.";
+            if (node.RequiresTool)
+            {
+                PrototypeItemInfo tool = PrototypeItemCatalog.Get(node.RequiredToolItemId);
+                return "Need " + tool.DisplayName + " to gather " + node.DisplayName + ".";
+            }
+
+            return "Cannot gather " + node.DisplayName + " yet.";
         }
 
         private void OnDrawGizmosSelected()

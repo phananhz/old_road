@@ -20,6 +20,7 @@ namespace TheOldRoad.Save
         public LootChestSaveEntry[] lootChests = Array.Empty<LootChestSaveEntry>();
         public PlayerSaveEntry player;
         public GameTimeSaveEntry gameTime;
+        public bool talkedToVillager;
     }
 
     [Serializable]

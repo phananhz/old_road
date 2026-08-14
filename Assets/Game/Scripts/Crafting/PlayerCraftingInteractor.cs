@@ -2,6 +2,7 @@ using UnityEngine;
 using TheOldRoad.Core;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
+using TheOldRoad.Items;
 
 namespace TheOldRoad.Crafting
 {
@@ -10,15 +11,15 @@ namespace TheOldRoad.Crafting
     {
         [SerializeField] private InventorySession inventorySession;
         [SerializeField] private VerticalSliceController sliceController;
-        [SerializeField] private RecipeDefinition recipe;
+        [SerializeField] private RecipeDefinition[] recipes;
 
-        public string CraftingHint { get; private set; } = "Press C to craft Cabin Plank.";
+        public string CraftingHint { get; private set; } = "Press C to craft.";
 
-        public void Configure(InventorySession inventorySession, VerticalSliceController sliceController, RecipeDefinition recipe)
+        public void Configure(InventorySession inventorySession, VerticalSliceController sliceController, params RecipeDefinition[] recipes)
         {
             this.inventorySession = inventorySession;
             this.sliceController = sliceController;
-            this.recipe = recipe;
+            this.recipes = recipes ?? System.Array.Empty<RecipeDefinition>();
             RefreshHint();
         }
 
@@ -27,15 +28,23 @@ namespace TheOldRoad.Crafting
             RefreshHint();
             if (!PrototypeInput.GetKeyDown(KeyCode.C)) return;
 
-            if (recipe == null || inventorySession == null || inventorySession.Runtime == null)
+            if (recipes == null || recipes.Length == 0 || inventorySession == null || inventorySession.Runtime == null)
             {
                 CraftingHint = "Crafting is not ready.";
                 return;
             }
 
+            RecipeDefinition recipe = SelectCraftableRecipe();
+            if (recipe == null)
+            {
+                RecipeDefinition blocked = SelectNextProgressRecipe();
+                CraftingHint = blocked != null ? "Need: " + FormatIngredients(blocked) + "." : "No craftable recipe.";
+                return;
+            }
+
             if (CraftingRuntime.TryCraft(recipe, inventorySession.Runtime))
             {
-                CraftingHint = "Crafted " + recipe.ResultQuantity + " " + recipe.ResultItemId + ".";
+                CraftingHint = "Crafted " + recipe.ResultQuantity + " " + PrototypeItemCatalog.Get(recipe.ResultItemId).DisplayName + ".";
                 sliceController?.NotifyCrafted(recipe);
             }
             else
@@ -46,7 +55,7 @@ namespace TheOldRoad.Crafting
 
         private void RefreshHint()
         {
-            if (recipe == null)
+            if (recipes == null || recipes.Length == 0)
             {
                 CraftingHint = "No recipe selected.";
                 return;
@@ -58,9 +67,57 @@ namespace TheOldRoad.Crafting
                 return;
             }
 
-            CraftingHint = inventorySession.Runtime.HasAll(ToCostArray(recipe))
-                ? "Press C to craft " + recipe.ResultItemId + "."
-                : "Need: " + FormatIngredients(recipe) + ".";
+            RecipeDefinition craftable = SelectCraftableRecipe();
+            if (craftable != null)
+            {
+                CraftingHint = "Press C to craft " + PrototypeItemCatalog.Get(craftable.ResultItemId).DisplayName + ".";
+                return;
+            }
+
+            RecipeDefinition blocked = SelectNextProgressRecipe();
+            CraftingHint = blocked != null
+                ? "Need: " + FormatIngredients(blocked) + " for " + PrototypeItemCatalog.Get(blocked.ResultItemId).DisplayName + "."
+                : "No craftable recipe.";
+        }
+
+        private RecipeDefinition SelectCraftableRecipe()
+        {
+            if (inventorySession == null || inventorySession.Runtime == null || recipes == null) return null;
+
+            for (int i = 0; i < recipes.Length; i++)
+            {
+                RecipeDefinition candidate = recipes[i];
+                if (candidate == null) continue;
+                if (IsSingleToolAlreadyOwned(candidate)) continue;
+                if (inventorySession.Runtime.HasAll(ToCostArray(candidate))) return candidate;
+            }
+
+            return null;
+        }
+
+        private RecipeDefinition SelectNextProgressRecipe()
+        {
+            if (recipes == null) return null;
+
+            for (int i = 0; i < recipes.Length; i++)
+            {
+                RecipeDefinition candidate = recipes[i];
+                if (candidate == null) continue;
+                if (IsSingleToolAlreadyOwned(candidate)) continue;
+                return candidate;
+            }
+
+            return recipes.Length > 0 ? recipes[recipes.Length - 1] : null;
+        }
+
+        private bool IsSingleToolAlreadyOwned(RecipeDefinition recipe)
+        {
+            return recipe != null
+                && !string.IsNullOrWhiteSpace(recipe.ResultItemId)
+                && recipe.ResultItemId.StartsWith("item.tool-", System.StringComparison.Ordinal)
+                && inventorySession != null
+                && inventorySession.Runtime != null
+                && inventorySession.Runtime.Has(recipe.ResultItemId, 1);
         }
 
         private static (string itemId, int quantity)[] ToCostArray(RecipeDefinition recipe)
@@ -85,7 +142,7 @@ namespace TheOldRoad.Crafting
             {
                 IngredientRequirement ingredient = recipe.Ingredients[i];
                 if (i > 0) text += ", ";
-                text += ingredient.quantity + " " + ingredient.itemId;
+                text += ingredient.quantity + " " + PrototypeItemCatalog.Get(ingredient.itemId).DisplayName;
             }
 
             return text;

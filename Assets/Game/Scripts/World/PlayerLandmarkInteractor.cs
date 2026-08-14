@@ -17,6 +17,7 @@ namespace TheOldRoad.World
         private DiscoverableLandmark nearestLandmark;
         private DiscoverableLandmark activeLandmark;
         private WorldActionProgressBar activeProgress;
+        private float nextScanTime;
 
         public string InteractionHint { get; private set; } = string.Empty;
 
@@ -34,7 +35,7 @@ namespace TheOldRoad.World
                 return;
             }
 
-            UpdateNearestLandmark();
+            UpdateNearestLandmark(false);
 
             if (!PrototypeInput.GetKeyDown(KeyCode.E)) return;
             if (nearestLandmark == null) return;
@@ -107,8 +108,11 @@ namespace TheOldRoad.World
             InteractionHint = "Inspect cancelled.";
         }
 
-        private void UpdateNearestLandmark()
+        private void UpdateNearestLandmark(bool force)
         {
+            if (!force && UnityEngine.Time.unscaledTime < nextScanTime) return;
+            nextScanTime = UnityEngine.Time.unscaledTime + 0.22f;
+
             DiscoverableLandmark previous = nearestLandmark;
             nearestLandmark = null;
             float nearestDistance = float.MaxValue;

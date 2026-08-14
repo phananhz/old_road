@@ -19,6 +19,7 @@ namespace TheOldRoad.World
         private LootChest nearestChest;
         private LootChest activeChest;
         private WorldActionProgressBar activeProgress;
+        private float nextScanTime;
 
         public string InteractionHint { get; private set; } = string.Empty;
 
@@ -37,7 +38,7 @@ namespace TheOldRoad.World
                 return;
             }
 
-            UpdateNearestChest();
+            UpdateNearestChest(false);
 
             if (!PrototypeInput.GetKeyDown(KeyCode.E) || inventorySession == null) return;
             if (nearestChest == null) return;
@@ -110,8 +111,11 @@ namespace TheOldRoad.World
             InteractionHint = "Open cancelled.";
         }
 
-        private void UpdateNearestChest()
+        private void UpdateNearestChest(bool force)
         {
+            if (!force && UnityEngine.Time.unscaledTime < nextScanTime) return;
+            nextScanTime = UnityEngine.Time.unscaledTime + 0.18f;
+
             LootChest previous = nearestChest;
             nearestChest = null;
             float nearestDistance = float.MaxValue;

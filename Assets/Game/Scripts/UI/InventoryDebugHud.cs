@@ -51,6 +51,23 @@ namespace TheOldRoad.UI
         private float promptHideTime;
         private string buildCatalogMessage = string.Empty;
         private float buildCatalogMessageHideTime;
+        private float nextCacheRefreshTime;
+        private PlayerVitals cachedVitals;
+        private PlayerMovement cachedPlayer;
+        private GameTimeController cachedGameTime;
+        private PlayerGatheringInteractor cachedGathering;
+        private PlayerCraftingInteractor cachedCrafting;
+        private PlayerCookingInteractor cachedCooking;
+        private PlayerLandmarkInteractor cachedLandmarkInteractor;
+        private PlayerLootInteractor cachedLootInteractor;
+        private PlayerCabinInteractor cachedCabinInteractor;
+        private PlayerNpcInteractor cachedNpcInteractor;
+        private DiscoverableLandmark[] cachedLandmarks = System.Array.Empty<DiscoverableLandmark>();
+        private LootChest[] cachedLootChests = System.Array.Empty<LootChest>();
+        private ResourceNode[] cachedResourceNodes = System.Array.Empty<ResourceNode>();
+        private ConstructionSite[] cachedConstructionSites = System.Array.Empty<ConstructionSite>();
+        private VillagerNpcController[] cachedNpcs = System.Array.Empty<VillagerNpcController>();
+        private AnimalPenController[] cachedAnimalPens = System.Array.Empty<AnimalPenController>();
 
         public void Configure(
             InventorySession inventorySession,
@@ -64,6 +81,9 @@ namespace TheOldRoad.UI
 
         private void Update()
         {
+            if (GameStartMenuController.IsOpen) return;
+            RefreshHudCache(false);
+
             for (int i = 0; i < 9; i++)
             {
                 if (PrototypeInput.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i))) selectedSlot = i;
@@ -79,6 +99,8 @@ namespace TheOldRoad.UI
         private void OnGUI()
         {
             EnsureStyles();
+            if (GameStartMenuController.IsOpen) return;
+            RefreshHudCache(false);
 
             DrawScreenVignette();
             DrawStatusCard();
@@ -98,31 +120,37 @@ namespace TheOldRoad.UI
             DrawHeaderStrip(new Rect(card.x, card.y, card.width, 32));
 
             GUI.Label(new Rect(card.x + 16, card.y + 5, card.width - 32, 26), "THE OLD ROAD", gameTitleStyle);
-            GUI.Label(new Rect(card.x + 214, card.y + 8, 110, 18), "Valen Outskirts", smallStyle);
+            GUI.Label(new Rect(card.x + 206, card.y + 8, 80, 18), "Valen", smallStyle);
+            if (GUI.Button(new Rect(card.x + 276, card.y + 6, 60, 21), LocalizationRuntime.T("settings")))
+            {
+                GameStartMenuController.OpenSettingsFromGame();
+            }
 
             Rect portrait = new Rect(card.x + 16, card.y + 44, 46, 46);
             DrawRect(portrait, new Color(0.18f, 0.13f, 0.09f, 1f));
             DrawBorder(portrait, GoldDim, 2f);
             DrawPlayerBadge(portrait);
 
-            PlayerVitals vitals = FindAnyObjectByType<PlayerVitals>();
+            PlayerVitals vitals = cachedVitals;
             int currentHealth = vitals != null ? vitals.CurrentHealth : 20;
             int maxHealth = vitals != null ? vitals.MaxHealth : 20;
-            GUI.Label(new Rect(card.x + 74, card.y + 42, 96, 18), "Roadwarden", labelStyle);
+            GUI.Label(new Rect(card.x + 74, card.y + 42, 112, 18), LocalizationRuntime.T("roadwarden"), labelStyle);
             DrawHealthBar(new Rect(card.x + 74, card.y + 65, 194, 16), currentHealth, maxHealth);
             GUI.Label(new Rect(card.x + 276, card.y + 59, 48, 24), currentHealth + "/" + maxHealth, labelStyle);
 
             if (sliceController != null)
             {
-                string progress = "Landmarks " + sliceController.DiscoveredLandmarkCount + "/" + sliceController.TotalLandmarkCount;
+                string progress = LocalizationRuntime.T("landmarks") + " " + sliceController.DiscoveredLandmarkCount + "/" + sliceController.TotalLandmarkCount;
                 GUI.Label(new Rect(card.x + 74, card.y + 91, 220, 18), progress, smallStyle);
             }
 
+            GUI.Label(new Rect(card.x + 214, card.y + 91, 112, 18), "FPS " + Mathf.RoundToInt(GameSettingsRuntime.MeasuredFps), smallStyle);
+
             float chipY = card.y + 113;
-            DrawResourceChip(new Rect(card.x + 16, chipY, 72, 18), "Wood", GetQuantity("item.wood"), PrototypeItemCatalog.Get("item.wood").Color);
-            DrawResourceChip(new Rect(card.x + 96, chipY, 74, 18), "Stone", GetQuantity("item.stone"), PrototypeItemCatalog.Get("item.stone").Color);
-            DrawResourceChip(new Rect(card.x + 178, chipY, 70, 18), "Food", GetForageQuantity(), PrototypeItemCatalog.Get("item.wild-berries").Color);
-            DrawResourceChip(new Rect(card.x + 256, chipY, 70, 18), "Ore", GetQuantity("item.iron-ore"), PrototypeItemCatalog.Get("item.iron-ore").Color);
+            DrawResourceChip(new Rect(card.x + 16, chipY, 72, 18), LocalizationRuntime.T("wood"), GetQuantity("item.wood"), PrototypeItemCatalog.Get("item.wood").Color);
+            DrawResourceChip(new Rect(card.x + 96, chipY, 74, 18), LocalizationRuntime.T("stone"), GetQuantity("item.stone"), PrototypeItemCatalog.Get("item.stone").Color);
+            DrawResourceChip(new Rect(card.x + 178, chipY, 70, 18), LocalizationRuntime.T("food"), GetForageQuantity(), PrototypeItemCatalog.Get("item.wild-berries").Color);
+            DrawResourceChip(new Rect(card.x + 256, chipY, 70, 18), LocalizationRuntime.T("ore"), GetQuantity("item.iron-ore"), PrototypeItemCatalog.Get("item.iron-ore").Color);
         }
 
         private void DrawMinimapCard()
@@ -132,18 +160,18 @@ namespace TheOldRoad.UI
             DrawCard(card, Ink);
             DrawCornerAccents(card, GoldDim);
 
-            GameTimeController gameTime = FindAnyObjectByType<GameTimeController>();
+            GameTimeController gameTime = cachedGameTime;
             string timeText = gameTime != null ? gameTime.ClockText : "Day 1  06:00";
             GUI.Label(new Rect(card.x + 14, card.y + 9, card.width - 28, 22), timeText, titleStyle);
-            GUI.Label(new Rect(card.x + 14, card.y + 31, card.width - 28, 18), "Old road survey", smallStyle);
+            GUI.Label(new Rect(card.x + 14, card.y + 31, card.width - 28, 18), LocalizationRuntime.T("survey"), smallStyle);
 
             Rect map = new Rect(card.x + 14, card.y + 54, card.width - 28, card.width - 28);
             DrawRect(new Rect(map.x - 5, map.y - 5, map.width + 10, map.height + 10), new Color(0.02f, 0.018f, 0.015f, 1f));
             DrawMinimap(map);
 
-            DrawControlPill(new Rect(card.x + 18, map.yMax + 12, 82, 22), "M", "Map");
-            DrawControlPill(new Rect(card.x + 106, map.yMax + 12, 44, 22), "I", "Bag");
-            DrawControlPill(new Rect(card.x + 156, map.yMax + 12, 44, 22), "J", "Log");
+            DrawControlPill(new Rect(card.x + 18, map.yMax + 12, 82, 22), "M", LocalizationRuntime.T("map"));
+            DrawControlPill(new Rect(card.x + 106, map.yMax + 12, 44, 22), "I", LocalizationRuntime.T("bag"));
+            DrawControlPill(new Rect(card.x + 156, map.yMax + 12, 44, 22), "J", LocalizationRuntime.T("log"));
         }
 
         private void DrawObjectiveCard()
@@ -159,7 +187,7 @@ namespace TheOldRoad.UI
 
             GUI.Label(
                 new Rect(card.x + 16f, card.y + 8f, card.width - 32f, 20f),
-                "Current Roadwarden Tasks  " + sliceController.CompletedObjectiveCount + "/" + sliceController.TotalObjectiveCount,
+                LocalizationRuntime.T("tasks") + "  " + sliceController.CompletedObjectiveCount + "/" + sliceController.TotalObjectiveCount,
                 labelStyle);
 
             for (int i = 0; i < objectives.Length; i++)
@@ -167,7 +195,7 @@ namespace TheOldRoad.UI
                 bool done = objectives[i].StartsWith("[x]");
                 Color previous = GUI.color;
                 GUI.color = done ? new Color(0.70f, 0.92f, 0.58f, 1f) : Parchment;
-                GUI.Label(new Rect(card.x + 18f, card.y + 34f + i * 22f, card.width - 36f, 20f), objectives[i], smallStyle);
+                GUI.Label(new Rect(card.x + 18f, card.y + 34f + i * 22f, card.width - 36f, 20f), LocalizeObjectiveLine(objectives[i]), smallStyle);
                 GUI.color = previous;
             }
         }
@@ -220,7 +248,7 @@ namespace TheOldRoad.UI
                 DrawHotbarSlot(new Rect(startX + i * (slotSize + gap), y, slotSize, slotSize), i);
             }
 
-            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), "E Gather/Inspect    F Use/Enter/Sleep    C Craft    B Build    I Bag    M Map    J Journal", centerStyle);
+            GUI.Label(new Rect(startX, y - 33f, totalWidth, 20f), BuildControlsText(), centerStyle);
         }
 
         private void DrawHotbarSlot(Rect slot, int index)
@@ -250,7 +278,7 @@ namespace TheOldRoad.UI
 
             Rect icon = new Rect(slot.x + slot.width * 0.5f - 15f, slot.y + 16f, 30f, 26f);
             DrawItemGlyph(icon, item);
-            GUI.Label(new Rect(slot.x + 3, slot.y + slot.height - 20f, slot.width - 6, 16), item.Name, captionStyle);
+            GUI.Label(new Rect(slot.x + 3, slot.y + slot.height - 20f, slot.width - 6, 16), LocalizeItemName(item.Name), captionStyle);
             if (item.Count > 0) GUI.Label(new Rect(slot.x + slot.width - 28f, slot.y + 39f, 23f, 18), item.Count.ToString(), numberStyle);
         }
 
@@ -258,30 +286,32 @@ namespace TheOldRoad.UI
         {
             if (overlayMode != OverlayMode.None)
             {
-                DrawMobileActionButton(new Rect(Screen.width - 112f, Screen.height - 122f, 82f, 54f), "Esc", "Close", KeyCode.Escape, new Color(0.50f, 0.18f, 0.14f, 0.96f));
+                DrawMobileActionButton(new Rect(Screen.width - 112f, Screen.height - 122f, 82f, 54f), "Esc", LocalizationRuntime.T("close"), KeyCode.Escape, new Color(0.50f, 0.18f, 0.14f, 0.96f));
                 return;
             }
 
             float right = Screen.width - 28f;
             float bottom = Screen.height - 30f;
 
-            DrawMobileActionButton(new Rect(right - 92f, bottom - 168f, 78f, 58f), "E", "Gather", KeyCode.E, new Color(0.22f, 0.44f, 0.18f, 0.96f));
-            DrawMobileActionButton(new Rect(right - 178f, bottom - 112f, 74f, 52f), "C", "Craft", KeyCode.C, new Color(0.45f, 0.31f, 0.12f, 0.96f));
-            DrawMobileActionButton(new Rect(right - 92f, bottom - 102f, 78f, 58f), "B", "Build", KeyCode.B, new Color(0.45f, 0.21f, 0.12f, 0.96f));
-            PlayerCookingInteractor cooking = FindAnyObjectByType<PlayerCookingInteractor>();
+            PlayerNpcInteractor npcInteractor = cachedNpcInteractor;
+            string interactLabel = npcInteractor != null && npcInteractor.CanTalkAction ? LocalizationRuntime.T("talk") : LocalizationRuntime.T("gather");
+            DrawMobileActionButton(new Rect(right - 92f, bottom - 168f, 78f, 58f), "E", interactLabel, KeyCode.E, new Color(0.22f, 0.44f, 0.18f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 178f, bottom - 112f, 74f, 52f), "C", LocalizationRuntime.T("craft"), KeyCode.C, new Color(0.45f, 0.31f, 0.12f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 92f, bottom - 102f, 78f, 58f), "B", LocalizationRuntime.T("build"), KeyCode.B, new Color(0.45f, 0.21f, 0.12f, 0.96f));
+            PlayerCookingInteractor cooking = cachedCooking;
             if (cooking != null && cooking.CanCookAction)
             {
-                DrawMobileActionButton(new Rect(right - 178f, bottom - 234f, 74f, 52f), "R", "Cook", KeyCode.R, new Color(0.54f, 0.24f, 0.10f, 0.96f));
+                DrawMobileActionButton(new Rect(right - 178f, bottom - 234f, 74f, 52f), "R", LocalizationRuntime.T("cook"), KeyCode.R, new Color(0.54f, 0.24f, 0.10f, 0.96f));
             }
 
-            PlayerCabinInteractor cabin = FindAnyObjectByType<PlayerCabinInteractor>();
+            PlayerCabinInteractor cabin = cachedCabinInteractor;
             if (cabin != null && cabin.CanUseAction)
             {
-                DrawMobileActionButton(new Rect(right - 178f, bottom - 176f, 74f, 52f), "F", cabin.ActionButtonLabel, KeyCode.F, new Color(0.36f, 0.20f, 0.42f, 0.96f));
+                DrawMobileActionButton(new Rect(right - 178f, bottom - 176f, 74f, 52f), "F", LocalizeActionLabel(cabin.ActionButtonLabel), KeyCode.F, new Color(0.36f, 0.20f, 0.42f, 0.96f));
             }
-            DrawMobileActionButton(new Rect(right - 260f, bottom - 100f, 68f, 46f), "I", "Bag", KeyCode.I, new Color(0.15f, 0.22f, 0.33f, 0.96f));
-            DrawMobileActionButton(new Rect(right - 260f, bottom - 154f, 68f, 46f), "M", "Map", KeyCode.M, new Color(0.18f, 0.27f, 0.23f, 0.96f));
-            DrawMobileActionButton(new Rect(right - 260f, bottom - 208f, 68f, 46f), "J", "Log", KeyCode.J, new Color(0.22f, 0.18f, 0.32f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 100f, 68f, 46f), "I", LocalizationRuntime.T("bag"), KeyCode.I, new Color(0.15f, 0.22f, 0.33f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 154f, 68f, 46f), "M", LocalizationRuntime.T("map"), KeyCode.M, new Color(0.18f, 0.27f, 0.23f, 0.96f));
+            DrawMobileActionButton(new Rect(right - 260f, bottom - 208f, 68f, 46f), "J", LocalizationRuntime.T("log"), KeyCode.J, new Color(0.22f, 0.18f, 0.32f, 0.96f));
         }
 
         private void DrawMobileActionButton(Rect rect, string key, string label, KeyCode keyCode, Color color)
@@ -334,10 +364,10 @@ namespace TheOldRoad.UI
             DrawCornerAccents(panel, Gold);
             DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 44));
 
-            GUI.Label(new Rect(panel.x + 24, panel.y + 9, panel.width - 48, 28), "Roadwarden Pack", gameTitleStyle);
-            GUI.Label(new Rect(panel.x + panel.width - 190, panel.y + 14, 170, 20), "I / Esc to close", smallStyle);
+            GUI.Label(new Rect(panel.x + 24, panel.y + 9, panel.width - 48, 28), LocalizationRuntime.T("pack_title"), gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 190, panel.y + 14, 170, 20), LocalizationRuntime.T("inventory_close"), smallStyle);
 
-            GUI.Label(new Rect(panel.x + 26, panel.y + 54, panel.width - 52, 20), "Materials gathered from Valen Outskirts", smallStyle);
+            GUI.Label(new Rect(panel.x + 26, panel.y + 54, panel.width - 52, 20), LocalizationRuntime.T("pack_subtitle"), smallStyle);
             Rect grid = new Rect(panel.x + 24, panel.y + 82, panel.width - 48, panel.height - 110);
             DrawInventoryGrid(grid);
         }
@@ -381,7 +411,7 @@ namespace TheOldRoad.UI
             DrawBorder(quantityBadge, hasItem ? GoldDim : new Color(0.18f, 0.16f, 0.14f, 1f), 1f);
             GUI.Label(quantityBadge, quantity.ToString(), centerStyle);
 
-            GUI.Label(new Rect(slot.x + 5f, slot.yMax - 43f, slot.width - 10f, 18f), GetShortItemName(item.DisplayName), centerStyle);
+            GUI.Label(new Rect(slot.x + 5f, slot.yMax - 43f, slot.width - 10f, 18f), GetShortItemName(LocalizeItemName(item.ItemId, item.DisplayName)), centerStyle);
         }
 
         private void DrawBuildCatalogOverlay()
@@ -393,8 +423,8 @@ namespace TheOldRoad.UI
             DrawCornerAccents(panel, Gold);
             DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 50f));
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 10f, panel.width - 48f, 28f), "Construction Catalog", gameTitleStyle);
-            GUI.Label(new Rect(panel.x + panel.width - 260f, panel.y + 16f, 230f, 20f), "B / Esc to close", smallStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 10f, panel.width - 48f, 28f), LocalizationRuntime.T("construction_catalog"), gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 260f, panel.y + 16f, 230f, 20f), LocalizationRuntime.T("build_close"), smallStyle);
 
             Rect sidebar = new Rect(panel.x + 22f, panel.y + 72f, 190f, panel.height - 100f);
             Rect content = new Rect(sidebar.xMax + 18f, sidebar.y, panel.xMax - sidebar.xMax - 40f, sidebar.height);
@@ -407,13 +437,13 @@ namespace TheOldRoad.UI
         {
             DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.76f));
             DrawBorder(rect, GoldDim, 1f);
-            GUI.Label(new Rect(rect.x + 14f, rect.y + 12f, rect.width - 28f, 24f), "Categories", titleStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 12f, rect.width - 28f, 24f), LocalizationRuntime.T("categories"), titleStyle);
 
-            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 52f, rect.width - 28f, 42f), 0, "Housing", "Homes and shelters");
-            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 104f, rect.width - 28f, 42f), 1, "Fire & Light", "Warmth and camp utility");
-            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 156f, rect.width - 28f, 42f), 2, "Animal Pens", "Fenced square or rectangle yards");
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 52f, rect.width - 28f, 42f), 0, LocalizationRuntime.T("housing"), LocalizationRuntime.T("housing_desc"));
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 104f, rect.width - 28f, 42f), 1, LocalizationRuntime.T("fire_light"), LocalizationRuntime.T("fire_light_desc"));
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 156f, rect.width - 28f, 42f), 2, LocalizationRuntime.T("animal_pens"), LocalizationRuntime.T("animal_pens_desc"));
 
-            GUI.Label(new Rect(rect.x + 14f, rect.yMax - 72f, rect.width - 28f, 52f), "Select a buildable card to enter placement mode.", smallStyle);
+            GUI.Label(new Rect(rect.x + 14f, rect.yMax - 72f, rect.width - 28f, 52f), LocalizationRuntime.T("build_select_hint"), smallStyle);
         }
 
         private void DrawBuildCategoryButton(Rect rect, int categoryIndex, string title, string subtitle)
@@ -438,7 +468,7 @@ namespace TheOldRoad.UI
             DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.64f));
             DrawBorder(rect, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
 
-            string heading = selectedBuildCategory == 0 ? "Housing" : selectedBuildCategory == 1 ? "Fire & Light" : "Animal Pens";
+            string heading = selectedBuildCategory == 0 ? LocalizationRuntime.T("housing") : selectedBuildCategory == 1 ? LocalizationRuntime.T("fire_light") : LocalizationRuntime.T("animal_pens");
             GUI.Label(new Rect(rect.x + 18f, rect.y + 14f, rect.width - 36f, 24f), heading, titleStyle);
             if (!string.IsNullOrWhiteSpace(buildCatalogMessage) && UnityEngine.Time.unscaledTime <= buildCatalogMessageHideTime)
             {
@@ -456,21 +486,21 @@ namespace TheOldRoad.UI
 
             if (selectedBuildCategory == 0)
             {
-                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Cabin", "Starter home with bed and interior.", "Housing", GetBuildingDefinition("building.cabin"), "Cabin", true);
-                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Stone Cottage", "Larger stone home prototype.", "Housing", GetBuildingDefinition("building.stone-cottage"), "Cottage", true);
-                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 2), "Storage Shed", "Small utility storage building.", "Housing", GetBuildingDefinition("building.storage-shed"), "Shed", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), LocalizationRuntime.T("building_cabin"), LocalizationRuntime.T("building_cabin_desc"), LocalizationRuntime.T("housing"), GetBuildingDefinition("building.cabin"), "Cabin", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), LocalizationRuntime.T("building_cottage"), LocalizationRuntime.T("building_cottage_desc"), LocalizationRuntime.T("housing"), GetBuildingDefinition("building.stone-cottage"), "Cottage", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 2), LocalizationRuntime.T("building_shed"), LocalizationRuntime.T("building_shed_desc"), LocalizationRuntime.T("housing"), GetBuildingDefinition("building.storage-shed"), "Shed", true);
                 return;
             }
 
             if (selectedBuildCategory == 1)
             {
-                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Campfire", "Small outdoor fire, light source, and cooking spot.", "Fire & Light", GetBuildingDefinition("building.campfire"), "Campfire", true);
-                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Cooking Hearth", "Stronger cooking station with warm light.", "Fire & Light", GetBuildingDefinition("building.cooking-hearth"), "Hearth", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), LocalizationRuntime.T("building_campfire"), LocalizationRuntime.T("building_campfire_desc"), LocalizationRuntime.T("fire_light"), GetBuildingDefinition("building.campfire"), "Campfire", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), LocalizationRuntime.T("building_hearth"), LocalizationRuntime.T("building_hearth_desc"), LocalizationRuntime.T("fire_light"), GetBuildingDefinition("building.cooking-hearth"), "Hearth", true);
                 return;
             }
 
-            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Small Animal Pen", "Square fenced yard. Produces eggs in prototype.", "Animal Pens", GetBuildingDefinition("building.animal-pen-small"), "PenSquare", true);
-            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Long Animal Pen", "Rectangle fenced yard. Produces wool in prototype.", "Animal Pens", GetBuildingDefinition("building.animal-pen-long"), "PenLong", true);
+            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), LocalizationRuntime.T("building_pen_small"), LocalizationRuntime.T("building_pen_small_desc"), LocalizationRuntime.T("animal_pens"), GetBuildingDefinition("building.animal-pen-small"), "PenSquare", true);
+            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), LocalizationRuntime.T("building_pen_long"), LocalizationRuntime.T("building_pen_long_desc"), LocalizationRuntime.T("animal_pens"), GetBuildingDefinition("building.animal-pen-long"), "PenLong", true);
         }
 
         private BuildingDefinition GetBuildingDefinition(string buildingId)
@@ -506,7 +536,7 @@ namespace TheOldRoad.UI
             Rect requirements = new Rect(rect.x + 16f, rect.y + 104f, rect.width - 32f, 74f);
             DrawRect(requirements, new Color(0.030f, 0.026f, 0.022f, 0.78f));
             DrawBorder(requirements, new Color(0.16f, 0.13f, 0.10f, 1f), 1f);
-            GUI.Label(new Rect(requirements.x + 10f, requirements.y + 6f, requirements.width - 20f, 18f), "Required items", smallStyle);
+            GUI.Label(new Rect(requirements.x + 10f, requirements.y + 6f, requirements.width - 20f, 18f), LocalizationRuntime.T("required_items"), smallStyle);
 
             if (definition != null)
             {
@@ -514,33 +544,33 @@ namespace TheOldRoad.UI
             }
             else
             {
-                GUI.Label(new Rect(requirements.x + 10f, requirements.y + 30f, requirements.width - 20f, 34f), "Prototype: requirements not finalized yet.", smallStyle);
+                GUI.Label(new Rect(requirements.x + 10f, requirements.y + 30f, requirements.width - 20f, 34f), LocalizationRuntime.T("requirements_unfinalized"), smallStyle);
             }
 
             Rect action = new Rect(rect.x + 18f, rect.yMax - 48f, rect.width - 36f, 32f);
             if (canBuild)
             {
-                if (GUI.Button(action, "Select & Place"))
+                if (GUI.Button(action, LocalizationRuntime.T("select_place")))
                 {
                     buildCatalogMessage = string.Empty;
                     placementController.BeginPlacement(definition);
                     overlayMode = OverlayMode.None;
-                    activePromptText = name + " selected. Move cursor to a valid grid cell, then left click.";
+                    activePromptText = name + " " + LocalizationRuntime.T("selected_place_hint");
                     promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
                 }
             }
             else if (buildable && definition != null && placementController != null)
             {
-                if (GUI.Button(action, "Not enough items"))
+                if (GUI.Button(action, LocalizationRuntime.T("not_enough_items")))
                 {
-                    ShowBuildCatalogMessage("Cannot build " + name + ". " + GetMissingBuildMaterialsText(definition));
+                    ShowBuildCatalogMessage(LocalizationRuntime.T("cannot_build") + " " + name + ". " + GetMissingBuildMaterialsText(definition));
                 }
             }
             else
             {
                 DrawRect(action, new Color(0.11f, 0.10f, 0.09f, 0.90f));
                 DrawBorder(action, new Color(0.22f, 0.20f, 0.18f, 1f), 1f);
-                GUI.Label(action, buildable ? "Missing definition" : "Coming soon", centerStyle);
+                GUI.Label(action, buildable ? LocalizationRuntime.T("missing_definition") : LocalizationRuntime.T("coming_soon"), centerStyle);
             }
         }
 
@@ -548,7 +578,7 @@ namespace TheOldRoad.UI
         {
             if (costs == null || costs.Length == 0)
             {
-                GUI.Label(new Rect(rect.x + 10f, rect.y + 30f, rect.width - 20f, 20f), "No material cost.", smallStyle);
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 30f, rect.width - 20f, 20f), LocalizationRuntime.T("no_material_cost"), smallStyle);
                 return;
             }
 
@@ -563,7 +593,7 @@ namespace TheOldRoad.UI
 
                 Color previous = GUI.color;
                 GUI.color = hasEnough ? new Color(0.72f, 0.95f, 0.60f, 1f) : new Color(0.95f, 0.48f, 0.40f, 1f);
-                GUI.Label(new Rect(row.x + 16f, row.y - 1f, row.width - 16f, row.height), item.DisplayName + " " + owned + "/" + cost.quantity, smallStyle);
+                GUI.Label(new Rect(row.x + 16f, row.y - 1f, row.width - 16f, row.height), LocalizeItemName(item.ItemId, item.DisplayName) + " " + owned + "/" + cost.quantity, smallStyle);
                 GUI.color = previous;
             }
         }
@@ -585,9 +615,9 @@ namespace TheOldRoad.UI
 
         private string GetMissingBuildMaterialsText(BuildingDefinition definition)
         {
-            if (definition == null || definition.ConstructionCosts == null) return "Missing building definition.";
+            if (definition == null || definition.ConstructionCosts == null) return LocalizationRuntime.T("missing_building_definition");
 
-            string message = "Missing: ";
+            string message = LocalizationRuntime.T("missing") + ": ";
             bool hasMissing = false;
             for (int i = 0; i < definition.ConstructionCosts.Length; i++)
             {
@@ -597,11 +627,11 @@ namespace TheOldRoad.UI
 
                 PrototypeItemInfo item = PrototypeItemCatalog.Get(cost.itemId);
                 if (hasMissing) message += ", ";
-                message += item.DisplayName + " " + owned + "/" + cost.quantity;
+                message += LocalizeItemName(item.ItemId, item.DisplayName) + " " + owned + "/" + cost.quantity;
                 hasMissing = true;
             }
 
-            return hasMissing ? message : "Materials are ready.";
+            return hasMissing ? message : LocalizationRuntime.T("materials_ready");
         }
 
         private void ShowBuildCatalogMessage(string message)
@@ -660,8 +690,8 @@ namespace TheOldRoad.UI
             DrawCornerAccents(panel, Gold);
             DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 50));
 
-            GUI.Label(new Rect(panel.x + 24, panel.y + 10, panel.width - 48, 28), "Valen Outskirts Map", gameTitleStyle);
-            GUI.Label(new Rect(panel.x + panel.width - 210, panel.y + 16, 190, 20), "M / Esc to close", smallStyle);
+            GUI.Label(new Rect(panel.x + 24, panel.y + 10, panel.width - 48, 28), LocalizationRuntime.T("map_title"), gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 210, panel.y + 16, 190, 20), LocalizationRuntime.T("map_close"), smallStyle);
 
             float legendWidth = panel.width > 760f ? 220f : 0f;
             Rect mapRect = new Rect(panel.x + 26, panel.y + 72, panel.width - 52 - legendWidth, panel.height - 102);
@@ -684,22 +714,22 @@ namespace TheOldRoad.UI
             DrawCornerAccents(panel, Gold);
             DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 48));
 
-            GUI.Label(new Rect(panel.x + 24, panel.y + 10, panel.width - 48, 28), "Roadwarden Journal", gameTitleStyle);
-            GUI.Label(new Rect(panel.x + panel.width - 210, panel.y + 16, 190, 20), "J / Esc to close", smallStyle);
+            GUI.Label(new Rect(panel.x + 24, panel.y + 10, panel.width - 48, 28), LocalizationRuntime.T("journal"), gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 210, panel.y + 16, 190, 20), LocalizationRuntime.T("esc_close"), smallStyle);
 
             string status = sliceController != null
                 ? sliceController.LastDiscoveryStatus + "  " + sliceController.DiscoveredLandmarkCount + "/" + sliceController.TotalLandmarkCount
-                : "Inspect landmarks to fill the journal.";
+                : LocalizationRuntime.T("inspect_landmarks");
             GUI.Label(new Rect(panel.x + 26, panel.y + 60, panel.width - 52, 22), status, labelStyle);
 
             Rect list = new Rect(panel.x + 24, panel.y + 92, panel.width - 48, panel.height - 120);
             DrawRect(list, new Color(0.025f, 0.023f, 0.02f, 0.64f));
             DrawBorder(list, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
 
-            DiscoverableLandmark[] landmarks = FindObjectsByType<DiscoverableLandmark>(FindObjectsInactive.Exclude);
+            DiscoverableLandmark[] landmarks = cachedLandmarks;
             if (landmarks.Length == 0)
             {
-                GUI.Label(new Rect(list.x + 18, list.y + 18, list.width - 36, 24), "No landmarks found in this scene.", smallStyle);
+                GUI.Label(new Rect(list.x + 18, list.y + 18, list.width - 36, 24), LocalizationRuntime.T("no_landmarks"), smallStyle);
                 return;
             }
 
@@ -714,10 +744,10 @@ namespace TheOldRoad.UI
                 DrawBorder(row, landmark.IsDiscovered ? GoldDim : new Color(0.16f, 0.14f, 0.12f, 1f), 1f);
                 DrawRect(new Rect(row.x + 12f, row.y + 18f, 34f, 34f), landmark.IsDiscovered ? new Color(0.36f, 0.58f, 0.68f, 1f) : new Color(0.16f, 0.15f, 0.14f, 1f));
                 DrawBorder(new Rect(row.x + 12f, row.y + 18f, 34f, 34f), Color.black, 1f);
-                GUI.Label(new Rect(row.x + 58f, row.y + 10f, row.width - 72f, 22f), landmark.IsDiscovered ? landmark.Title : "Unknown landmark", labelStyle);
+                GUI.Label(new Rect(row.x + 58f, row.y + 10f, row.width - 72f, 22f), landmark.IsDiscovered ? landmark.Title : LocalizationRuntime.T("unknown_landmark"), labelStyle);
                 GUI.Label(
                     new Rect(row.x + 58f, row.y + 34f, row.width - 72f, 28f),
-                    landmark.IsDiscovered ? landmark.JournalText : "Follow the road and inspect this place to record it.",
+                    landmark.IsDiscovered ? landmark.JournalText : LocalizationRuntime.T("journal_hint"),
                     smallStyle);
                 rowY += 82f;
                 if (rowY > list.yMax - 72f) break;
@@ -733,40 +763,33 @@ namespace TheOldRoad.UI
             DrawRoad(map);
             DrawBorder(map, new Color(0.01f, 0.012f, 0.01f, 1f), 2f);
 
-            DrawLandmarkDot(map, "Northern Waystone");
-            DrawLandmarkDot(map, "Old Road Sign");
-            DrawLandmarkDot(map, "Broken Watch Arch");
-            DrawLandmarkDot(map, "River Footbridge");
-            DrawLandmarkDot(map, "Abandoned Camp");
-            DrawLandmarkDot(map, "Eastern Bell Marker");
-            DrawLandmarkDot(map, "Hunter Shrine");
-            DrawLandmarkDot(map, "South Ruin Gate");
+            DrawLandmarkDots(map);
 
-            foreach (LootChest chest in FindObjectsByType<LootChest>(FindObjectsInactive.Exclude))
+            foreach (LootChest chest in cachedLootChests)
             {
                 if (chest == null || chest.IsOpened) continue;
                 DrawMapDot(map, chest.transform.position, new Color(1f, 0.78f, 0.24f, 1f), map.width > 220f ? 9f : 5f);
             }
 
-            foreach (ResourceNode node in FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude))
+            foreach (ResourceNode node in cachedResourceNodes)
             {
                 if (node == null || node.IsHarvested) continue;
                 DrawMapDot(map, node.transform.position, GetResourceMapColor(node.ResourceItemId), map.width > 220f ? 9f : 5f);
             }
 
-            foreach (ConstructionSite site in FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude))
+            foreach (ConstructionSite site in cachedConstructionSites)
             {
                 if (site == null) continue;
                 DrawMapDot(map, site.transform.position, new Color(0.95f, 0.62f, 0.22f, 1f), map.width > 220f ? 10f : 6f);
             }
 
-            foreach (VillagerNpcController npc in FindObjectsByType<VillagerNpcController>(FindObjectsInactive.Exclude))
+            foreach (VillagerNpcController npc in cachedNpcs)
             {
                 if (npc == null) continue;
                 DrawMapDot(map, npc.transform.position, new Color(0.92f, 0.78f, 0.42f, 1f), map.width > 220f ? 8f : 5f);
             }
 
-            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            PlayerMovement player = cachedPlayer;
             if (player != null) DrawMapDot(map, player.transform.position, new Color(0.25f, 0.62f, 1f, 1f), map.width > 220f ? 11f : 7f);
         }
 
@@ -807,38 +830,43 @@ namespace TheOldRoad.UI
             }
         }
 
-        private void DrawLandmarkDot(Rect map, string objectName)
+        private void DrawLandmarkDots(Rect map)
         {
-            GameObject landmark = GameObject.Find(objectName);
-            if (landmark == null) return;
-            DrawMapDot(map, landmark.transform.position, new Color(0.68f, 0.42f, 0.92f, 1f), map.width > 220f ? 9f : 5f);
+            foreach (DiscoverableLandmark landmark in cachedLandmarks)
+            {
+                if (landmark == null) continue;
+                DrawMapDot(map, landmark.transform.position, new Color(0.68f, 0.42f, 0.92f, 1f), map.width > 220f ? 9f : 5f);
+            }
         }
 
         private string BuildPromptText()
         {
             string prompt = string.Empty;
 
-            PlayerGatheringInteractor gathering = FindAnyObjectByType<PlayerGatheringInteractor>();
+            PlayerGatheringInteractor gathering = cachedGathering;
             if (gathering != null && !string.IsNullOrWhiteSpace(gathering.InteractionHint)) prompt = gathering.InteractionHint;
 
-            PlayerCraftingInteractor crafting = FindAnyObjectByType<PlayerCraftingInteractor>();
+            PlayerCraftingInteractor crafting = cachedCrafting;
             if (crafting != null && !string.IsNullOrWhiteSpace(crafting.CraftingHint)) AppendPrompt(ref prompt, crafting.CraftingHint);
 
-            PlayerCookingInteractor cooking = FindAnyObjectByType<PlayerCookingInteractor>();
+            PlayerCookingInteractor cooking = cachedCooking;
             if (cooking != null && !string.IsNullOrWhiteSpace(cooking.CookingHint)) AppendPrompt(ref prompt, cooking.CookingHint);
 
-            PlayerLandmarkInteractor landmark = FindAnyObjectByType<PlayerLandmarkInteractor>();
+            PlayerLandmarkInteractor landmark = cachedLandmarkInteractor;
             if (landmark != null && !string.IsNullOrWhiteSpace(landmark.InteractionHint)) AppendPrompt(ref prompt, landmark.InteractionHint);
 
-            PlayerLootInteractor loot = FindAnyObjectByType<PlayerLootInteractor>();
+            PlayerLootInteractor loot = cachedLootInteractor;
             if (loot != null && !string.IsNullOrWhiteSpace(loot.InteractionHint)) AppendPrompt(ref prompt, loot.InteractionHint);
 
-            PlayerCabinInteractor cabin = FindAnyObjectByType<PlayerCabinInteractor>();
+            PlayerCabinInteractor cabin = cachedCabinInteractor;
             if (cabin != null && !string.IsNullOrWhiteSpace(cabin.InteractionHint)) AppendPrompt(ref prompt, cabin.InteractionHint);
+
+            PlayerNpcInteractor npc = cachedNpcInteractor;
+            if (npc != null && !string.IsNullOrWhiteSpace(npc.InteractionHint)) AppendPrompt(ref prompt, npc.InteractionHint);
 
             if (placementController != null && !string.IsNullOrWhiteSpace(placementController.LastStatus)) AppendPrompt(ref prompt, placementController.LastStatus);
 
-            foreach (AnimalPenController pen in FindObjectsByType<AnimalPenController>(FindObjectsInactive.Exclude))
+            foreach (AnimalPenController pen in cachedAnimalPens)
             {
                 if (pen != null && !string.IsNullOrWhiteSpace(pen.Status))
                 {
@@ -856,6 +884,75 @@ namespace TheOldRoad.UI
             else prompt += "    |    " + addition;
         }
 
+        private static string BuildControlsText()
+        {
+            return "E " + LocalizationRuntime.T("gather") + "/" + LocalizationRuntime.T("inspect")
+                + "    F " + LocalizationRuntime.T("use") + "/" + LocalizationRuntime.T("enter") + "/" + LocalizationRuntime.T("sleep")
+                + "    C " + LocalizationRuntime.T("craft")
+                + "    B " + LocalizationRuntime.T("build")
+                + "    I " + LocalizationRuntime.T("bag")
+                + "    M " + LocalizationRuntime.T("map")
+                + "    J " + LocalizationRuntime.T("log");
+        }
+
+        private static string LocalizeObjectiveLine(string line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) return line;
+
+            string prefix = string.Empty;
+            string text = line;
+            if (line.StartsWith("[x] ") || line.StartsWith("[ ] "))
+            {
+                prefix = line.Substring(0, 4);
+                text = line.Substring(4);
+            }
+
+            return prefix + LocalizationRuntime.Objective(text);
+        }
+
+        private static string LocalizeActionLabel(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label)) return label;
+
+            switch (label)
+            {
+                case "Use": return LocalizationRuntime.T("use");
+                case "Enter": return LocalizationRuntime.T("enter");
+                case "Exit": return LocalizationRuntime.T("exit");
+                case "Sleep": return LocalizationRuntime.T("sleep");
+                default: return label;
+            }
+        }
+
+        private static string LocalizeItemName(string itemId, string fallback)
+        {
+            string localized = LocalizationRuntime.T(itemId);
+            return localized == itemId ? fallback : localized;
+        }
+
+        private static string LocalizeItemName(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName)) return string.Empty;
+
+            switch (displayName)
+            {
+                case "Wood": return LocalizationRuntime.T("item.wood");
+                case "Stone": return LocalizationRuntime.T("item.stone");
+                case "Plank":
+                case "Cabin Plank": return LocalizationRuntime.T("item.cabin-plank");
+                case "Worn Axe": return LocalizationRuntime.T("item.tool-axe");
+                case "Stone Pick": return LocalizationRuntime.T("item.tool-pickaxe");
+                case "Wild Berries": return LocalizationRuntime.T("item.wild-berries");
+                case "Medicinal Herb": return LocalizationRuntime.T("item.medicinal-herb");
+                case "Mushroom": return LocalizationRuntime.T("item.mushroom");
+                case "Iron Ore": return LocalizationRuntime.T("item.iron-ore");
+                case "Torch": return LocalizationRuntime.T("item.torch");
+                case "Bell Fragment": return LocalizationRuntime.T("item.bell-fragment");
+                case "Old Coin": return LocalizationRuntime.T("item.old-coin");
+                default: return displayName;
+            }
+        }
+
         private HotbarItem GetHotbarItem(int index)
         {
             switch (index)
@@ -863,12 +960,12 @@ namespace TheOldRoad.UI
                 case 0: return new HotbarItem("Wood", "W", GetQuantity("item.wood"), new Color(0.47f, 0.29f, 0.12f, 1f));
                 case 1: return new HotbarItem("Stone", "S", GetQuantity("item.stone"), new Color(0.45f, 0.48f, 0.52f, 1f));
                 case 2: return new HotbarItem("Plank", "P", GetQuantity("item.cabin-plank"), new Color(0.74f, 0.50f, 0.25f, 1f));
-                case 3: return ToHotbarItem("item.wild-berries");
-                case 4: return ToHotbarItem("item.medicinal-herb");
-                case 5: return ToHotbarItem("item.mushroom");
+                case 3: return ToHotbarItem("item.tool-axe");
+                case 4: return ToHotbarItem("item.tool-pickaxe");
+                case 5: return ToHotbarItem("item.wild-berries");
                 case 6: return ToHotbarItem("item.iron-ore");
                 case 7: return ToHotbarItem("item.torch");
-                case 8: return new HotbarItem("Cabin", "B", 1, new Color(0.65f, 0.38f, 0.18f, 1f));
+                case 8: return ToHotbarItem("item.bell-fragment");
                 default: return HotbarItem.Empty;
             }
         }
@@ -930,7 +1027,7 @@ namespace TheOldRoad.UI
 
         private string BuildTinyStatus()
         {
-            GameTimeController gameTime = FindAnyObjectByType<GameTimeController>();
+            GameTimeController gameTime = cachedGameTime;
             string time = gameTime != null ? gameTime.ClockText : "Day 1  06:00";
             return time + "  -  " + (sliceController != null ? sliceController.SaveStatus : "Save pending");
         }
@@ -1010,6 +1107,30 @@ namespace TheOldRoad.UI
                 return;
             }
 
+            if (item.Name == "Worn Axe")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.42f, rect.y + rect.height * 0.30f, rect.width * 0.12f, rect.height * 0.52f), new Color(0.44f, 0.24f, 0.10f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.26f, rect.y + rect.height * 0.22f, rect.width * 0.34f, rect.height * 0.22f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.30f, rect.width * 0.12f, rect.height * 0.18f), new Color(0.80f, 0.84f, 0.86f, 1f));
+                return;
+            }
+
+            if (item.Name == "Stone Pick")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.46f, rect.y + rect.height * 0.30f, rect.width * 0.11f, rect.height * 0.52f), new Color(0.42f, 0.24f, 0.10f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.20f, rect.y + rect.height * 0.22f, rect.width * 0.62f, rect.height * 0.17f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.26f, rect.y + rect.height * 0.18f, rect.width * 0.18f, rect.height * 0.10f), new Color(0.74f, 0.76f, 0.74f, 1f));
+                return;
+            }
+
+            if (item.Name == "Bell Fragment")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.28f, rect.y + rect.height * 0.26f, rect.width * 0.44f, rect.height * 0.42f), item.Color);
+                DrawRect(new Rect(rect.x + rect.width * 0.36f, rect.y + rect.height * 0.18f, rect.width * 0.28f, rect.height * 0.12f), new Color(0.86f, 0.90f, 1f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.44f, rect.y + rect.height * 0.48f, rect.width * 0.13f, rect.height * 0.22f), new Color(0.42f, 0.52f, 0.70f, 1f));
+                return;
+            }
+
             if (item.Name == "Wild Berries")
             {
                 DrawRect(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.48f, rect.width * 0.56f, rect.height * 0.28f), new Color(0.18f, 0.48f, 0.20f, 1f));
@@ -1071,17 +1192,41 @@ namespace TheOldRoad.UI
         {
             DrawRect(rect, new Color(0.03f, 0.026f, 0.022f, 0.84f));
             DrawBorder(rect, GoldDim, 1f);
-            GUI.Label(new Rect(rect.x + 14, rect.y + 12, rect.width - 28, 24), "Legend", titleStyle);
-            DrawLegendRow(rect.x + 16, rect.y + 54, new Color(0.25f, 0.62f, 1f, 1f), "Player");
-            DrawLegendRow(rect.x + 16, rect.y + 84, GetResourceMapColor("item.wood"), "Wood nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 114, GetResourceMapColor("item.stone"), "Stone nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 144, GetResourceMapColor("item.wild-berries"), "Food/herb nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 174, GetResourceMapColor("item.iron-ore"), "Ore nodes");
-            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(0.95f, 0.62f, 0.22f, 1f), "Cabin site");
-            DrawLegendRow(rect.x + 16, rect.y + 234, new Color(0.68f, 0.42f, 0.92f, 1f), "Landmark");
-            DrawLegendRow(rect.x + 16, rect.y + 264, new Color(1f, 0.78f, 0.24f, 1f), "Loot chest");
-            DrawLegendRow(rect.x + 16, rect.y + 294, new Color(0.92f, 0.78f, 0.42f, 1f), "Villager NPC");
-            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), "Explore by following the road. Markers are prototype testing aids.", smallStyle);
+            GUI.Label(new Rect(rect.x + 14, rect.y + 12, rect.width - 28, 24), LocalizationRuntime.T("legend"), titleStyle);
+            DrawLegendRow(rect.x + 16, rect.y + 54, new Color(0.25f, 0.62f, 1f, 1f), LocalizationRuntime.T("legend_player"));
+            DrawLegendRow(rect.x + 16, rect.y + 84, GetResourceMapColor("item.wood"), LocalizationRuntime.T("legend_wood"));
+            DrawLegendRow(rect.x + 16, rect.y + 114, GetResourceMapColor("item.stone"), LocalizationRuntime.T("legend_stone"));
+            DrawLegendRow(rect.x + 16, rect.y + 144, GetResourceMapColor("item.wild-berries"), LocalizationRuntime.T("legend_food"));
+            DrawLegendRow(rect.x + 16, rect.y + 174, GetResourceMapColor("item.iron-ore"), LocalizationRuntime.T("legend_ore"));
+            DrawLegendRow(rect.x + 16, rect.y + 204, new Color(0.95f, 0.62f, 0.22f, 1f), LocalizationRuntime.T("legend_cabin_site"));
+            DrawLegendRow(rect.x + 16, rect.y + 234, new Color(0.68f, 0.42f, 0.92f, 1f), LocalizationRuntime.T("legend_landmark"));
+            DrawLegendRow(rect.x + 16, rect.y + 264, new Color(1f, 0.78f, 0.24f, 1f), LocalizationRuntime.T("legend_loot"));
+            DrawLegendRow(rect.x + 16, rect.y + 294, new Color(0.92f, 0.78f, 0.42f, 1f), LocalizationRuntime.T("legend_npc"));
+            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), LocalizationRuntime.T("legend_hint"), smallStyle);
+        }
+
+        private void RefreshHudCache(bool force)
+        {
+            if (!force && UnityEngine.Time.unscaledTime < nextCacheRefreshTime) return;
+            nextCacheRefreshTime = UnityEngine.Time.unscaledTime + 0.35f;
+
+            cachedVitals = cachedVitals != null ? cachedVitals : FindAnyObjectByType<PlayerVitals>();
+            cachedPlayer = cachedPlayer != null ? cachedPlayer : FindAnyObjectByType<PlayerMovement>();
+            cachedGameTime = cachedGameTime != null ? cachedGameTime : FindAnyObjectByType<GameTimeController>();
+            cachedGathering = cachedGathering != null ? cachedGathering : FindAnyObjectByType<PlayerGatheringInteractor>();
+            cachedCrafting = cachedCrafting != null ? cachedCrafting : FindAnyObjectByType<PlayerCraftingInteractor>();
+            cachedCooking = cachedCooking != null ? cachedCooking : FindAnyObjectByType<PlayerCookingInteractor>();
+            cachedLandmarkInteractor = cachedLandmarkInteractor != null ? cachedLandmarkInteractor : FindAnyObjectByType<PlayerLandmarkInteractor>();
+            cachedLootInteractor = cachedLootInteractor != null ? cachedLootInteractor : FindAnyObjectByType<PlayerLootInteractor>();
+            cachedCabinInteractor = cachedCabinInteractor != null ? cachedCabinInteractor : FindAnyObjectByType<PlayerCabinInteractor>();
+            cachedNpcInteractor = cachedNpcInteractor != null ? cachedNpcInteractor : FindAnyObjectByType<PlayerNpcInteractor>();
+
+            cachedLandmarks = FindObjectsByType<DiscoverableLandmark>(FindObjectsInactive.Exclude);
+            cachedLootChests = FindObjectsByType<LootChest>(FindObjectsInactive.Exclude);
+            cachedResourceNodes = FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude);
+            cachedConstructionSites = FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude);
+            cachedNpcs = FindObjectsByType<VillagerNpcController>(FindObjectsInactive.Exclude);
+            cachedAnimalPens = FindObjectsByType<AnimalPenController>(FindObjectsInactive.Exclude);
         }
 
         private static Color GetResourceMapColor(string itemId)
@@ -1135,10 +1280,9 @@ namespace TheOldRoad.UI
                 map.y + (1f - Mathf.Clamp01(normalized.y)) * map.height);
         }
 
-        private static Vector3 GetMapCenter()
+        private Vector3 GetMapCenter()
         {
-            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
-            return player != null ? player.transform.position : Vector3.zero;
+            return cachedPlayer != null ? cachedPlayer.transform.position : Vector3.zero;
         }
 
         private static float GetMapRange() => 96f;

@@ -18,6 +18,8 @@ Current prototype harvestable resources:
 - berry bushes: `item.wild-berries`;
 - herb patches: `item.medicinal-herb`;
 - mushroom clusters: `item.mushroom`;
-- iron veins: `item.iron-ore`.
+- iron veins: `item.iron-ore`, requires `item.tool-pickaxe`.
 
-Future expansion may add node health, required tools, drop tables, respawn, and regrowth.
+Tool requirements are prototype progression gates. If the player is near a gated resource without the required tool, the prompt explains which tool is missing and the harvest action does not start.
+
+Future expansion may add node health, richer tool tiers, drop tables, respawn, and regrowth.

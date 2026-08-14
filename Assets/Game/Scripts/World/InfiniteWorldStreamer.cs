@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
+using TheOldRoad.Core;
+using TheOldRoad.Gathering;
+using TheOldRoad.Items;
 using TheOldRoad.NPC;
 using TheOldRoad.Player;
 
@@ -13,6 +16,7 @@ namespace TheOldRoad.World
         [SerializeField, Min(1)] private int loadRadius = 2;
         [SerializeField, Min(1)] private int unloadRadius = 3;
         [SerializeField] private int worldSeed = 43129;
+        [SerializeField] private VerticalSliceController sliceController;
 
         private readonly Dictionary<Vector2Int, GameObject> loadedChunks = new Dictionary<Vector2Int, GameObject>();
         private Vector2Int lastCenter = new Vector2Int(int.MinValue, int.MinValue);
@@ -20,13 +24,14 @@ namespace TheOldRoad.World
 
         public int LoadedChunkCount => loadedChunks.Count;
 
-        public void Configure(Transform target, int worldSeed, float chunkSize, int loadRadius, int unloadRadius)
+        public void Configure(Transform target, int worldSeed, float chunkSize, int loadRadius, int unloadRadius, VerticalSliceController sliceController = null)
         {
             this.target = target;
             this.worldSeed = worldSeed;
             this.chunkSize = Mathf.Max(8f, chunkSize);
             this.loadRadius = Mathf.Max(1, loadRadius);
             this.unloadRadius = Mathf.Max(this.loadRadius, unloadRadius);
+            this.sliceController = sliceController;
             Refresh(true);
         }
 
@@ -100,19 +105,72 @@ namespace TheOldRoad.World
                 float x = ChunkMin(coord).x + 3f + Hash01(coord.x, coord.y, 100 + i) * (chunkSize - 6f);
                 float y = ChunkMin(coord).y + 3f + Hash01(coord.x, coord.y, 200 + i) * (chunkSize - 6f);
                 float roll = Hash01(coord.x, coord.y, 300 + i);
-                Sprite sprite = roll < 0.46f
-                    ? PrototypePixelArtFactory.Tree()
-                    : roll < 0.70f
-                        ? PrototypePixelArtFactory.Rock()
-                        : roll < 0.82f
-                            ? PrototypePixelArtFactory.BerryBush()
-                            : roll < 0.92f
-                                ? PrototypePixelArtFactory.MushroomCluster()
-                                : PrototypePixelArtFactory.HerbPatch();
+                GetResourceDecoration(roll, out Sprite sprite, out string itemId, out int amount, out string label, out string requiredToolItemId);
 
-                GameObject decoration = CreateSprite("Wild " + i, sprite, new Vector3(x, y, 0f), 0);
+                string nodeId = "node.chunk." + coord.x + "." + coord.y + "." + i;
+                GameObject decoration = CreateSprite(label, sprite, new Vector3(x, y, 0f), 0);
                 decoration.transform.SetParent(parent, true);
+                SpriteRenderer renderer = decoration.GetComponent<SpriteRenderer>();
+                if (renderer != null) renderer.color = PrototypeItemCatalog.Get(itemId).Color;
+                ResourceNode node = decoration.AddComponent<ResourceNode>();
+                node.Configure(nodeId, itemId, amount, sliceController != null && sliceController.IsResourceNodeHarvested(nodeId), requiredToolItemId);
+                sliceController?.RegisterResourceNode(node);
             }
+        }
+
+        private static void GetResourceDecoration(float roll, out Sprite sprite, out string itemId, out int amount, out string label, out string requiredToolItemId)
+        {
+            requiredToolItemId = string.Empty;
+            if (roll < 0.44f)
+            {
+                sprite = PrototypePixelArtFactory.Tree();
+                itemId = "item.wood";
+                amount = 3;
+                label = "Wild Pine";
+                return;
+            }
+
+            if (roll < 0.66f)
+            {
+                sprite = PrototypePixelArtFactory.Rock();
+                itemId = "item.stone";
+                amount = 2;
+                label = "Field Stone";
+                return;
+            }
+
+            if (roll < 0.79f)
+            {
+                sprite = PrototypePixelArtFactory.BerryBush();
+                itemId = "item.wild-berries";
+                amount = 2;
+                label = "Wild Berry Bush";
+                return;
+            }
+
+            if (roll < 0.89f)
+            {
+                sprite = PrototypePixelArtFactory.MushroomCluster();
+                itemId = "item.mushroom";
+                amount = 2;
+                label = "Forest Mushroom Cluster";
+                return;
+            }
+
+            if (roll < 0.97f)
+            {
+                sprite = PrototypePixelArtFactory.HerbPatch();
+                itemId = "item.medicinal-herb";
+                amount = 1;
+                label = "Medicinal Herb Patch";
+                return;
+            }
+
+            sprite = PrototypePixelArtFactory.IronOre();
+            itemId = "item.iron-ore";
+            amount = 1;
+            label = "Iron Vein";
+            requiredToolItemId = "item.tool-pickaxe";
         }
 
         private void AddVillage(Transform parent, Vector2Int coord)

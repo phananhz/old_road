@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using TheOldRoad.Core;
 
 namespace TheOldRoad.Input
 {
@@ -15,6 +16,7 @@ namespace TheOldRoad.Input
 
         public static bool GetKey(KeyCode key)
         {
+            if (PrototypeGameState.GameplayInputBlocked) return false;
             if (ImGuiPrototypeInputBridge.GetKey(key)) return true;
 
             try
@@ -32,6 +34,7 @@ namespace TheOldRoad.Input
 
         public static bool GetKeyDown(KeyCode key)
         {
+            if (PrototypeGameState.GameplayInputBlocked) return false;
             if (VirtualKeyDownFrames.TryGetValue(key, out int virtualFrame) && virtualFrame == UnityEngine.Time.frameCount) return true;
             if (ImGuiPrototypeInputBridge.GetKeyDown(key)) return true;
 
@@ -50,6 +53,7 @@ namespace TheOldRoad.Input
 
         public static bool GetMouseButtonDown(int button)
         {
+            if (PrototypeGameState.GameplayInputBlocked) return false;
             if (ImGuiPrototypeInputBridge.GetMouseButtonDown(button)) return true;
 
             try
@@ -67,6 +71,7 @@ namespace TheOldRoad.Input
 
         public static bool GetMouseButton(int button)
         {
+            if (PrototypeGameState.GameplayInputBlocked) return false;
             if (ImGuiPrototypeInputBridge.GetMouseButton(button)) return true;
 
             try

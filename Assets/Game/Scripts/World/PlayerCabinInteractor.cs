@@ -17,6 +17,7 @@ namespace TheOldRoad.World
         private bool sleepConfirmationOpen;
         private Vector3 lastInteriorValidPosition;
         private bool hasInteriorValidPosition;
+        private float nextCabinScanTime;
 
         public string InteractionHint { get; private set; } = string.Empty;
         public bool CanUseAction { get; private set; }
@@ -82,7 +83,12 @@ namespace TheOldRoad.World
                 return;
             }
 
-            nearestCabin = FindNearestCompletedCabin();
+            if (UnityEngine.Time.unscaledTime >= nextCabinScanTime)
+            {
+                nextCabinScanTime = UnityEngine.Time.unscaledTime + 0.25f;
+                nearestCabin = FindNearestCompletedCabin();
+            }
+
             if (nearestCabin == null) return;
 
             CanUseAction = true;

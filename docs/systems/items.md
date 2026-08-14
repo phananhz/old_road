@@ -12,3 +12,17 @@ Prototype item IDs:
 - `item.wood`
 - `item.stone`
 - `item.cabin-plank`
+- `item.wild-berries`
+- `item.medicinal-herb`
+- `item.mushroom`
+- `item.iron-ore`
+- `item.old-coin`
+- `item.torch`
+- `item.tool-axe`
+- `item.tool-pickaxe`
+- `item.roadwarden-page`
+- `item.bell-fragment`
+- `item.cooked-meal`
+- `item.egg`
+- `item.wool`
+- `item.milk`

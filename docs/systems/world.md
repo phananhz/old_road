@@ -25,11 +25,11 @@ It contains:
 
 The original Valen Outskirts map remains as the authored starting area. Beyond it, `InfiniteWorldStreamer` creates deterministic 32 x 32 Unity-unit chunks around the player and unloads far chunks. This is a prototype infinite-world approach: terrain, decorative resources, villages, and NPCs are regenerated from stable coordinates and seed values rather than authored as final content.
 
-The current chunk-streaming prototype intentionally does not persist every streamed decoration or NPC. Persistent gameplay state still lives in the save system for the vertical-slice authored objects and player-built construction.
+Streamed resource decorations are gameplay `ResourceNode` objects with deterministic stable IDs based on chunk coordinates. Harvested streamed nodes persist through save/load, including after the chunk unloads and is regenerated. Streamed NPCs and purely decorative village props remain deterministic placeholders rather than fully persistent entities.
 
 ## Prototype Villages
 
-Streamed chunks can contain small deterministic villages. Villages currently include placeholder houses, a storehouse, a campfire, a sign, and harmless NPC villagers. NPCs have visible job labels such as Miller, Woodcutter, and Herbalist and walk between local work points to make villages feel active.
+Streamed chunks can contain small deterministic villages. Villages currently include placeholder houses, a storehouse, a campfire, a sign, and harmless NPC villagers. NPCs have visible job labels such as Miller, Woodcutter, and Herbalist, walk between local work points, highlight when the player is close, and provide a short prototype interaction line.
 
 ## Landmark Discovery
 
@@ -50,11 +50,13 @@ Current discoverable landmarks:
 
 One-time loot chests use stable IDs and can be opened with the same interaction input used by the gather prototype. Current rewards are prototype values for testing exploration flow only:
 
+- Father's Journal Page: roadwarden journal page
 - Roadside Cache: wood
 - Abandoned Camp Chest: cabin plank
 - South Ruin Chest: stone
 - Hunter Shrine Cache: wood
-- Bell Marker Cache: stone
+- Bell Marker Cache: bell fragment
+- Silent Bell Casket: bell fragment
 - Forager's Hidden Pouch: medicinal herb
 - Bridge Toll Box: old coin
 - Collapsed Mine Crate: iron ore

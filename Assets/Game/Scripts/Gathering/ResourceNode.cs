@@ -9,6 +9,7 @@ namespace TheOldRoad.Gathering
         [SerializeField] private string nodeId;
         [SerializeField] private string resourceItemId = "wood";
         [SerializeField, Min(1)] private int resourceAmount = 1;
+        [SerializeField] private string requiredToolItemId = string.Empty;
         private bool harvested;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer glowRenderer;
@@ -18,26 +19,36 @@ namespace TheOldRoad.Gathering
         public string NodeId => nodeId;
         public string ResourceItemId => resourceItemId;
         public int ResourceAmount => resourceAmount;
+        public string RequiredToolItemId => requiredToolItemId;
         public bool IsHarvested => harvested;
         public string DisplayName => gameObject.name;
+        public bool RequiresTool => !string.IsNullOrWhiteSpace(requiredToolItemId);
 
         private void Awake()
         {
             CaptureVisualState();
         }
 
-        public void Configure(string nodeId, string resourceItemId, int resourceAmount, bool harvested = false)
+        public void Configure(string nodeId, string resourceItemId, int resourceAmount, bool harvested = false, string requiredToolItemId = "")
         {
             this.nodeId = nodeId;
             this.resourceItemId = resourceItemId;
             this.resourceAmount = Mathf.Max(1, resourceAmount);
+            this.requiredToolItemId = requiredToolItemId ?? string.Empty;
             CaptureVisualState();
             SetHarvested(harvested);
         }
 
+        public bool CanHarvest(InventoryRuntime inventory)
+        {
+            return !harvested
+                && inventory != null
+                && (!RequiresTool || inventory.Has(requiredToolItemId, 1));
+        }
+
         public bool TryHarvest(InventoryRuntime inventory)
         {
-            if (harvested || inventory == null || string.IsNullOrWhiteSpace(resourceItemId) || resourceAmount <= 0)
+            if (!CanHarvest(inventory) || string.IsNullOrWhiteSpace(resourceItemId) || resourceAmount <= 0)
                 return false;
 
             inventory.Add(resourceItemId, resourceAmount);
@@ -83,7 +94,6 @@ namespace TheOldRoad.Gathering
             }
 
             if (baseScale == Vector3.zero) baseScale = transform.localScale;
-            EnsureGlowRenderer();
         }
 
         private void EnsureGlowRenderer()
@@ -106,7 +116,7 @@ namespace TheOldRoad.Gathering
 
         private void SetGlowVisible(bool visible)
         {
-            EnsureGlowRenderer();
+            if (visible) EnsureGlowRenderer();
             if (glowRenderer == null) return;
 
             glowRenderer.sprite = spriteRenderer != null ? spriteRenderer.sprite : glowRenderer.sprite;

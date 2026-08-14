@@ -26,6 +26,7 @@
 - FR-ITEM-002: The prototype shall include multiple material, forage, ore, and currency item IDs for inventory testing.
 - FR-ITEM-003: The prototype shall include a torch item that can provide a small local light radius.
 - FR-ITEM-004: The prototype shall include cooked food and animal-product item IDs for cooking and animal pen testing.
+- FR-ITEM-005: The prototype shall include basic tool and story-progression item IDs for longer-term loop testing.
 - FR-LOOT-001: Prototype loot containers shall use stable chest IDs.
 - FR-LOOT-002: Opening a loot container shall reward inventory through gameplay logic and shall not update UI directly.
 - FR-LOOT-003: Opened loot container state shall persist through save/load.
@@ -37,6 +38,7 @@
 - FR-GATHER-003: Harvested node state shall be explicit.
 - FR-GATHER-004: Gathering shall show a short world-space progress countdown above the target resource before rewards are granted.
 - FR-GATHER-005: The prototype map shall include multiple harvestable resource categories beyond wood and stone.
+- FR-GATHER-006: Tool-gated prototype resources shall clearly report the missing tool instead of starting the gather countdown.
 - FR-EXPLORE-001: Prototype landmarks shall use stable landmark IDs.
 - FR-EXPLORE-002: Player shall be able to inspect undiscovered landmarks through gameplay input.
 - FR-EXPLORE-003: Discovered landmarks shall appear in a journal-style UI.
@@ -86,6 +88,13 @@
 - FR-UI-006: The prototype HUD shall expose mobile-style action buttons for gather, craft, build, inventory, and map.
 - FR-UI-007: The prototype HUD shall expose a journal/log overlay for discovered landmarks.
 - FR-UI-008: The bag overlay shall display items as compact square slots so item labels and counts stay inside their cells.
+- FR-UI-009: The prototype shall show a start screen before gameplay begins.
+- FR-SETTINGS-001: The prototype shall allow changing Unity graphics quality from an in-game settings panel.
+- FR-SETTINGS-002: The prototype shall allow toggling sound on/off and changing master volume.
+- FR-SETTINGS-003: Prototype settings shall persist between play sessions on the local device.
+- FR-SETTINGS-004: The prototype shall allow selecting a target frame rate, including an unlimited option.
+- FR-SETTINGS-005: The prototype shall display measured FPS so frame-rate settings can be verified in runtime testing.
+- FR-SETTINGS-006: The prototype shall allow switching runtime UI language between English and Vietnamese from the settings panel.
 
 ## Non-Functional Requirements
 

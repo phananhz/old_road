@@ -10,6 +10,7 @@ using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Items;
+using TheOldRoad.NPC;
 using TheOldRoad.Player;
 using TheOldRoad.Save;
 using TheOldRoad.Time;
@@ -39,6 +40,8 @@ namespace TheOldRoad.Core
         [SerializeField] private BuildingDefinition storageShedDefinition;
         [SerializeField] private BuildingDefinition stoneCottageDefinition;
         [SerializeField] private RecipeDefinition cabinPlankRecipe;
+        [SerializeField] private RecipeDefinition wornAxeRecipe;
+        [SerializeField] private RecipeDefinition stonePickRecipe;
         [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-100000, -100000);
         [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(100000, 100000);
         [SerializeField, Min(1f)] private float autosaveIntervalSeconds = 10f;
@@ -49,12 +52,14 @@ namespace TheOldRoad.Core
         private readonly Dictionary<string, BuildingDefinition> buildingDefinitions = new Dictionary<string, BuildingDefinition>();
         private readonly Dictionary<string, ConstructionJob> constructionJobs = new Dictionary<string, ConstructionJob>();
         private readonly HashSet<Vector2Int> occupiedCells = new HashSet<Vector2Int>();
+        private readonly HashSet<string> harvestedResourceNodeIds = new HashSet<string>();
 
         private InventorySession inventorySession;
         private SaveRepository saveRepository;
         private IClock clock;
         private string saveStatus = "Save not initialized.";
         private float autosaveTimer;
+        private bool talkedToVillager;
 
         public InventoryRuntime Inventory => inventorySession != null ? inventorySession.Runtime : null;
         public string SaveStatus => saveStatus;
@@ -74,6 +79,19 @@ namespace TheOldRoad.Core
         public string[] ObjectiveDisplayLines => BuildObjectiveStates()
             .Select(state => (state.completed ? "[x] " : "[ ] ") + state.text)
             .ToArray();
+
+        public bool IsResourceNodeHarvested(string nodeId)
+        {
+            return !string.IsNullOrWhiteSpace(nodeId) && harvestedResourceNodeIds.Contains(nodeId);
+        }
+
+        public void RegisterResourceNode(ResourceNode node)
+        {
+            if (node == null || string.IsNullOrWhiteSpace(node.NodeId)) return;
+
+            resourceNodes[node.NodeId] = node;
+            if (harvestedResourceNodeIds.Contains(node.NodeId)) node.SetHarvested(true);
+        }
 
         public BuildingDefinition GetBuildingDefinition(string buildingId)
         {
@@ -147,6 +165,7 @@ namespace TheOldRoad.Core
         public void NotifyResourceHarvested(ResourceNode node)
         {
             if (node == null) return;
+            if (!string.IsNullOrWhiteSpace(node.NodeId) && node.IsHarvested) harvestedResourceNodeIds.Add(node.NodeId);
             SaveNow();
         }
 
@@ -163,9 +182,7 @@ namespace TheOldRoad.Core
                 saveVersion = SaveSerializer.CurrentVersion,
                 inventory = Inventory.ToSaveEntries(),
                 constructionJobs = constructionJobs.Values.Select(job => job.ToSaveEntry()).ToArray(),
-                resourceNodes = resourceNodes.Values
-                    .Select(node => new ResourceNodeSaveEntry { nodeId = node.NodeId, harvested = node.IsHarvested })
-                    .ToArray(),
+                resourceNodes = BuildResourceNodeSaveEntries(),
                 landmarks = landmarks.Values
                     .Select(landmark => new LandmarkSaveEntry { landmarkId = landmark.LandmarkId, discovered = landmark.IsDiscovered })
                     .ToArray(),
@@ -173,8 +190,30 @@ namespace TheOldRoad.Core
                     .Select(chest => new LootChestSaveEntry { chestId = chest.ChestId, opened = chest.IsOpened })
                     .ToArray(),
                 player = CreatePlayerSaveEntry(),
-                gameTime = CreateGameTimeSaveEntry()
+                gameTime = CreateGameTimeSaveEntry(),
+                talkedToVillager = talkedToVillager
             };
+        }
+
+        private ResourceNodeSaveEntry[] BuildResourceNodeSaveEntries()
+        {
+            Dictionary<string, bool> states = new Dictionary<string, bool>();
+            foreach (ResourceNode node in resourceNodes.Values)
+            {
+                if (node == null || string.IsNullOrWhiteSpace(node.NodeId)) continue;
+                states[node.NodeId] = node.IsHarvested;
+                if (node.IsHarvested) harvestedResourceNodeIds.Add(node.NodeId);
+            }
+
+            foreach (string harvestedId in harvestedResourceNodeIds)
+            {
+                if (string.IsNullOrWhiteSpace(harvestedId)) continue;
+                states[harvestedId] = true;
+            }
+
+            return states
+                .Select(pair => new ResourceNodeSaveEntry { nodeId = pair.Key, harvested = pair.Value })
+                .ToArray();
         }
 
         public void SaveNow()
@@ -201,6 +240,16 @@ namespace TheOldRoad.Core
         public void NotifyPrototypeStateChanged(string status)
         {
             if (!string.IsNullOrWhiteSpace(status)) LastDiscoveryStatus = status;
+            SaveNow();
+        }
+
+        public void NotifyVillagerTalked(VillagerNpcController villager)
+        {
+            talkedToVillager = true;
+            if (villager != null)
+            {
+                LastDiscoveryStatus = "Spoke with " + villager.VillagerName + " the " + villager.JobTitle + ".";
+            }
             SaveNow();
         }
 
@@ -238,12 +287,18 @@ namespace TheOldRoad.Core
             {
                 ("Inspect an old-road landmark", DiscoveredLandmarkCount > 0),
                 ("Open an old chest", OpenedLootChestCount > 0),
+                ("Recover Father's Roadwarden journal page", inventory != null && inventory.GetQuantity("item.roadwarden-page") > 0),
+                ("Speak with a village NPC", talkedToVillager),
+                ("Craft a worn axe", inventory != null && inventory.GetQuantity("item.tool-axe") > 0),
                 ("Gather 3 wood", inventory != null && inventory.GetQuantity("item.wood") >= 3),
                 ("Gather 2 stone", inventory != null && inventory.GetQuantity("item.stone") >= 2),
+                ("Craft a stone pick", inventory != null && inventory.GetQuantity("item.tool-pickaxe") > 0),
+                ("Mine iron ore", inventory != null && inventory.GetQuantity("item.iron-ore") > 0),
                 ("Forage any wild food or herb", inventory != null && HasAnyForagedItem(inventory)),
                 ("Craft 1 cabin plank", inventory != null && inventory.GetQuantity("item.cabin-plank") >= 1),
                 ("Start cabin construction", constructionJobs.Count > 0),
                 ("Complete the first cabin", HasCompletedBuilding(CabinId)),
+                ("Find the first bell fragment", inventory != null && inventory.GetQuantity("item.bell-fragment") > 0),
                 ("Build a campfire", HasCompletedBuilding(CampfireId)),
                 ("Cook one meal", inventory != null && inventory.GetQuantity("item.cooked-meal") > 0),
                 ("Build an animal pen", HasCompletedBuilding(AnimalPenSmallId) || HasCompletedBuilding(AnimalPenLongId))
@@ -290,6 +345,7 @@ namespace TheOldRoad.Core
             EnsureProceduralResourceNodes();
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
             EnsureHud(inventorySession, placement);
+            EnsureStartMenu();
         }
 
         private GameTimeController EnsureGameTime()
@@ -318,6 +374,7 @@ namespace TheOldRoad.Core
             foreach (ResourceNodeSaveEntry resourceSave in data.resourceNodes ?? Array.Empty<ResourceNodeSaveEntry>())
             {
                 if (resourceSave == null || string.IsNullOrWhiteSpace(resourceSave.nodeId)) continue;
+                if (resourceSave.harvested) harvestedResourceNodeIds.Add(resourceSave.nodeId);
                 if (resourceNodes.TryGetValue(resourceSave.nodeId, out ResourceNode node))
                 {
                     node.SetHarvested(resourceSave.harvested);
@@ -361,6 +418,7 @@ namespace TheOldRoad.Core
                 if (gameTime != null) gameTime.LoadAbsoluteMinute(data.gameTime.absoluteMinute);
             }
 
+            talkedToVillager = data.talkedToVillager;
             RestorePlayerState(data.player);
         }
 
@@ -490,16 +548,42 @@ namespace TheOldRoad.Core
             RegisterBuildingDefinition(storageShedDefinition);
             RegisterBuildingDefinition(stoneCottageDefinition);
 
-            if (cabinPlankRecipe != null) return;
-
-            cabinPlankRecipe = ScriptableObject.CreateInstance<RecipeDefinition>();
-            cabinPlankRecipe.ConfigureForPrototype(
+            cabinPlankRecipe ??= CreatePrototypeRecipe(
                 "recipe.cabin-planks",
                 new[] { new IngredientRequirement { itemId = "item.wood", quantity = 2 } },
                 "item.cabin-plank",
-                1,
-                0f,
-                string.Empty);
+                1);
+
+            wornAxeRecipe ??= CreatePrototypeRecipe(
+                "recipe.worn-axe",
+                new[]
+                {
+                    new IngredientRequirement { itemId = "item.wood", quantity = 2 },
+                    new IngredientRequirement { itemId = "item.stone", quantity = 1 }
+                },
+                "item.tool-axe",
+                1);
+
+            stonePickRecipe ??= CreatePrototypeRecipe(
+                "recipe.stone-pick",
+                new[]
+                {
+                    new IngredientRequirement { itemId = "item.wood", quantity = 2 },
+                    new IngredientRequirement { itemId = "item.stone", quantity = 3 }
+                },
+                "item.tool-pickaxe",
+                1);
+        }
+
+        private static RecipeDefinition CreatePrototypeRecipe(
+            string recipeId,
+            IngredientRequirement[] ingredients,
+            string resultItemId,
+            int resultQuantity)
+        {
+            RecipeDefinition recipe = ScriptableObject.CreateInstance<RecipeDefinition>();
+            recipe.ConfigureForPrototype(recipeId, ingredients, resultItemId, resultQuantity, 0f, string.Empty);
+            return recipe;
         }
 
         private static BuildingDefinition CreatePrototypeBuilding(
@@ -572,7 +656,7 @@ namespace TheOldRoad.Core
                 streamer = streamerObject.AddComponent<InfiniteWorldStreamer>();
             }
 
-            streamer.Configure(player.transform, WorldSeed, 32f, 2, 3);
+            streamer.Configure(player.transform, WorldSeed, 32f, 2, 3, this);
         }
 
         private void EnsureGround()
@@ -741,7 +825,7 @@ namespace TheOldRoad.Core
 
             PlayerCraftingInteractor crafting = player.GetComponent<PlayerCraftingInteractor>();
             if (crafting == null) crafting = player.AddComponent<PlayerCraftingInteractor>();
-            crafting.Configure(session, this, cabinPlankRecipe);
+            crafting.Configure(session, this, wornAxeRecipe, stonePickRecipe, cabinPlankRecipe);
 
             PlayerCookingInteractor cooking = player.GetComponent<PlayerCookingInteractor>();
             if (cooking == null) cooking = player.AddComponent<PlayerCookingInteractor>();
@@ -758,6 +842,10 @@ namespace TheOldRoad.Core
             PlayerCabinInteractor cabinInteractor = player.GetComponent<PlayerCabinInteractor>();
             if (cabinInteractor == null) cabinInteractor = player.AddComponent<PlayerCabinInteractor>();
             cabinInteractor.Configure(cabinInterior, gameTime, 2.25f);
+
+            PlayerNpcInteractor npcInteractor = player.GetComponent<PlayerNpcInteractor>();
+            if (npcInteractor == null) npcInteractor = player.AddComponent<PlayerNpcInteractor>();
+            npcInteractor.Configure(this, 1.55f);
         }
 
         private void EnsureDayNightLighting(Camera mainCamera, GameTimeController gameTime, InventorySession session)
@@ -769,14 +857,14 @@ namespace TheOldRoad.Core
             lighting.Configure(gameTime, session);
         }
 
-        private void EnsureResourceNode(string nodeId, string displayName, Vector3 position, string itemId, int amount, Color color)
+        private void EnsureResourceNode(string nodeId, string displayName, Vector3 position, string itemId, int amount, Color color, string requiredToolItemId = "")
         {
             if (resourceNodes.ContainsKey(nodeId)) return;
 
             foreach (ResourceNode existingNode in FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude))
             {
                 if (existingNode == null || existingNode.NodeId != nodeId) continue;
-                resourceNodes[nodeId] = existingNode;
+                RegisterResourceNode(existingNode);
                 return;
             }
 
@@ -786,8 +874,8 @@ namespace TheOldRoad.Core
             if (renderer != null) renderer.color = color;
 
             ResourceNode node = nodeObject.AddComponent<ResourceNode>();
-            node.Configure(nodeId, itemId, amount);
-            resourceNodes[nodeId] = node;
+            node.Configure(nodeId, itemId, amount, false, requiredToolItemId);
+            RegisterResourceNode(node);
         }
 
         private static Sprite GetResourceSprite(string itemId)
@@ -835,7 +923,7 @@ namespace TheOldRoad.Core
             EnsureResourceNode("node.berry.01", "Roadside Berry Bush", new Vector3(-10f, -2.8f, 0f), "item.wild-berries", 2, PrototypeItemCatalog.Get("item.wild-berries").Color);
             EnsureResourceNode("node.herb.01", "Valen Mint Patch", new Vector3(11.5f, 5.6f, 0f), "item.medicinal-herb", 1, PrototypeItemCatalog.Get("item.medicinal-herb").Color);
             EnsureResourceNode("node.mushroom.01", "Old Stump Mushrooms", new Vector3(-26f, 12f, 0f), "item.mushroom", 2, PrototypeItemCatalog.Get("item.mushroom").Color);
-            EnsureResourceNode("node.iron.01", "Exposed Iron Vein", new Vector3(28f, -18f, 0f), "item.iron-ore", 1, PrototypeItemCatalog.Get("item.iron-ore").Color);
+            EnsureResourceNode("node.iron.01", "Exposed Iron Vein", new Vector3(28f, -18f, 0f), "item.iron-ore", 1, PrototypeItemCatalog.Get("item.iron-ore").Color, "item.tool-pickaxe");
         }
 
         private void SpawnProceduralResources(System.Random random, int count, string idPrefix, string displayPrefix, string itemId, int amount)
@@ -853,7 +941,8 @@ namespace TheOldRoad.Core
                 if (Mathf.Abs(y - RoadCenterY(x)) < 1.9f && random.NextDouble() < 0.65d) continue;
 
                 string id = idPrefix + created.ToString("00");
-                EnsureResourceNode(id, displayPrefix + " " + (created + 1), position, itemId, amount, Color.white);
+                string requiredToolItemId = itemId == "item.iron-ore" ? "item.tool-pickaxe" : string.Empty;
+                EnsureResourceNode(id, displayPrefix + " " + (created + 1), position, itemId, amount, Color.white, requiredToolItemId);
                 created++;
             }
         }
@@ -865,11 +954,13 @@ namespace TheOldRoad.Core
 
         private void EnsureLootChests()
         {
+            EnsureLootChest("chest.journal.01", "Father's Journal Page", new Vector3(-1.8f, 2.1f, 0f), "item.roadwarden-page", 1);
             EnsureLootChest("chest.road.01", "Roadside Cache", new Vector3(-6f, -2.2f, 0f), "item.wood", 2);
             EnsureLootChest("chest.camp.01", "Abandoned Camp Chest", new Vector3(9.8f, -11.4f, 0f), "item.cabin-plank", 1);
             EnsureLootChest("chest.ruin.01", "South Ruin Chest", new Vector3(36f, -24.2f, 0f), "item.stone", 3);
             EnsureLootChest("chest.shrine.01", "Hunter Shrine Cache", new Vector3(-40f, 24f, 0f), "item.wood", 3);
-            EnsureLootChest("chest.bell.01", "Bell Marker Cache", new Vector3(44.2f, 7.4f, 0f), "item.stone", 2);
+            EnsureLootChest("chest.bell.01", "Bell Marker Cache", new Vector3(44.2f, 7.4f, 0f), "item.bell-fragment", 1);
+            EnsureLootChest("chest.bell.fragment.01", "Silent Bell Casket", new Vector3(47.2f, 9.2f, 0f), "item.bell-fragment", 1);
             EnsureLootChest("chest.grove.01", "Forager's Hidden Pouch", new Vector3(-30f, 14.5f, 0f), "item.medicinal-herb", 2);
             EnsureLootChest("chest.bridge.01", "Bridge Toll Box", new Vector3(-11.4f, -5.6f, 0f), "item.old-coin", 4);
             EnsureLootChest("chest.mine.01", "Collapsed Mine Crate", new Vector3(31.5f, -19.5f, 0f), "item.iron-ore", 2);
@@ -912,6 +1003,14 @@ namespace TheOldRoad.Core
             }
 
             hud.Configure(session, placement, this);
+        }
+
+        private void EnsureStartMenu()
+        {
+            if (FindAnyObjectByType<GameStartMenuController>() != null) return;
+
+            GameObject menuObject = new GameObject("Start And Settings Menu");
+            menuObject.AddComponent<GameStartMenuController>();
         }
 
         private void CreateConstructionSite(ConstructionJob job, BuildingDefinition definition)

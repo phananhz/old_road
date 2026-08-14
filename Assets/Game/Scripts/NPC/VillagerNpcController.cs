@@ -13,13 +13,17 @@ namespace TheOldRoad.NPC
         [SerializeField] private Vector3[] workPoints;
 
         private SpriteRenderer spriteRenderer;
+        private SpriteRenderer glowRenderer;
         private int targetIndex;
         private float waitUntil;
         private int frameIndex;
         private float frameTimer;
+        private string currentSpeech = string.Empty;
+        private float speechHideTime;
 
         public string VillagerName => villagerName;
         public string JobTitle => jobTitle;
+        public string CurrentSpeech => UnityEngine.Time.unscaledTime <= speechHideTime ? currentSpeech : string.Empty;
 
         public void Configure(string villagerName, string jobTitle, Vector3[] workPoints, float moveSpeed)
         {
@@ -81,6 +85,32 @@ namespace TheOldRoad.NPC
 
             Rect rect = new Rect(screen.x - 54f, Screen.height - screen.y - 15f, 108f, 30f);
             GUI.Label(rect, villagerName + "\n" + jobTitle, CreateNpcLabelStyle());
+
+            if (string.IsNullOrWhiteSpace(CurrentSpeech)) return;
+
+            Vector3 speechScreen = camera.WorldToScreenPoint(transform.position + Vector3.up * 2.05f);
+            if (speechScreen.z < 0f) return;
+
+            Rect speechRect = new Rect(speechScreen.x - 150f, Screen.height - speechScreen.y - 18f, 300f, 42f);
+            GUI.Label(speechRect, CurrentSpeech, CreateSpeechStyle());
+        }
+
+        public void SetHighlighted(bool highlighted)
+        {
+            EnsureRenderer();
+            if (spriteRenderer == null) return;
+
+            spriteRenderer.color = highlighted ? new Color(1f, 0.95f, 0.68f, 1f) : Color.white;
+            EnsureGlowRenderer();
+            if (glowRenderer != null) glowRenderer.enabled = highlighted;
+        }
+
+        public string Talk()
+        {
+            string line = BuildDialogueLine();
+            currentSpeech = villagerName + ": " + line;
+            speechHideTime = UnityEngine.Time.unscaledTime + 5.5f;
+            return line;
         }
 
         private void EnsureRenderer()
@@ -89,11 +119,44 @@ namespace TheOldRoad.NPC
             if (spriteRenderer != null && spriteRenderer.sprite == null) ApplyFrame(0);
         }
 
+        private void EnsureGlowRenderer()
+        {
+            if (spriteRenderer == null || glowRenderer != null) return;
+
+            GameObject glowObject = new GameObject("NPC Interaction Glow");
+            glowObject.transform.SetParent(transform, false);
+            glowObject.transform.localPosition = Vector3.zero;
+            glowObject.transform.localScale = new Vector3(1.35f, 1.35f, 1f);
+
+            glowRenderer = glowObject.AddComponent<SpriteRenderer>();
+            glowRenderer.sprite = spriteRenderer.sprite;
+            glowRenderer.color = new Color(1f, 0.78f, 0.24f, 0.45f);
+            glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
+            glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
+            glowRenderer.enabled = false;
+        }
+
         private void ApplyFrame(int frame)
         {
             if (spriteRenderer == null) return;
             int variant = Mathf.Abs(StableStringHash(villagerName + jobTitle)) % 4;
             spriteRenderer.sprite = PrototypePixelArtFactory.Villager(variant, frame);
+            if (glowRenderer != null) glowRenderer.sprite = spriteRenderer.sprite;
+        }
+
+        private string BuildDialogueLine()
+        {
+            switch (jobTitle)
+            {
+                case "Miller":
+                    return "The old road woke before dawn. Follow it, but keep food in your pack.";
+                case "Woodcutter":
+                    return "Trees past the village are fair game. If the bark glows, your axe-hand is close enough.";
+                case "Herbalist":
+                    return "Berries, herbs, and mushrooms grow far from Valen. Gather them before night falls.";
+                default:
+                    return "No one here means you harm. Roads bring trouble, but also trade.";
+            }
         }
 
         private static int StableStringHash(string value)
@@ -115,6 +178,21 @@ namespace TheOldRoad.NPC
                 fontSize = 10,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(0.92f, 0.84f, 0.62f, 1f) }
+            };
+        }
+
+        private static GUIStyle CreateSpeechStyle()
+        {
+            return new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 11,
+                wordWrap = true,
+                normal =
+                {
+                    textColor = new Color(0.12f, 0.08f, 0.04f, 1f),
+                    background = Texture2D.whiteTexture
+                }
             };
         }
     }

@@ -15,6 +15,7 @@ namespace TheOldRoad.Crafting
         [SerializeField, Min(0.2f)] private float interactionRadius = 1.9f;
 
         private ConstructionSite nearestCookingStation;
+        private float nextScanTime;
 
         public string CookingHint { get; private set; } = string.Empty;
         public bool CanCookAction { get; private set; }
@@ -31,14 +32,19 @@ namespace TheOldRoad.Crafting
             if (inventorySession == null) inventorySession = FindAnyObjectByType<InventorySession>();
             if (sliceController == null) sliceController = FindAnyObjectByType<VerticalSliceController>();
 
-            RefreshState();
+            RefreshState(false);
             if (!CanCookAction || !PrototypeInput.GetKeyDown(KeyCode.R)) return;
             Cook();
         }
 
-        private void RefreshState()
+        private void RefreshState(bool force)
         {
-            nearestCookingStation = FindNearestCookingStation();
+            if (force || UnityEngine.Time.unscaledTime >= nextScanTime)
+            {
+                nextScanTime = UnityEngine.Time.unscaledTime + 0.25f;
+                nearestCookingStation = FindNearestCookingStation();
+            }
+
             CanCookAction = nearestCookingStation != null;
             if (!CanCookAction)
             {

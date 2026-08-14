@@ -9,6 +9,7 @@
 
 The current prototype HUD uses a Minecraft-like readable layout with a medieval dark-fantasy skin:
 
+- title/start screen: blocks gameplay until the player starts the journey, hides the gameplay HUD behind it, and exposes Settings/Quit;
 - top-left: game title, player health, day/time, and save status;
 - top-right: in-game day/time and a local minimap centered around the player for chunk-streamed exploration;
 - bottom-center: 9-slot hotbar for key materials and build actions;
@@ -24,6 +25,10 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 - `M`: expanded map overlay with player, resources, construction sites, landmarks, road, and river markers.
 - `J`: Roadwarden Journal overlay with discovered landmark entries.
 - `Esc`: close overlays.
+
+The runtime settings panel can be opened from the title screen or the in-game HUD. It supports Unity graphics quality selection, target frame rate selection including Unlimited, English/Vietnamese language selection, sound on/off, and master volume. Settings are saved locally through `PlayerPrefs` and applied through concrete Unity runtime settings: `QualitySettings.SetQualityLevel`, anti-aliasing, anisotropic filtering, shadow quality, LOD bias, disabled vSync, `Application.targetFrameRate`, the active localization runtime, and the Unity audio listener where available. The HUD and settings panel show measured FPS so frame-rate changes can be verified while testing.
+
+Language switching is available while gameplay is paused in the settings panel. The current prototype localizes the title/settings panels plus the main gameplay HUD, hotbar controls, inventory/map/journal overlays, build catalog labels, key item names, and objective text.
 
 The visual skin uses dark panels, gold trim, parchment text, subtle shadows, corner accents, compact control pills, item glyphs, virtual joystick movement controls, and map legends to avoid covering the play field while looking closer to a real game HUD than a debug overlay.
 
@@ -46,11 +51,11 @@ The UI is implemented as runtime `OnGUI` prototype code so it can be iterated wi
 1. Wood
 2. Stone
 3. Cabin Plank
-4. Wild Berries
-5. Medicinal Herb
-6. Mushroom
+4. Worn Axe
+5. Stone Pick
+6. Wild Berries
 7. Iron Ore
 8. Torch
-9. Cabin/build plan
+9. Bell Fragment
 
 This is not the final inventory UX. It is the first testable gameplay HUD.
