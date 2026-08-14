@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 using TheOldRoad.Building;
 using TheOldRoad.Construction;
 using TheOldRoad.Crafting;
@@ -20,18 +21,32 @@ namespace TheOldRoad.Core
     public sealed class VerticalSliceController : MonoBehaviour
     {
         private const string CabinId = "building.cabin";
+        private const string CampfireId = "building.campfire";
+        private const string CookingHearthId = "building.cooking-hearth";
+        private const string AnimalPenSmallId = "building.animal-pen-small";
+        private const string AnimalPenLongId = "building.animal-pen-long";
+        private const string StorageShedId = "building.storage-shed";
+        private const string StoneCottageId = "building.stone-cottage";
         private const int WorldSeed = 43129;
         private static readonly Vector2 WorldMin = new Vector2(-60f, -36f);
         private static readonly Vector2 WorldMax = new Vector2(60f, 36f);
 
         [SerializeField] private BuildingDefinition cabinDefinition;
+        [SerializeField] private BuildingDefinition campfireDefinition;
+        [SerializeField] private BuildingDefinition cookingHearthDefinition;
+        [SerializeField] private BuildingDefinition animalPenSmallDefinition;
+        [SerializeField] private BuildingDefinition animalPenLongDefinition;
+        [SerializeField] private BuildingDefinition storageShedDefinition;
+        [SerializeField] private BuildingDefinition stoneCottageDefinition;
         [SerializeField] private RecipeDefinition cabinPlankRecipe;
         [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-50, -28);
         [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(50, 28);
+        [SerializeField, Min(1f)] private float autosaveIntervalSeconds = 10f;
 
         private readonly Dictionary<string, ResourceNode> resourceNodes = new Dictionary<string, ResourceNode>();
         private readonly Dictionary<string, DiscoverableLandmark> landmarks = new Dictionary<string, DiscoverableLandmark>();
         private readonly Dictionary<string, LootChest> lootChests = new Dictionary<string, LootChest>();
+        private readonly Dictionary<string, BuildingDefinition> buildingDefinitions = new Dictionary<string, BuildingDefinition>();
         private readonly Dictionary<string, ConstructionJob> constructionJobs = new Dictionary<string, ConstructionJob>();
         private readonly HashSet<Vector2Int> occupiedCells = new HashSet<Vector2Int>();
 
@@ -39,6 +54,7 @@ namespace TheOldRoad.Core
         private SaveRepository saveRepository;
         private IClock clock;
         private string saveStatus = "Save not initialized.";
+        private float autosaveTimer;
 
         public InventoryRuntime Inventory => inventorySession != null ? inventorySession.Runtime : null;
         public string SaveStatus => saveStatus;
@@ -59,6 +75,12 @@ namespace TheOldRoad.Core
             .Select(state => (state.completed ? "[x] " : "[ ] ") + state.text)
             .ToArray();
 
+        public BuildingDefinition GetBuildingDefinition(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId)) return null;
+            return buildingDefinitions.TryGetValue(buildingId, out BuildingDefinition definition) ? definition : null;
+        }
+
         private void Awake()
         {
             clock = new SystemClock();
@@ -66,6 +88,15 @@ namespace TheOldRoad.Core
             EnsureDefinitions();
             BuildRuntimeScene();
             LoadState();
+        }
+
+        private void Update()
+        {
+            autosaveTimer += UnityEngine.Time.unscaledDeltaTime;
+            if (autosaveTimer < autosaveIntervalSeconds) return;
+
+            autosaveTimer = 0f;
+            SaveNow();
         }
 
         private void OnApplicationPause(bool pause)
@@ -140,13 +171,16 @@ namespace TheOldRoad.Core
                     .ToArray(),
                 lootChests = lootChests.Values
                     .Select(chest => new LootChestSaveEntry { chestId = chest.ChestId, opened = chest.IsOpened })
-                    .ToArray()
+                    .ToArray(),
+                player = CreatePlayerSaveEntry(),
+                gameTime = CreateGameTimeSaveEntry()
             };
         }
 
         public void SaveNow()
         {
             if (saveRepository == null) return;
+            autosaveTimer = 0f;
             saveRepository.TrySave(CreateSaveData(), out saveStatus);
         }
 
@@ -164,6 +198,37 @@ namespace TheOldRoad.Core
             SaveNow();
         }
 
+        public void NotifyPrototypeStateChanged(string status)
+        {
+            if (!string.IsNullOrWhiteSpace(status)) LastDiscoveryStatus = status;
+            SaveNow();
+        }
+
+        private PlayerSaveEntry CreatePlayerSaveEntry()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player == null) return null;
+
+            CabinInteriorController interior = FindAnyObjectByType<CabinInteriorController>(FindObjectsInactive.Include);
+            return new PlayerSaveEntry
+            {
+                x = player.transform.position.x,
+                y = player.transform.position.y,
+                insideCabin = interior != null && interior.IsInside
+            };
+        }
+
+        private static GameTimeSaveEntry CreateGameTimeSaveEntry()
+        {
+            GameTimeController gameTime = FindAnyObjectByType<GameTimeController>();
+            if (gameTime == null) return null;
+
+            return new GameTimeSaveEntry
+            {
+                absoluteMinute = gameTime.AbsoluteMinute
+            };
+        }
+
         private (string text, bool completed)[] BuildObjectiveStates()
         {
             RefreshConstructionJobs();
@@ -178,8 +243,16 @@ namespace TheOldRoad.Core
                 ("Forage any wild food or herb", inventory != null && HasAnyForagedItem(inventory)),
                 ("Craft 1 cabin plank", inventory != null && inventory.GetQuantity("item.cabin-plank") >= 1),
                 ("Start cabin construction", constructionJobs.Count > 0),
-                ("Complete the first cabin", constructionJobs.Values.Any(job => job != null && job.state == ConstructionState.Completed))
+                ("Complete the first cabin", HasCompletedBuilding(CabinId)),
+                ("Build a campfire", HasCompletedBuilding(CampfireId)),
+                ("Cook one meal", inventory != null && inventory.GetQuantity("item.cooked-meal") > 0),
+                ("Build an animal pen", HasCompletedBuilding(AnimalPenSmallId) || HasCompletedBuilding(AnimalPenLongId))
             };
+        }
+
+        private bool HasCompletedBuilding(string buildingId)
+        {
+            return constructionJobs.Values.Any(job => job != null && job.buildingId == buildingId && job.state == ConstructionState.Completed);
         }
 
         private static bool HasAnyForagedItem(InventoryRuntime inventory)
@@ -272,20 +345,62 @@ namespace TheOldRoad.Core
             foreach (ConstructionSaveEntry constructionSave in data.constructionJobs ?? Array.Empty<ConstructionSaveEntry>())
             {
                 if (constructionSave == null || string.IsNullOrWhiteSpace(constructionSave.constructionId)) continue;
+                BuildingDefinition definition = GetBuildingDefinition(constructionSave.buildingId) ?? cabinDefinition;
                 ConstructionJob job = ConstructionJob.FromSaveEntry(constructionSave);
+                if (string.IsNullOrWhiteSpace(job.buildingId)) job.buildingId = definition.BuildingId;
                 job.Refresh(clock.NowUnixSeconds);
                 constructionJobs[job.constructionId] = job;
-                MarkOccupied(job.Placement, cabinDefinition.Footprint);
-                CreateConstructionSite(job, cabinDefinition);
+                MarkOccupied(job.Placement, definition.Footprint);
+                CreateConstructionSite(job, definition);
             }
+
+            if (data.gameTime != null)
+            {
+                GameTimeController gameTime = FindAnyObjectByType<GameTimeController>();
+                if (gameTime != null) gameTime.LoadAbsoluteMinute(data.gameTime.absoluteMinute);
+            }
+
+            RestorePlayerState(data.player);
+        }
+
+        private void RestorePlayerState(PlayerSaveEntry playerSave)
+        {
+            if (playerSave == null) return;
+
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player == null) return;
+
+            Vector3 savedPosition = new Vector3(playerSave.x, playerSave.y, 0f);
+            if (playerSave.insideCabin)
+            {
+                CabinInteriorController interior = FindAnyObjectByType<CabinInteriorController>(FindObjectsInactive.Include);
+                Vector3 cabinPosition = FindFirstCompletedCabinPosition();
+                if (interior != null)
+                {
+                    interior.Enter(player, cabinPosition);
+                    player.transform.position = savedPosition;
+                    return;
+                }
+            }
+
+            player.transform.position = savedPosition;
+        }
+
+        private Vector3 FindFirstCompletedCabinPosition()
+        {
+            foreach (ConstructionSite site in FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude))
+            {
+                if (site != null && site.IsCompleted && site.BuildingId == CabinId) return site.transform.position;
+            }
+
+            return Vector3.zero;
         }
 
         private void EnsureDefinitions()
         {
             if (cabinDefinition == null)
             {
-                cabinDefinition = ScriptableObject.CreateInstance<BuildingDefinition>();
-                cabinDefinition.ConfigureForPrototype(
+                cabinDefinition = CreatePrototypeBuilding(
                     CabinId,
                     new Vector2Int(2, 2),
                     new[]
@@ -297,6 +412,83 @@ namespace TheOldRoad.Core
                     new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
             }
 
+            campfireDefinition ??= CreatePrototypeBuilding(
+                CampfireId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 2 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                },
+                12f,
+                new[] { "Ring", "Kindling", "Flame" });
+
+            cookingHearthDefinition ??= CreatePrototypeBuilding(
+                CookingHearthId,
+                new Vector2Int(2, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.stone", quantity = 5 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 2 },
+                    new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 }
+                },
+                25f,
+                new[] { "Base", "Chamber", "Ready" });
+
+            animalPenSmallDefinition ??= CreatePrototypeBuilding(
+                AnimalPenSmallId,
+                new Vector2Int(3, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 6 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                },
+                35f,
+                new[] { "Posts", "Rails", "Gate", "Ready" });
+
+            animalPenLongDefinition ??= CreatePrototypeBuilding(
+                AnimalPenLongId,
+                new Vector2Int(4, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 4 }
+                },
+                45f,
+                new[] { "Posts", "Rails", "Gate", "Ready" });
+
+            storageShedDefinition ??= CreatePrototypeBuilding(
+                StorageShedId,
+                new Vector2Int(2, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 5 },
+                    new BuildCostEntry { itemId = "item.cabin-plank", quantity = 1 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                },
+                30f,
+                new[] { "Foundation", "Frame", "Roof", "Ready" });
+
+            stoneCottageDefinition ??= CreatePrototypeBuilding(
+                StoneCottageId,
+                new Vector2Int(3, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.stone", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 }
+                },
+                60f,
+                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
+
+            RegisterBuildingDefinition(cabinDefinition);
+            RegisterBuildingDefinition(campfireDefinition);
+            RegisterBuildingDefinition(cookingHearthDefinition);
+            RegisterBuildingDefinition(animalPenSmallDefinition);
+            RegisterBuildingDefinition(animalPenLongDefinition);
+            RegisterBuildingDefinition(storageShedDefinition);
+            RegisterBuildingDefinition(stoneCottageDefinition);
+
             if (cabinPlankRecipe != null) return;
 
             cabinPlankRecipe = ScriptableObject.CreateInstance<RecipeDefinition>();
@@ -307,6 +499,24 @@ namespace TheOldRoad.Core
                 1,
                 0f,
                 string.Empty);
+        }
+
+        private static BuildingDefinition CreatePrototypeBuilding(
+            string buildingId,
+            Vector2Int footprint,
+            BuildCostEntry[] costs,
+            float durationSeconds,
+            string[] stages)
+        {
+            BuildingDefinition definition = ScriptableObject.CreateInstance<BuildingDefinition>();
+            definition.ConfigureForPrototype(buildingId, footprint, costs, durationSeconds, stages);
+            return definition;
+        }
+
+        private void RegisterBuildingDefinition(BuildingDefinition definition)
+        {
+            if (definition == null || string.IsNullOrWhiteSpace(definition.BuildingId)) return;
+            buildingDefinitions[definition.BuildingId] = definition;
         }
 
         private Camera EnsureCamera()
@@ -501,6 +711,10 @@ namespace TheOldRoad.Core
 
             movement.Configure(compositeInput, 3f);
 
+            PlayerPixelAnimator animator = player.GetComponent<PlayerPixelAnimator>();
+            if (animator == null) animator = player.AddComponent<PlayerPixelAnimator>();
+            animator.Configure(movement, 0.14f);
+
             PlayerVitals vitals = player.GetComponent<PlayerVitals>();
             if (vitals == null) vitals = player.AddComponent<PlayerVitals>();
             vitals.Configure(20, 20);
@@ -512,6 +726,10 @@ namespace TheOldRoad.Core
             PlayerCraftingInteractor crafting = player.GetComponent<PlayerCraftingInteractor>();
             if (crafting == null) crafting = player.AddComponent<PlayerCraftingInteractor>();
             crafting.Configure(session, this, cabinPlankRecipe);
+
+            PlayerCookingInteractor cooking = player.GetComponent<PlayerCookingInteractor>();
+            if (cooking == null) cooking = player.AddComponent<PlayerCookingInteractor>();
+            cooking.Configure(session, this, 1.9f);
 
             PlayerLandmarkInteractor landmarkInteractor = player.GetComponent<PlayerLandmarkInteractor>();
             if (landmarkInteractor == null) landmarkInteractor = player.AddComponent<PlayerLandmarkInteractor>();
@@ -682,9 +900,41 @@ namespace TheOldRoad.Core
 
         private void CreateConstructionSite(ConstructionJob job, BuildingDefinition definition)
         {
-            GameObject site = CreateSpriteObject("Cabin Construction Site", PrototypePixelArtFactory.CabinConstruction(0), new Vector3(job.gridX, job.gridY, 0f), 0);
-            site.name = "Cabin Construction Site";
-            site.AddComponent<ConstructionSite>().Configure(job, definition, clock);
+            string buildingName = GetBuildingDisplayName(definition != null ? definition.BuildingId : job.buildingId);
+            GameObject site = CreateSpriteObject(buildingName + " Construction Site", PrototypePixelArtFactory.BuildingConstruction(job.buildingId, 0), new Vector3(job.gridX, job.gridY, 0f), 0);
+            site.name = buildingName + " Construction Site";
+            ConstructionSite constructionSite = site.AddComponent<ConstructionSite>();
+            constructionSite.Configure(job, definition, clock);
+
+            if (job.buildingId == CampfireId || job.buildingId == CookingHearthId)
+            {
+                CampfireLightController light = site.GetComponent<CampfireLightController>();
+                if (light == null) light = site.AddComponent<CampfireLightController>();
+                light.Configure(constructionSite, FindAnyObjectByType<GameTimeController>());
+            }
+
+            if (job.buildingId == AnimalPenSmallId || job.buildingId == AnimalPenLongId)
+            {
+                AnimalPenController pen = site.GetComponent<AnimalPenController>();
+                if (pen == null) pen = site.AddComponent<AnimalPenController>();
+                string product = job.buildingId == AnimalPenLongId ? "item.wool" : "item.egg";
+                float seconds = job.buildingId == AnimalPenLongId ? 60f : 45f;
+                pen.Configure(constructionSite, inventorySession, this, product, seconds);
+            }
+        }
+
+        private static string GetBuildingDisplayName(string buildingId)
+        {
+            switch (buildingId)
+            {
+                case CampfireId: return "Campfire";
+                case CookingHearthId: return "Cooking Hearth";
+                case AnimalPenSmallId: return "Small Animal Pen";
+                case AnimalPenLongId: return "Long Animal Pen";
+                case StorageShedId: return "Storage Shed";
+                case StoneCottageId: return "Stone Cottage";
+                default: return "Cabin";
+            }
         }
 
         private bool HasOverlap(Vector2Int origin, Vector2Int footprint)
@@ -757,15 +1007,27 @@ namespace TheOldRoad.Core
             SpriteRenderer spriteRenderer = player.GetComponent<SpriteRenderer>();
             if (spriteRenderer == null) spriteRenderer = player.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = PrototypePixelArtFactory.Player();
+            spriteRenderer.enabled = true;
+            spriteRenderer.shadowCastingMode = ShadowCastingMode.Off;
+            spriteRenderer.receiveShadows = false;
 
             YSortSprite sorter = player.GetComponent<YSortSprite>();
             if (sorter == null) sorter = player.AddComponent<YSortSprite>();
+            sorter.enabled = true;
             sorter.Configure(50);
 
-            MeshRenderer meshRenderer = player.GetComponentInChildren<MeshRenderer>();
-            if (meshRenderer != null)
+            Renderer[] renderers = player.GetComponentsInChildren<Renderer>(true);
+            foreach (Renderer renderer in renderers)
             {
-                meshRenderer.enabled = false;
+                if (renderer == null || renderer == spriteRenderer) continue;
+
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+
+                if (renderer is MeshRenderer || renderer.name.ToLowerInvariant().Contains("shadow"))
+                {
+                    renderer.enabled = false;
+                }
             }
         }
 

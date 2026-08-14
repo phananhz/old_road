@@ -26,4 +26,10 @@ Reference images can guide mood, lighting, and density. Do not copy protected as
 
 The current vertical slice uses runtime-generated point-filtered placeholder sprites. These are not production assets. They exist to validate camera, scale, sorting, movement, harvesting, building placement, and construction progress before final art is imported.
 
+Current prototype visual upgrades:
+
+- the player has a simple four-frame walk cycle and horizontal flip for left/right movement;
+- the completed cabin sprite has a more detailed medieval pixel-art silhouette with roof, windows, door, stone base, chimney, and wood planks;
+- the cabin interior is divided into sleeping, living, and kitchen areas with visible partition walls and room-specific furniture.
+
 Production art should eventually replace the placeholders under `Assets/Game/Art` and prefabs under `Assets/Game/Prefabs`.

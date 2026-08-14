@@ -14,12 +14,14 @@
 - FR-CAMERA-002: The prototype camera shall use orthographic 2D framing suitable for top-down or top-down-oblique pixel-art gameplay.
 - FR-VISUAL-001: Prototype gameplay objects shall use readable pixel-art placeholders until production sprites are authored.
 - FR-VISUAL-002: Prototype sprites shall use point filtering and deterministic Y sorting for top-down readability.
+- FR-VISUAL-003: The prototype player sprite shall show a simple walk animation when moving.
 - FR-WORLD-001: Valen Outskirts prototype world shall support a wider finite exploration map.
 - FR-WORLD-002: Prototype terrain and resource placement may be generated from a deterministic seed for repeatable testing.
 - FR-WORLD-003: The river shall include lightweight animated visual motion in the prototype scene.
 - FR-ITEM-001: Static item data shall use stable item IDs.
 - FR-ITEM-002: The prototype shall include multiple material, forage, ore, and currency item IDs for inventory testing.
 - FR-ITEM-003: The prototype shall include a torch item that can provide a small local light radius.
+- FR-ITEM-004: The prototype shall include cooked food and animal-product item IDs for cooking and animal pen testing.
 - FR-LOOT-001: Prototype loot containers shall use stable chest IDs.
 - FR-LOOT-002: Opening a loot container shall reward inventory through gameplay logic and shall not update UI directly.
 - FR-LOOT-003: Opened loot container state shall persist through save/load.
@@ -40,9 +42,15 @@
 - FR-QUEST-002: Objective completion shall be derived from gameplay state rather than directly edited by UI.
 - FR-CRAFT-001: Recipes shall define stable recipe ID, ingredients, result, optional duration, and optional workstation.
 - FR-CRAFT-002: The prototype shall expose at least one manually testable crafting action through gameplay input.
+- FR-COOK-001: Completed campfire or cooking hearth buildings shall allow the player to cook a prototype meal from gathered food ingredients.
+- FR-COOK-002: Cooking a prototype meal shall add a cooked-food item and restore a small amount of player health.
 - FR-BUILD-001: Building definitions shall define stable building ID, footprint, construction costs, duration, and visual stages.
 - FR-BUILD-002: Building placement shall be grid-aligned.
 - FR-BUILD-003: Placement shall validate buildable area, footprint, and overlap.
+- FR-BUILD-004: The prototype build action shall open a construction catalog with building categories, preview cards, and required material display before entering placement mode.
+- FR-BUILD-005: The prototype shall allow placing and constructing multiple building categories from the catalog, including cabin, campfire, cooking hearth, storage shed, stone cottage, and animal pens.
+- FR-BUILD-006: Completed campfire and cooking hearth buildings shall emit a small animated warm light.
+- FR-BUILD-007: Completed animal pen buildings shall produce prototype animal-product items over time.
 - FR-CONST-001: Construction shall create a stable construction instance ID.
 - FR-CONST-002: Construction shall store building ID, start timestamp, duration, state, and placement.
 - FR-CONST-003: Construction progress shall be derived from current time minus start time.
@@ -51,6 +59,8 @@
 - FR-HOUSE-001: Completed cabins shall expose an enter interaction when the player is nearby.
 - FR-HOUSE-002: The prototype shall provide a full-screen cabin interior with visible furniture.
 - FR-HOUSE-003: The cabin interior shall include a bed interaction that advances time by 8 in-game hours.
+- FR-HOUSE-004: The bed interaction shall ask for player confirmation before advancing the clock.
+- FR-HOUSE-005: The cabin interior shall visually separate sleeping, living, and kitchen areas with partition walls.
 - FR-TIME-001: The prototype shall simulate day and night through the in-game clock.
 - FR-TIME-002: Outdoor brightness shall change according to the current in-game time.
 - FR-SAVE-001: Save data shall contain `saveVersion`.
@@ -58,6 +68,7 @@
 - FR-SAVE-003: Save data shall persist construction jobs and placement.
 - FR-SAVE-004: Save data shall avoid Unity InstanceIDs and arbitrary scene references.
 - FR-SAVE-005: Missing or invalid saves shall be handled explicitly.
+- FR-SAVE-006: Save data shall persist player world position and in-game clock time.
 - FR-VS-001: The Valen Outskirts flow shall be playable end-to-end in the Unity Editor.
 - FR-UI-001: The prototype HUD shall show player health.
 - FR-UI-002: The prototype HUD shall show a hotbar with key item quantities.

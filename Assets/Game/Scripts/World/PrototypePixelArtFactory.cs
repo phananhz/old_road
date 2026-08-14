@@ -14,7 +14,8 @@ namespace TheOldRoad.World
 
         private static readonly Dictionary<string, Sprite> Cache = new Dictionary<string, Sprite>();
 
-        public static Sprite Player() => GetOrCreate("player", 16, 24, PaintPlayer, new Vector2(0.5f, 0.18f));
+        public static Sprite Player() => PlayerWalk(0);
+        public static Sprite PlayerWalk(int frame) => GetOrCreate("player.walk." + Mathf.Abs(frame % 4), 16, 24, pixels => PaintPlayer(pixels, Mathf.Abs(frame % 4)), new Vector2(0.5f, 0.18f));
         public static Sprite Tree() => GetOrCreate("tree", 24, 32, PaintTree, new Vector2(0.5f, 0.12f));
         public static Sprite Rock() => GetOrCreate("rock", 18, 14, PaintRock, new Vector2(0.5f, 0.18f));
         public static Sprite BerryBush() => GetOrCreate("berry.bush", 22, 20, PaintBerryBush, new Vector2(0.5f, 0.12f));
@@ -22,11 +23,14 @@ namespace TheOldRoad.World
         public static Sprite MushroomCluster() => GetOrCreate("mushroom.cluster", 20, 16, PaintMushroomCluster, new Vector2(0.5f, 0.12f));
         public static Sprite IronOre() => GetOrCreate("iron.ore", 20, 16, PaintIronOre, new Vector2(0.5f, 0.18f));
         public static Sprite WaterRipple() => GetOrCreate("water.ripple", 24, 8, PaintWaterRipple, new Vector2(0.5f, 0.5f));
-        public static Sprite CabinInteriorFloor() => GetOrCreate("cabin.interior.floor", 160, 96, PaintCabinInteriorFloor, new Vector2(0.5f, 0.5f));
-        public static Sprite CabinInteriorWall() => GetOrCreate("cabin.interior.wall", 160, 42, PaintCabinInteriorWall, new Vector2(0.5f, 0.5f));
+        public static Sprite CabinInteriorFloor() => GetOrCreate("cabin.interior.floor.rooms.v2", 176, 112, PaintCabinInteriorFloor, new Vector2(0.5f, 0.5f));
+        public static Sprite CabinInteriorWall() => GetOrCreate("cabin.interior.wall.rooms.v2", 176, 48, PaintCabinInteriorWall, new Vector2(0.5f, 0.5f));
+        public static Sprite CabinPartitionWall() => GetOrCreate("cabin.partition.wall", 18, 92, PaintCabinPartitionWall, new Vector2(0.5f, 0.5f));
         public static Sprite CabinBed() => GetOrCreate("cabin.bed", 34, 24, PaintCabinBed, new Vector2(0.5f, 0.15f));
         public static Sprite CabinHearth() => GetOrCreate("cabin.hearth", 28, 28, PaintCabinHearth, new Vector2(0.5f, 0.12f));
         public static Sprite CabinTable() => GetOrCreate("cabin.table", 30, 22, PaintCabinTable, new Vector2(0.5f, 0.15f));
+        public static Sprite CabinBench() => GetOrCreate("cabin.bench", 28, 14, PaintCabinBench, new Vector2(0.5f, 0.15f));
+        public static Sprite CabinKitchenCounter() => GetOrCreate("cabin.kitchen.counter", 38, 22, PaintCabinKitchenCounter, new Vector2(0.5f, 0.15f));
         public static Sprite CabinDoorMarker() => GetOrCreate("cabin.door.marker", 26, 12, PaintCabinDoorMarker, new Vector2(0.5f, 0.5f));
         public static Sprite TorchGlow() => GetOrCreate("torch.glow", 96, 96, PaintTorchGlow, new Vector2(0.5f, 0.5f));
         public static Sprite SolidPixel() => GetOrCreate("solid.pixel", 1, 1, PaintSolidPixel, new Vector2(0.5f, 0.5f));
@@ -37,8 +41,31 @@ namespace TheOldRoad.World
         public static Sprite RuinedArch() => GetOrCreate("ruined.arch", 46, 36, PaintRuinedArch, new Vector2(0.5f, 0.08f));
         public static Sprite Footbridge() => GetOrCreate("footbridge", 48, 18, PaintFootbridge, new Vector2(0.5f, 0.5f));
         public static Sprite Campfire() => GetOrCreate("campfire", 28, 22, PaintCampfire, new Vector2(0.5f, 0.12f));
-        public static Sprite CabinComplete() => GetOrCreate("cabin.complete", 36, 32, pixels => PaintCabin(pixels, 36, 32, 1f), new Vector2(0.5f, 0.12f));
-        public static Sprite CabinConstruction(int stage) => GetOrCreate("cabin.stage." + Mathf.Clamp(stage, 0, 4), 36, 32, pixels => PaintCabin(pixels, 36, 32, Mathf.Clamp01(stage / 4f)), new Vector2(0.5f, 0.12f));
+        public static Sprite CookingHearthOutdoor() => GetOrCreate("cooking.hearth.outdoor", 34, 30, PaintCookingHearthOutdoor, new Vector2(0.5f, 0.12f));
+        public static Sprite AnimalPenSmall() => GetOrCreate("animal.pen.small", 46, 34, pixels => PaintAnimalPen(pixels, 46, 34, false), new Vector2(0.5f, 0.12f));
+        public static Sprite AnimalPenLong() => GetOrCreate("animal.pen.long", 64, 34, pixels => PaintAnimalPen(pixels, 64, 34, true), new Vector2(0.5f, 0.12f));
+        public static Sprite StorageShed() => GetOrCreate("storage.shed", 42, 34, PaintStorageShed, new Vector2(0.5f, 0.12f));
+        public static Sprite StoneCottage() => GetOrCreate("stone.cottage", 58, 46, PaintStoneCottage, new Vector2(0.5f, 0.12f));
+        public static Sprite CabinComplete() => GetOrCreate("cabin.complete.v2", 52, 44, pixels => PaintCabin(pixels, 52, 44, 1f), new Vector2(0.5f, 0.12f));
+        public static Sprite CabinConstruction(int stage) => GetOrCreate("cabin.stage.v2." + Mathf.Clamp(stage, 0, 4), 52, 44, pixels => PaintCabin(pixels, 52, 44, Mathf.Clamp01(stage / 4f)), new Vector2(0.5f, 0.12f));
+        public static Sprite BuildingComplete(string buildingId)
+        {
+            switch (buildingId)
+            {
+                case "building.campfire": return Campfire();
+                case "building.cooking-hearth": return CookingHearthOutdoor();
+                case "building.animal-pen-small": return AnimalPenSmall();
+                case "building.animal-pen-long": return AnimalPenLong();
+                case "building.storage-shed": return StorageShed();
+                case "building.stone-cottage": return StoneCottage();
+                default: return CabinComplete();
+            }
+        }
+
+        public static Sprite BuildingConstruction(string buildingId, int stage)
+        {
+            return CabinConstruction(stage);
+        }
         public static Sprite PlacementPreview() => GetOrCreate("placement.preview", 32, 32, PaintPlacementPreview, new Vector2(0.5f, 0.5f));
         public static Sprite ValenOutskirtsGround() => GetOrCreate("valen.outskirts.ground.seeded.120x72", 1920, 1152, PaintValenOutskirtsGround, new Vector2(0.5f, 0.5f));
 
@@ -67,16 +94,25 @@ namespace TheOldRoad.World
             return sprite;
         }
 
-        private static void PaintPlayer(Color32[] pixels)
+        private static void PaintPlayer(Color32[] pixels, int frame)
         {
-            FillRect(pixels, 16, 24, 5, 2, 6, 4, new Color32(37, 28, 26, 255));
+            int step = frame == 1 ? 1 : frame == 3 ? -1 : 0;
+            int capeSwing = frame == 1 || frame == 2 ? 1 : 0;
+
+            FillRect(pixels, 16, 24, 5, 1, 3, 5 + Mathf.Max(0, step), new Color32(37, 28, 26, 255));
+            FillRect(pixels, 16, 24, 8, 1, 3, 5 + Mathf.Max(0, -step), new Color32(37, 28, 26, 255));
             FillRect(pixels, 16, 24, 4, 6, 8, 9, new Color32(48, 55, 68, 255));
+            FillRect(pixels, 16, 24, 5, 7, 6, 7, new Color32(36, 42, 54, 255));
             FillRect(pixels, 16, 24, 5, 15, 6, 5, new Color32(86, 89, 96, 255));
             FillRect(pixels, 16, 24, 6, 16, 4, 2, new Color32(151, 157, 165, 255));
-            FillRect(pixels, 16, 24, 3, 8, 2, 8, new Color32(94, 34, 37, 255));
-            FillRect(pixels, 16, 24, 11, 8, 2, 8, new Color32(94, 34, 37, 255));
+            FillRect(pixels, 16, 24, 3, 8 + capeSwing, 2, 8, new Color32(94, 34, 37, 255));
+            FillRect(pixels, 16, 24, 11, 8 - capeSwing, 2, 8, new Color32(94, 34, 37, 255));
+            SetPixel(pixels, 16, 24, 4, 7 + capeSwing, new Color32(142, 48, 52, 255));
+            SetPixel(pixels, 16, 24, 11, 7 - capeSwing, new Color32(142, 48, 52, 255));
             FillRect(pixels, 16, 24, 7, 0, 2, 22, new Color32(168, 142, 76, 255));
             SetPixel(pixels, 16, 24, 7, 19, new Color32(220, 209, 157, 255));
+            SetPixel(pixels, 16, 24, 9, 19, new Color32(220, 209, 157, 255));
+            FillRect(pixels, 16, 24, 6, 20, 4, 2, new Color32(58, 62, 70, 255));
         }
 
         private static void PaintTree(Color32[] pixels)
@@ -148,11 +184,12 @@ namespace TheOldRoad.World
 
         private static void PaintCabinInteriorFloor(Color32[] pixels)
         {
-            const int width = 160;
-            const int height = 96;
+            const int width = 176;
+            const int height = 112;
             Color32 floorA = new Color32(88, 58, 34, 255);
             Color32 floorB = new Color32(104, 68, 38, 255);
             Color32 seam = new Color32(58, 36, 24, 255);
+            Color32 wallShadow = new Color32(43, 30, 24, 255);
 
             for (int y = 0; y < height; y++)
             {
@@ -163,24 +200,64 @@ namespace TheOldRoad.World
                     if (y % 8 == 0 || x % 32 == 0) pixels[y * width + x] = seam;
                 }
             }
+
+            FillRect(pixels, width, height, 0, height - 10, width, 10, wallShadow);
+            FillRect(pixels, width, height, 0, 0, width, 3, new Color32(36, 25, 20, 255));
+            FillRect(pixels, width, height, 4, 14, 46, 34, new Color32(78, 38, 38, 255));
+            DrawRect(pixels, width, height, 4, 14, 49, 47, new Color32(132, 76, 50, 255));
+            FillRect(pixels, width, height, 66, 18, 42, 26, new Color32(68, 78, 62, 255));
+            DrawRect(pixels, width, height, 66, 18, 107, 43, new Color32(132, 105, 58, 255));
+            FillRect(pixels, width, height, 128, 12, 38, 30, new Color32(67, 58, 45, 255));
+            DrawRect(pixels, width, height, 128, 12, 165, 41, new Color32(118, 91, 52, 255));
         }
 
         private static void PaintCabinInteriorWall(Color32[] pixels)
         {
-            const int width = 160;
-            const int height = 42;
+            const int width = 176;
+            const int height = 48;
             Color32 wallA = new Color32(64, 42, 31, 255);
             Color32 wallB = new Color32(80, 52, 35, 255);
             Color32 beam = new Color32(38, 26, 20, 255);
+            Color32 shelf = new Color32(108, 70, 37, 255);
 
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
                     pixels[y * width + x] = ((x / 10 + y / 6) % 2 == 0) ? wallA : wallB;
-                    if (x % 40 < 3 || y < 4 || y > height - 5) pixels[y * width + x] = beam;
+                    if (x % 44 < 3 || y < 4 || y > height - 5) pixels[y * width + x] = beam;
                 }
             }
+
+            FillRect(pixels, width, height, 15, 19, 28, 12, new Color32(31, 52, 62, 255));
+            DrawRect(pixels, width, height, 15, 19, 42, 30, new Color32(35, 24, 17, 255));
+            FillRect(pixels, width, height, 70, 24, 34, 4, shelf);
+            FillRect(pixels, width, height, 74, 29, 6, 8, new Color32(130, 50, 42, 255));
+            FillRect(pixels, width, height, 84, 29, 5, 8, new Color32(76, 94, 70, 255));
+            FillRect(pixels, width, height, 94, 29, 6, 8, new Color32(156, 119, 58, 255));
+            FillRect(pixels, width, height, 126, 17, 34, 11, new Color32(32, 44, 54, 255));
+            DrawRect(pixels, width, height, 126, 17, 159, 27, new Color32(35, 24, 17, 255));
+        }
+
+        private static void PaintCabinPartitionWall(Color32[] pixels)
+        {
+            const int width = 18;
+            const int height = 92;
+            Color32 timber = new Color32(74, 45, 27, 255);
+            Color32 edge = new Color32(37, 24, 18, 255);
+            Color32 plaster = new Color32(83, 62, 44, 255);
+
+            FillRect(pixels, width, height, 6, 0, 6, height, timber);
+            FillRect(pixels, width, height, 2, 0, 2, height, edge);
+            FillRect(pixels, width, height, 14, 0, 2, height, edge);
+            for (int y = 8; y < height - 8; y += 16)
+            {
+                FillRect(pixels, width, height, 3, y, 12, 3, edge);
+            }
+
+            FillRect(pixels, width, height, 4, 18, 10, 17, new Color32(0, 0, 0, 0));
+            FillRect(pixels, width, height, 4, 52, 10, 18, plaster);
+            DrawRect(pixels, width, height, 4, 52, 13, 69, edge);
         }
 
         private static void PaintCabinBed(Color32[] pixels)
@@ -209,6 +286,26 @@ namespace TheOldRoad.World
             FillRect(pixels, 30, 22, 7, 2, 3, 7, new Color32(66, 43, 28, 255));
             FillRect(pixels, 30, 22, 20, 2, 3, 7, new Color32(66, 43, 28, 255));
             FillRect(pixels, 30, 22, 13, 16, 4, 2, new Color32(214, 172, 82, 255));
+        }
+
+        private static void PaintCabinBench(Color32[] pixels)
+        {
+            FillRect(pixels, 28, 14, 4, 7, 20, 4, new Color32(113, 72, 38, 255));
+            FillRect(pixels, 28, 14, 3, 10, 22, 3, new Color32(153, 98, 49, 255));
+            FillRect(pixels, 28, 14, 6, 2, 3, 6, new Color32(55, 35, 24, 255));
+            FillRect(pixels, 28, 14, 19, 2, 3, 6, new Color32(55, 35, 24, 255));
+            DrawRect(pixels, 28, 14, 3, 2, 25, 13, new Color32(38, 24, 18, 255));
+        }
+
+        private static void PaintCabinKitchenCounter(Color32[] pixels)
+        {
+            FillRect(pixels, 38, 22, 3, 5, 32, 10, new Color32(82, 57, 39, 255));
+            FillRect(pixels, 38, 22, 3, 15, 32, 4, new Color32(139, 101, 58, 255));
+            FillRect(pixels, 38, 22, 6, 7, 7, 6, new Color32(54, 39, 30, 255));
+            FillRect(pixels, 38, 22, 16, 8, 7, 5, new Color32(65, 68, 67, 255));
+            FillRect(pixels, 38, 22, 27, 7, 5, 7, new Color32(112, 79, 42, 255));
+            FillRect(pixels, 38, 22, 17, 12, 5, 2, new Color32(138, 154, 150, 255));
+            DrawRect(pixels, 38, 22, 3, 5, 35, 19, new Color32(35, 23, 17, 255));
         }
 
         private static void PaintCabinDoorMarker(Color32[] pixels)
@@ -316,22 +413,134 @@ namespace TheOldRoad.World
             FillRect(pixels, 28, 22, 19, 1, 5, 3, new Color32(62, 64, 66, 255));
         }
 
+        private static void PaintCookingHearthOutdoor(Color32[] pixels)
+        {
+            FillRect(pixels, 34, 30, 5, 2, 24, 6, new Color32(64, 61, 58, 255));
+            FillRect(pixels, 34, 30, 7, 8, 20, 14, new Color32(88, 84, 78, 255));
+            FillRect(pixels, 34, 30, 10, 10, 14, 7, new Color32(27, 20, 16, 255));
+            FillRect(pixels, 34, 30, 13, 15, 8, 8, new Color32(215, 72, 32, 255));
+            FillRect(pixels, 34, 30, 15, 17, 4, 7, new Color32(250, 174, 48, 255));
+            FillRect(pixels, 34, 30, 9, 22, 16, 4, new Color32(47, 45, 43, 255));
+            FillRect(pixels, 34, 30, 25, 15, 5, 10, new Color32(51, 48, 45, 255));
+            DrawRect(pixels, 34, 30, 5, 2, 29, 25, new Color32(33, 31, 29, 255));
+        }
+
+        private static void PaintAnimalPen(Color32[] pixels, int width, int height, bool longPen)
+        {
+            Color32 grass = new Color32(42, 82, 38, 255);
+            Color32 grassB = new Color32(52, 96, 45, 255);
+            Color32 wood = new Color32(120, 75, 36, 255);
+            Color32 woodDark = new Color32(62, 38, 24, 255);
+            for (int y = 3; y < height - 4; y++)
+            {
+                for (int x = 5; x < width - 5; x++)
+                {
+                    pixels[y * width + x] = ((x / 4 + y / 4) % 2 == 0) ? grass : grassB;
+                }
+            }
+
+            DrawRect(pixels, width, height, 4, 4, width - 5, height - 5, woodDark);
+            DrawRect(pixels, width, height, 7, 7, width - 8, height - 8, wood);
+            for (int x = 8; x < width - 8; x += 8)
+            {
+                FillRect(pixels, width, height, x, 4, 3, height - 8, wood);
+            }
+
+            for (int y = 8; y < height - 8; y += 8)
+            {
+                FillRect(pixels, width, height, 4, y, width - 8, 3, wood);
+            }
+
+            int gateX = longPen ? width / 2 - 5 : width - 15;
+            FillRect(pixels, width, height, gateX, 4, 10, 5, grass);
+            FillRect(pixels, width, height, gateX + 1, 4, 8, 2, new Color32(40, 30, 22, 255));
+            FillRect(pixels, width, height, width / 3, height / 2, 5, 4, new Color32(239, 231, 205, 255));
+            FillRect(pixels, width, height, width / 3 + 1, height / 2 + 3, 3, 3, new Color32(45, 42, 37, 255));
+        }
+
+        private static void PaintStorageShed(Color32[] pixels)
+        {
+            FillRect(pixels, 42, 34, 5, 2, 32, 5, new Color32(36, 25, 20, 150));
+            FillRect(pixels, 42, 34, 8, 6, 26, 15, new Color32(86, 55, 33, 255));
+            for (int x = 10; x < 32; x += 6) FillRect(pixels, 42, 34, x, 7, 2, 14, new Color32(52, 34, 24, 255));
+            FillRect(pixels, 42, 34, 5, 21, 32, 4, new Color32(58, 35, 28, 255));
+            FillRect(pixels, 42, 34, 9, 25, 24, 4, new Color32(112, 44, 38, 255));
+            FillRect(pixels, 42, 34, 17, 7, 8, 11, new Color32(40, 26, 20, 255));
+            FillRect(pixels, 42, 34, 27, 13, 5, 5, new Color32(52, 80, 86, 255));
+            DrawRect(pixels, 42, 34, 8, 6, 34, 21, new Color32(34, 22, 16, 255));
+        }
+
+        private static void PaintStoneCottage(Color32[] pixels)
+        {
+            FillRect(pixels, 58, 46, 5, 2, 48, 6, new Color32(32, 25, 22, 150));
+            FillRect(pixels, 58, 46, 8, 8, 42, 22, new Color32(86, 84, 78, 255));
+            for (int y = 10; y < 29; y += 5)
+            {
+                for (int x = 10; x < 48; x += 9)
+                {
+                    FillRect(pixels, 58, 46, x, y, 6, 3, new Color32(118, 112, 104, 255));
+                }
+            }
+
+            FillRect(pixels, 58, 46, 5, 30, 48, 5, new Color32(55, 40, 35, 255));
+            FillRect(pixels, 58, 46, 9, 35, 40, 4, new Color32(103, 42, 38, 255));
+            FillRect(pixels, 58, 46, 15, 39, 28, 4, new Color32(149, 58, 44, 255));
+            FillRect(pixels, 58, 46, 25, 8, 8, 14, new Color32(44, 31, 24, 255));
+            FillRect(pixels, 58, 46, 13, 17, 8, 6, new Color32(64, 86, 92, 255));
+            FillRect(pixels, 58, 46, 38, 17, 8, 6, new Color32(64, 86, 92, 255));
+            FillRect(pixels, 58, 46, 43, 34, 6, 9, new Color32(50, 45, 42, 255));
+            DrawRect(pixels, 58, 46, 8, 8, 50, 30, new Color32(39, 37, 35, 255));
+        }
+
         private static void PaintCabin(Color32[] pixels, int width, int height, float progress)
         {
-            FillRect(pixels, width, height, 4, 1, 28, 5, new Color32(72, 55, 38, 255));
+            Color32 shadow = new Color32(36, 26, 20, 150);
+            Color32 stone = new Color32(76, 72, 68, 255);
+            Color32 stoneLight = new Color32(118, 112, 104, 255);
+            Color32 woodDark = new Color32(62, 38, 25, 255);
+            Color32 wood = new Color32(112, 70, 38, 255);
+            Color32 woodLight = new Color32(158, 102, 53, 255);
+            Color32 roofDark = new Color32(67, 26, 25, 255);
+            Color32 roof = new Color32(122, 45, 38, 255);
+            Color32 roofLight = new Color32(168, 67, 49, 255);
+
+            FillRect(pixels, width, height, 4, 1, width - 8, 5, shadow);
+            FillRect(pixels, width, height, 7, 5, width - 14, 6, stone);
+            for (int x = 8; x < width - 8; x += 7)
+            {
+                FillRect(pixels, width, height, x, 8, 4, 2, stoneLight);
+            }
             if (progress < 0.25f) return;
 
-            FillRect(pixels, width, height, 7, 6, 22, 11, new Color32(104, 69, 41, 255));
-            FillRect(pixels, width, height, 10, 7, 4, 8, new Color32(50, 32, 24, 255));
+            FillRect(pixels, width, height, 10, 11, width - 20, 17, woodDark);
+            for (int y = 13; y < 28; y += 5)
+            {
+                FillRect(pixels, width, height, 12, y, width - 24, 3, wood);
+                FillRect(pixels, width, height, 15, y + 1, width - 30, 1, woodLight);
+            }
+
+            FillRect(pixels, width, height, 14, 11, 4, 17, new Color32(48, 31, 22, 255));
+            FillRect(pixels, width, height, width - 18, 11, 4, 17, new Color32(48, 31, 22, 255));
+            FillRect(pixels, width, height, 23, 11, 8, 12, new Color32(49, 31, 23, 255));
+            FillRect(pixels, width, height, 25, 13, 4, 8, new Color32(80, 47, 28, 255));
             if (progress < 0.5f) return;
 
-            FillRect(pixels, width, height, 5, 16, 26, 4, new Color32(62, 42, 34, 255));
-            FillRect(pixels, width, height, 8, 20, 20, 4, new Color32(91, 38, 35, 255));
+            FillRect(pixels, width, height, 6, 28, width - 12, 5, roofDark);
+            FillRect(pixels, width, height, 9, 33, width - 18, 4, roof);
+            FillRect(pixels, width, height, 13, 37, width - 26, 3, roofLight);
+            FillRect(pixels, width, height, 18, 40, width - 36, 3, roof);
+            FillRect(pixels, width, height, 22, 42, width - 44, 2, roofDark);
             if (progress < 0.75f) return;
 
-            FillRect(pixels, width, height, 12, 9, 5, 4, new Color32(222, 157, 71, 255));
-            FillRect(pixels, width, height, 20, 9, 5, 4, new Color32(222, 157, 71, 255));
-            FillRect(pixels, width, height, 14, 24, 8, 4, new Color32(129, 45, 39, 255));
+            FillRect(pixels, width, height, 13, 17, 7, 6, new Color32(64, 86, 92, 255));
+            FillRect(pixels, width, height, width - 20, 17, 7, 6, new Color32(64, 86, 92, 255));
+            DrawRect(pixels, width, height, 13, 17, 19, 22, new Color32(34, 24, 18, 255));
+            DrawRect(pixels, width, height, width - 20, 17, width - 14, 22, new Color32(34, 24, 18, 255));
+            FillRect(pixels, width, height, 15, 19, 3, 2, new Color32(227, 169, 72, 255));
+            FillRect(pixels, width, height, width - 18, 19, 3, 2, new Color32(227, 169, 72, 255));
+            FillRect(pixels, width, height, width - 16, 34, 6, 9, new Color32(54, 45, 39, 255));
+            FillRect(pixels, width, height, width - 15, 41, 4, 2, new Color32(104, 99, 92, 255));
+            FillRect(pixels, width, height, 7, 29, width - 14, 2, new Color32(43, 24, 21, 255));
         }
 
         private static void PaintPlacementPreview(Color32[] pixels)

@@ -18,6 +18,8 @@ namespace TheOldRoad.Save
         public ResourceNodeSaveEntry[] resourceNodes = Array.Empty<ResourceNodeSaveEntry>();
         public LandmarkSaveEntry[] landmarks = Array.Empty<LandmarkSaveEntry>();
         public LootChestSaveEntry[] lootChests = Array.Empty<LootChestSaveEntry>();
+        public PlayerSaveEntry player;
+        public GameTimeSaveEntry gameTime;
     }
 
     [Serializable]
@@ -51,5 +53,19 @@ namespace TheOldRoad.Save
     {
         public string chestId;
         public bool opened;
+    }
+
+    [Serializable]
+    public sealed class PlayerSaveEntry
+    {
+        public float x;
+        public float y;
+        public bool insideCabin;
+    }
+
+    [Serializable]
+    public sealed class GameTimeSaveEntry
+    {
+        public int absoluteMinute;
     }
 }

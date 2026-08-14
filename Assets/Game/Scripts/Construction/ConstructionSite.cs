@@ -21,6 +21,9 @@ namespace TheOldRoad.Construction
         private static GUIStyle labelStyle;
 
         public ConstructionJob Job => job;
+        public BuildingDefinition Definition => buildingDefinition;
+        public bool IsCompleted => job != null && job.state == ConstructionState.Completed;
+        public string BuildingId => job != null ? job.buildingId : string.Empty;
 
         private void Awake()
         {
@@ -53,14 +56,29 @@ namespace TheOldRoad.Construction
             float progress = job.GetProgress(now);
             int stageIndex = job.GetStageIndex(now, 5);
             siteRenderer.sprite = job.state == ConstructionState.Completed
-                ? PrototypePixelArtFactory.CabinComplete()
-                : PrototypePixelArtFactory.CabinConstruction(stageIndex);
+                ? PrototypePixelArtFactory.BuildingComplete(job.buildingId)
+                : PrototypePixelArtFactory.BuildingConstruction(job.buildingId, stageIndex);
             siteRenderer.color = Color.white;
 
             string stageName = GetStageName(now);
+            string buildingName = GetBuildingName(job.buildingId);
             gameObject.name = job.state == ConstructionState.Completed
-                ? "Cabin"
-                : $"Cabin {stageName} {Mathf.RoundToInt(progress * 100f)}%";
+                ? buildingName
+                : $"{buildingName} {stageName} {Mathf.RoundToInt(progress * 100f)}%";
+        }
+
+        private static string GetBuildingName(string buildingId)
+        {
+            switch (buildingId)
+            {
+                case "building.campfire": return "Campfire";
+                case "building.cooking-hearth": return "Cooking Hearth";
+                case "building.animal-pen-small": return "Small Animal Pen";
+                case "building.animal-pen-long": return "Long Animal Pen";
+                case "building.storage-shed": return "Storage Shed";
+                case "building.stone-cottage": return "Stone Cottage";
+                default: return "Cabin";
+            }
         }
 
         private string GetStageName(long nowUnixSeconds)

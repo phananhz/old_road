@@ -21,4 +21,6 @@ Visual stages are derived independently from progress. The default conceptual st
 
 In the prototype, every active construction site draws a world-space progress bar above the building footprint. The bar uses the persisted job start time and duration, so it continues to reflect offline progress after save/load.
 
-Completed cabin sites expose an enter interaction when the player stands nearby. The current prototype interior is generated at runtime and contains a bed, hearth, table, and exit marker. Standing near the bed and using the cabin action advances the in-game clock by 8 hours.
+Completed cabin sites expose an enter interaction when the player stands nearby. The current prototype interior is generated at runtime and contains three visible areas: sleeping nook, living room, and kitchen. Partition walls visually divide those areas. Standing near the bed and using the cabin action opens a confirmation prompt; confirming advances the in-game clock by 8 hours.
+
+Completed campfire and cooking hearth buildings emit a small warm light and support prototype cooking. Completed animal pen buildings produce prototype animal products over time. These values are prototype-only and exist to test the broader build loop.

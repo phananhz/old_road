@@ -14,7 +14,11 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 - bottom-center: 9-slot hotbar for key materials and build actions;
 - bottom-left: virtual joystick for mobile-style movement testing;
 - bottom-right: mobile-style action buttons for `Gather`, `Craft`, `Build`, `Bag`, `Map`, and `Log`;
+- contextual `Cook` action appears near completed campfires or cooking hearths when the player is close enough.
+- `B` or the `Build` action opens the construction catalog before placement.
+- the construction catalog contains a large build grid and a side category list for Housing, Fire & Light, and Animal Pens.
 - contextual mobile `F` action button for cabin `Enter`, `Exit`, and `Sleep` interactions;
+- a centered bed confirmation prompt that can be accepted with `Y`/`Enter` or the `Yes` button, and cancelled with `N`/`Esc` or the `No` button;
 - top-center: temporary contextual prompts for gathering, inspecting, crafting, and building.
 - `I`: inventory overlay with all current prototype item stacks.
 - `M`: expanded map overlay with player, resources, construction sites, landmarks, road, and river markers.
@@ -23,7 +27,9 @@ The current prototype HUD uses a Minecraft-like readable layout with a medieval 
 
 The visual skin uses dark panels, gold trim, parchment text, subtle shadows, corner accents, compact control pills, item glyphs, virtual joystick movement controls, and map legends to avoid covering the play field while looking closer to a real game HUD than a debug overlay.
 
-Hotbar slots can be selected with number keys or by clicking/tapping directly on the slot.
+Hotbar slots can be selected with number keys or by clicking/tapping directly on the slot. Build catalog cards can be selected by click or tap.
+
+The build catalog now exposes multiple buildable prototype buildings: Cabin, Stone Cottage, Storage Shed, Campfire, Cooking Hearth, Small Animal Pen, and Long Animal Pen. Fire buildings support cooking and warm light; animal pens produce prototype animal-product items over time.
 
 The mobile action buttons emit the same prototype input events as keyboard controls so gathering, crafting, building, inventory, map, and journal logic remain outside the UI layer.
 

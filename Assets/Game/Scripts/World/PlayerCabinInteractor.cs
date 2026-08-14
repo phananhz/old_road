@@ -14,6 +14,9 @@ namespace TheOldRoad.World
         [SerializeField] private GameTimeController gameTime;
 
         private ConstructionSite nearestCabin;
+        private bool sleepConfirmationOpen;
+        private Vector3 lastInteriorValidPosition;
+        private bool hasInteriorValidPosition;
 
         public string InteractionHint { get; private set; } = string.Empty;
         public bool CanUseAction { get; private set; }
@@ -30,6 +33,27 @@ namespace TheOldRoad.World
         {
             if (interior == null) interior = FindAnyObjectByType<CabinInteriorController>();
             if (gameTime == null) gameTime = FindAnyObjectByType<GameTimeController>();
+
+            if (interior != null && interior.IsInside)
+            {
+                if (!hasInteriorValidPosition)
+                {
+                    lastInteriorValidPosition = transform.position;
+                    hasInteriorValidPosition = true;
+                }
+
+                interior.ConstrainActorInside(transform, ref lastInteriorValidPosition);
+            }
+            else
+            {
+                hasInteriorValidPosition = false;
+            }
+
+            if (sleepConfirmationOpen)
+            {
+                HandleSleepConfirmationInput();
+                return;
+            }
 
             RefreshActionState();
             if (!CanUseAction || !PrototypeInput.GetKeyDown(KeyCode.F)) return;
@@ -49,7 +73,7 @@ namespace TheOldRoad.World
                 if (interior.IsNearBed(transform))
                 {
                     ActionButtonLabel = "Sleep";
-                    InteractionHint = "Press F to sleep 8 hours.";
+                    InteractionHint = "Press F to use the bed.";
                     return;
                 }
 
@@ -75,12 +99,12 @@ namespace TheOldRoad.World
             {
                 if (interior.IsNearBed(transform))
                 {
-                    interior.SleepEightHours(gameTime);
-                    InteractionHint = interior.Status;
+                    OpenSleepConfirmation();
                     return;
                 }
 
                 interior.Exit(player);
+                hasInteriorValidPosition = false;
                 InteractionHint = interior.Status;
                 return;
             }
@@ -89,7 +113,47 @@ namespace TheOldRoad.World
             if (nearestCabin == null || interior == null) return;
 
             interior.Enter(player, nearestCabin.transform.position);
+            lastInteriorValidPosition = player.transform.position;
+            hasInteriorValidPosition = true;
             InteractionHint = interior.Status;
+        }
+
+        private void OpenSleepConfirmation()
+        {
+            sleepConfirmationOpen = true;
+            CanUseAction = false;
+            ActionButtonLabel = "Sleep";
+            InteractionHint = "Sleep for 8 hours? Press Y to confirm or N/Esc to cancel.";
+        }
+
+        private void HandleSleepConfirmationInput()
+        {
+            CanUseAction = false;
+            ActionButtonLabel = "Sleep";
+
+            if (PrototypeInput.GetKeyDown(KeyCode.Y) || PrototypeInput.GetKeyDown(KeyCode.Return))
+            {
+                ConfirmSleep();
+                return;
+            }
+
+            if (PrototypeInput.GetKeyDown(KeyCode.N) || PrototypeInput.GetKeyDown(KeyCode.Escape))
+            {
+                CancelSleep();
+            }
+        }
+
+        private void ConfirmSleep()
+        {
+            sleepConfirmationOpen = false;
+            if (interior != null) interior.SleepEightHours(gameTime);
+            InteractionHint = interior != null ? interior.Status : "Slept 8 hours.";
+        }
+
+        private void CancelSleep()
+        {
+            sleepConfirmationOpen = false;
+            InteractionHint = "Sleep cancelled.";
         }
 
         private ConstructionSite FindNearestCompletedCabin()
@@ -115,6 +179,54 @@ namespace TheOldRoad.World
         {
             Gizmos.color = Color.magenta;
             Gizmos.DrawWireSphere(transform.position, interactionRadius);
+        }
+
+        private void OnGUI()
+        {
+            if (!sleepConfirmationOpen) return;
+
+            const float width = 420f;
+            const float height = 190f;
+            Rect panel = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
+
+            Color previousColor = GUI.color;
+            GUI.color = new Color(0.02f, 0.018f, 0.014f, 0.94f);
+            GUI.DrawTexture(panel, Texture2D.whiteTexture);
+            GUI.color = new Color(0.72f, 0.56f, 0.28f, 1f);
+            GUI.DrawTexture(new Rect(panel.x, panel.y, panel.width, 3f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(panel.x, panel.yMax - 3f, panel.width, 3f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(panel.x, panel.y, 3f, panel.height), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(panel.xMax - 3f, panel.y, 3f, panel.height), Texture2D.whiteTexture);
+            GUI.color = previousColor;
+
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.95f, 0.84f, 0.58f, 1f) }
+            };
+
+            GUIStyle bodyStyle = new GUIStyle(GUI.skin.label)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 16,
+                wordWrap = true,
+                normal = { textColor = new Color(0.92f, 0.88f, 0.78f, 1f) }
+            };
+
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 20f, panel.width - 48f, 32f), "Use Bed", titleStyle);
+            GUI.Label(new Rect(panel.x + 36f, panel.y + 62f, panel.width - 72f, 48f), "Do you want to sleep for 8 in-game hours?", bodyStyle);
+
+            if (GUI.Button(new Rect(panel.x + 52f, panel.y + 126f, 140f, 40f), "Yes (Y)"))
+            {
+                ConfirmSleep();
+            }
+
+            if (GUI.Button(new Rect(panel.xMax - 192f, panel.y + 126f, 140f, 40f), "No (N)"))
+            {
+                CancelSleep();
+            }
         }
     }
 }

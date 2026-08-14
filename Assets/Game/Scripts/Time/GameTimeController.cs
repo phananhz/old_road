@@ -20,6 +20,7 @@ namespace TheOldRoad.Time
         public string ClockText => "Day " + Day + "  " + Hour.ToString("00") + ":" + Minute.ToString("00");
         public float DayFraction => Mathf.Repeat(TotalMinutes, MinutesPerDay) / MinutesPerDay;
         public float SunlightIntensity => EvaluateSunlight(DayFraction);
+        public int AbsoluteMinute => Mathf.FloorToInt(TotalMinutes);
 
         private float TotalMinutes => startHour * 60f + startMinute + elapsedGameMinutes;
 
@@ -31,6 +32,11 @@ namespace TheOldRoad.Time
         public void AdvanceHours(float hours)
         {
             elapsedGameMinutes += Mathf.Max(0f, hours) * 60f;
+        }
+
+        public void LoadAbsoluteMinute(int absoluteMinute)
+        {
+            elapsedGameMinutes = Mathf.Max(0f, absoluteMinute - (startHour * 60f + startMinute));
         }
 
         private static float EvaluateSunlight(float dayFraction)

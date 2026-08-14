@@ -13,10 +13,13 @@ Player launches game -> walks around Valen Outskirts -> finds Tree -> harvests T
 
 - VS-AC-001: Bootstrap scene opens and creates a playable runtime world.
 - VS-AC-002: Player moves in 8 directions with keyboard input.
+- VS-AC-002B: Player shows a visible walk animation while moving.
 - VS-AC-003: Tree can be harvested once and rewards `item.wood`.
 - VS-AC-004: Rock can be harvested once and rewards `item.stone`.
 - VS-AC-005: Inventory is visible in the development HUD.
 - VS-AC-006: Player can enter and cancel building placement mode.
+- VS-AC-006B: Pressing Build opens a construction catalog with building categories, preview cards, and required material display.
+- VS-AC-006C: Build catalog cards for campfire, cooking hearth, storage shed, stone cottage, and animal pens can enter placement mode and create construction jobs.
 - VS-AC-007: Cabin preview follows the grid.
 - VS-AC-008: Invalid placement cannot be confirmed.
 - VS-AC-009: Valid placement creates a construction job.
@@ -45,9 +48,12 @@ Player launches game -> walks around Valen Outskirts -> finds Tree -> harvests T
 - VS-AC-032: The prototype includes varied resource and loot item types beyond wood and stone.
 - VS-AC-033: The river shows visible animated ripple motion.
 - VS-AC-034: A completed cabin can be entered and exited through a nearby interaction.
-- VS-AC-035: The cabin interior fills the gameplay camera and contains a bed.
-- VS-AC-036: Using the bed advances the in-game clock by 8 hours.
+- VS-AC-035: The cabin interior fills the gameplay camera, contains sleeping, living, and kitchen areas divided by partition walls, and keeps the player visible and movable inside the room.
+- VS-AC-036: Using the bed opens a confirmation prompt; confirming advances the in-game clock by 8 hours and cancelling leaves time unchanged.
 - VS-AC-037: Outdoor brightness changes by time of day and a torch item provides a small local glow at night.
+- VS-AC-038: Completed campfires and cooking hearths emit warm light and allow cooking a prototype meal.
+- VS-AC-039: Completed animal pens produce prototype animal-product items over time.
+- VS-AC-040: Save/load restores player position and in-game clock time.
 
 ## Manual Test VS-001
 
@@ -64,34 +70,40 @@ Steps:
 4. Press `I`, confirm inventory overlay opens, then press `Esc` to close.
 5. Press `M`, confirm expanded map opens, then press `Esc` to close.
 6. Move the player with `WASD` or arrow keys.
-7. Drag the bottom-left virtual joystick and confirm the player moves in that direction.
-8. Confirm the camera follows the player and the minimap marker moves.
-9. Click or tap a hotbar slot and confirm the selected slot highlight changes.
-10. Tap the `Map` action button and confirm the expanded map opens, then tap `Close`.
-11. Tap the `Bag` action button and confirm inventory opens, then tap `Close`.
-12. Press `J`, confirm the Roadwarden Journal opens, then press `Esc` to close.
-13. Walk along the road and confirm the camera continues following across the wider map.
-14. Move near a landmark such as Old Road Sign and confirm an inspect prompt appears.
-15. Press `E` or tap `Gather` to inspect it, confirm a countdown bar appears above the landmark, then confirm the objective tracker updates after the countdown completes.
-16. Open `J` and confirm the journal entry appears.
-17. Press `M` and confirm the expanded map shows the road, river, resources, landmarks, and player marker.
-18. Move near a loot chest and confirm it shows a glow outline with an `E` prompt.
-19. Press `E` or tap `Gather` to open it, confirm a countdown bar appears above the chest, then confirm item quantities update after the countdown completes.
-20. Move near a Tree and confirm it shows a glow outline with an `E` prompt.
-21. Press `E` or tap `Gather` to gather Tree, and confirm the reward is granted only after the countdown bar completes.
-22. Move near a Rock and press `E` or tap `Gather`, and confirm walking away before the countdown completes cancels the action.
-23. Move near berries, herbs, mushrooms, or iron ore and confirm the gathered item appears in the hotbar and inventory.
-24. Confirm the hotbar shows enough wood and stone and objective progress updates.
-25. Press `C` or tap `Craft` and confirm Cabin Plank increases while Wood decreases.
-26. Press `B` or tap `Build`.
-27. Move the mouse to a valid grid cell.
-28. Left-click to start cabin construction and confirm a construction progress bar appears above the cabin site.
-29. Wait for the cabin to complete, stand near it, and press `F` or tap the contextual `Enter` button.
-30. Confirm the camera shows the full cabin interior with bed, hearth, table, and exit marker.
-31. Stand near the bed and press `F` or tap `Sleep`; confirm the clock advances 8 hours.
-32. Press `F` or tap `Exit` away from the bed and confirm the player returns outside.
-33. Open a torch chest, wait for evening/night, and confirm a warm glow follows the player.
-34. Stop Play, then press Play again.
+7. Confirm the player sprite animates while moving, then returns to idle when movement stops.
+8. Drag the bottom-left virtual joystick and confirm the player moves in that direction.
+9. Confirm the camera follows the player and the minimap marker moves.
+10. Click or tap a hotbar slot and confirm the selected slot highlight changes.
+11. Tap the `Map` action button and confirm the expanded map opens, then tap `Close`.
+12. Tap the `Bag` action button and confirm inventory opens, then tap `Close`.
+13. Press `J`, confirm the Roadwarden Journal opens, then press `Esc` to close.
+14. Walk along the road and confirm the camera continues following across the wider map.
+15. Move near a landmark such as Old Road Sign and confirm an inspect prompt appears.
+16. Press `E` or tap `Gather` to inspect it, confirm a countdown bar appears above the landmark, then confirm the objective tracker updates after the countdown completes.
+17. Open `J` and confirm the journal entry appears.
+18. Press `M` and confirm the expanded map shows the road, river, resources, landmarks, and player marker.
+19. Move near a loot chest and confirm it shows a glow outline with an `E` prompt.
+20. Press `E` or tap `Gather` to open it, confirm a countdown bar appears above the chest, then confirm item quantities update after the countdown completes.
+21. Move near a Tree and confirm it shows a glow outline with an `E` prompt.
+22. Press `E` or tap `Gather` to gather Tree, and confirm the reward is granted only after the countdown bar completes.
+23. Move near a Rock and press `E` or tap `Gather`, and confirm walking away before the countdown completes cancels the action.
+24. Move near berries, herbs, mushrooms, or iron ore and confirm the gathered item appears in the hotbar and inventory.
+25. Confirm the hotbar shows enough wood and stone and objective progress updates.
+26. Press `C` or tap `Craft` and confirm Cabin Plank increases while Wood decreases.
+27. Press `B` or tap `Build`.
+28. Confirm the construction catalog opens with Housing, Fire & Light, and Animal Pens categories.
+29. Select the Cabin card under Housing and confirm placement preview mode starts.
+30. Move the mouse to a valid grid cell.
+31. Left-click to start cabin construction and confirm a construction progress bar appears above the cabin site.
+32. Wait for the cabin to complete, stand near it, and press `F` or tap the contextual `Enter` button.
+33. Confirm the camera shows the full cabin interior with sleeping, living, and kitchen areas divided by partition walls.
+34. Stand near the bed and press `F` or tap `Sleep`; confirm the sleep prompt appears.
+35. Cancel the prompt with `N`, `Esc`, or `No`; confirm the clock does not change.
+36. Press `F` or tap `Sleep` again, choose `Yes`, and confirm the clock advances 8 hours.
+37. Move around inside the cabin and confirm the player remains visible.
+38. Press `F` or tap `Exit` away from the bed and confirm the player returns outside.
+39. Open a torch chest, wait for evening/night, and confirm a warm glow follows the player.
+40. Stop Play, then press Play again.
 
 Expected result:
 

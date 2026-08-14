@@ -5,7 +5,7 @@ namespace TheOldRoad.Save
 {
     public static class SaveSerializer
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
         private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
         {
             IncludeFields = true,
@@ -27,7 +27,7 @@ namespace TheOldRoad.Save
             try
             {
                 SaveData candidate = JsonSerializer.Deserialize<SaveData>(json, Options);
-                if (candidate == null || candidate.saveVersion != CurrentVersion) return false;
+                if (candidate == null || candidate.saveVersion < 1 || candidate.saveVersion > CurrentVersion) return false;
                 data = candidate;
                 return true;
             }

@@ -5,7 +5,7 @@ using TheOldRoad.World;
 
 namespace TheOldRoad.Building
 {
-    /// <summary>Development placement preview for the first cabin prototype.</summary>
+    /// <summary>Development placement preview for the selected prototype building.</summary>
     public sealed class BuildingPlacementController : MonoBehaviour
     {
         [SerializeField] private Camera worldCamera;
@@ -21,7 +21,7 @@ namespace TheOldRoad.Building
         private Vector2Int currentCell;
 
         public bool IsPlacementMode => placementMode;
-        public string LastStatus { get; private set; } = "Press B to plan a cabin.";
+        public string LastStatus { get; private set; } = "Press B to open the build catalog.";
         public BuildingDefinition BuildingDefinition => buildingDefinition;
 
         public void Configure(
@@ -49,22 +49,34 @@ namespace TheOldRoad.Building
 
         private void Update()
         {
-            if (TheOldRoad.Input.PrototypeInput.GetKeyDown(KeyCode.B)) TogglePlacementMode();
             if (!placementMode || worldCamera == null) return;
 
             currentCell = GetMouseCell();
             UpdatePreview(currentCell);
 
             if (TheOldRoad.Input.PrototypeInput.GetMouseButtonDown(0) && IsCurrentPlacementValid()) ConfirmPlacement();
-            if (TheOldRoad.Input.PrototypeInput.GetMouseButtonDown(1)) TogglePlacementMode();
+            if (TheOldRoad.Input.PrototypeInput.GetMouseButtonDown(1)) CancelPlacement();
         }
 
-        private void TogglePlacementMode()
+        public void BeginPlacement(BuildingDefinition selectedDefinition)
         {
-            placementMode = !placementMode;
-            if (placementMode) CreatePreview();
-            else if (preview != null) Destroy(preview);
-            LastStatus = placementMode ? "Select a valid grid cell, then left click." : "Press B to plan a cabin.";
+            if (selectedDefinition != null) buildingDefinition = selectedDefinition;
+            if (buildingDefinition == null)
+            {
+                LastStatus = "No building definition selected.";
+                return;
+            }
+
+            placementMode = true;
+            CreatePreview();
+            LastStatus = "Select a valid grid cell, then left click. Right click cancels.";
+        }
+
+        public void CancelPlacement()
+        {
+            placementMode = false;
+            if (preview != null) Destroy(preview);
+            LastStatus = "Press B to open the build catalog.";
         }
 
         private void CreatePreview()
@@ -72,7 +84,7 @@ namespace TheOldRoad.Building
             if (preview != null) Destroy(preview);
 
             preview = new GameObject("Cabin Placement Preview");
-            preview.name = "Cabin Placement Preview";
+            preview.name = GetBuildingName() + " Placement Preview";
             preview.transform.localScale = GetFootprint();
             SpriteRenderer renderer = preview.AddComponent<SpriteRenderer>();
             renderer.sprite = PrototypePixelArtFactory.PlacementPreview();
@@ -95,7 +107,7 @@ namespace TheOldRoad.Building
                 return;
             }
 
-            if (sliceController.TryBeginConstruction(buildingDefinition, currentCell, out string status)) TogglePlacementMode();
+            if (sliceController.TryBeginConstruction(buildingDefinition, currentCell, out string status)) CancelPlacement();
             LastStatus = status;
         }
 
@@ -114,6 +126,13 @@ namespace TheOldRoad.Building
         }
 
         private Vector3 GetFootprint() => new Vector3(GetFootprintInCells().x, GetFootprintInCells().y, 1f);
+
+        private string GetBuildingName()
+        {
+            if (buildingDefinition == null || string.IsNullOrWhiteSpace(buildingDefinition.BuildingId)) return "Building";
+            if (buildingDefinition.BuildingId == "building.cabin") return "Cabin";
+            return buildingDefinition.BuildingId;
+        }
 
         private Vector2Int GetMouseCell()
         {

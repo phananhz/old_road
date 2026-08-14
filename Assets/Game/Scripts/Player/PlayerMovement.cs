@@ -12,6 +12,8 @@ namespace TheOldRoad.Player
         private IPlayerInputSource inputSource;
 
         public float MoveSpeed => moveSpeed;
+        public Vector2 LastMoveDirection { get; private set; }
+        public bool IsMoving { get; private set; }
 
         private void Awake()
         {
@@ -46,9 +48,16 @@ namespace TheOldRoad.Player
         private void Update()
         {
             if (inputSource == null) ResolveInputSource();
-            if (inputSource == null) return;
+            if (inputSource == null)
+            {
+                LastMoveDirection = Vector2.zero;
+                IsMoving = false;
+                return;
+            }
 
             Vector2 direction = Vector2.ClampMagnitude(inputSource.Move, 1f);
+            LastMoveDirection = direction;
+            IsMoving = direction.sqrMagnitude > 0.001f;
             transform.position += new Vector3(direction.x, direction.y, 0f) * (moveSpeed * UnityEngine.Time.deltaTime);
         }
     }

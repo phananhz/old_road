@@ -45,6 +45,7 @@ namespace TheOldRoad.UI
         private Texture2D pixel;
         private int selectedSlot;
         private OverlayMode overlayMode;
+        private int selectedBuildCategory;
         private string activePromptText = string.Empty;
         private float promptHideTime;
 
@@ -68,6 +69,7 @@ namespace TheOldRoad.UI
             if (PrototypeInput.GetKeyDown(KeyCode.I)) ToggleOverlay(OverlayMode.Inventory);
             if (PrototypeInput.GetKeyDown(KeyCode.M)) ToggleOverlay(OverlayMode.Map);
             if (PrototypeInput.GetKeyDown(KeyCode.J)) ToggleOverlay(OverlayMode.Journal);
+            if (PrototypeInput.GetKeyDown(KeyCode.B)) HandleBuildInput();
             if (PrototypeInput.GetKeyDown(KeyCode.Escape)) overlayMode = OverlayMode.None;
         }
 
@@ -263,6 +265,12 @@ namespace TheOldRoad.UI
             DrawMobileActionButton(new Rect(right - 92f, bottom - 168f, 78f, 58f), "E", "Gather", KeyCode.E, new Color(0.22f, 0.44f, 0.18f, 0.96f));
             DrawMobileActionButton(new Rect(right - 178f, bottom - 112f, 74f, 52f), "C", "Craft", KeyCode.C, new Color(0.45f, 0.31f, 0.12f, 0.96f));
             DrawMobileActionButton(new Rect(right - 92f, bottom - 102f, 78f, 58f), "B", "Build", KeyCode.B, new Color(0.45f, 0.21f, 0.12f, 0.96f));
+            PlayerCookingInteractor cooking = FindAnyObjectByType<PlayerCookingInteractor>();
+            if (cooking != null && cooking.CanCookAction)
+            {
+                DrawMobileActionButton(new Rect(right - 178f, bottom - 234f, 74f, 52f), "R", "Cook", KeyCode.R, new Color(0.54f, 0.24f, 0.10f, 0.96f));
+            }
+
             PlayerCabinInteractor cabin = FindAnyObjectByType<PlayerCabinInteractor>();
             if (cabin != null && cabin.CanUseAction)
             {
@@ -297,8 +305,21 @@ namespace TheOldRoad.UI
             DrawRect(new Rect(0, 0, Screen.width, Screen.height), new Color(0f, 0f, 0f, 0.58f));
 
             if (overlayMode == OverlayMode.Inventory) DrawInventoryOverlay();
+            if (overlayMode == OverlayMode.BuildCatalog) DrawBuildCatalogOverlay();
             if (overlayMode == OverlayMode.Map) DrawMapOverlay();
             if (overlayMode == OverlayMode.Journal) DrawJournalOverlay();
+        }
+
+        private void HandleBuildInput()
+        {
+            if (placementController != null && placementController.IsPlacementMode)
+            {
+                placementController.CancelPlacement();
+                overlayMode = OverlayMode.None;
+                return;
+            }
+
+            ToggleOverlay(OverlayMode.BuildCatalog);
         }
 
         private void DrawInventoryOverlay()
@@ -344,6 +365,213 @@ namespace TheOldRoad.UI
                 GUI.Label(new Rect(slot.x + 72, slot.y + 42, slot.width - 86, 26), "x" + GetQuantity(item.ItemId), titleStyle);
                 GUI.Label(new Rect(slot.x + 15, slot.y + 68, slot.width - 30, 18), item.UseText, smallStyle);
             }
+        }
+
+        private void DrawBuildCatalogOverlay()
+        {
+            float panelWidth = Mathf.Min(Screen.width - 70f, 1040f);
+            float panelHeight = Mathf.Min(Screen.height - 90f, 650f);
+            Rect panel = new Rect((Screen.width - panelWidth) * 0.5f, (Screen.height - panelHeight) * 0.5f, panelWidth, panelHeight);
+            DrawCard(panel, Ink);
+            DrawCornerAccents(panel, Gold);
+            DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 50f));
+
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 10f, panel.width - 48f, 28f), "Construction Catalog", gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 260f, panel.y + 16f, 230f, 20f), "B / Esc to close", smallStyle);
+
+            Rect sidebar = new Rect(panel.x + 22f, panel.y + 72f, 190f, panel.height - 100f);
+            Rect content = new Rect(sidebar.xMax + 18f, sidebar.y, panel.xMax - sidebar.xMax - 40f, sidebar.height);
+
+            DrawBuildCategorySidebar(sidebar);
+            DrawBuildCatalogContent(content);
+        }
+
+        private void DrawBuildCategorySidebar(Rect rect)
+        {
+            DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.76f));
+            DrawBorder(rect, GoldDim, 1f);
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 12f, rect.width - 28f, 24f), "Categories", titleStyle);
+
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 52f, rect.width - 28f, 42f), 0, "Housing", "Homes and shelters");
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 104f, rect.width - 28f, 42f), 1, "Fire & Light", "Warmth and camp utility");
+            DrawBuildCategoryButton(new Rect(rect.x + 14f, rect.y + 156f, rect.width - 28f, 42f), 2, "Animal Pens", "Fenced square or rectangle yards");
+
+            GUI.Label(new Rect(rect.x + 14f, rect.yMax - 72f, rect.width - 28f, 52f), "Select a buildable card to enter placement mode.", smallStyle);
+        }
+
+        private void DrawBuildCategoryButton(Rect rect, int categoryIndex, string title, string subtitle)
+        {
+            bool selected = selectedBuildCategory == categoryIndex;
+            DrawRect(rect, selected ? new Color(0.42f, 0.25f, 0.10f, 0.96f) : InkSoft);
+            DrawBorder(rect, selected ? Gold : GoldDim, selected ? 2f : 1f);
+
+            Event current = Event.current;
+            if (current != null && current.type == EventType.MouseDown && current.button == 0 && rect.Contains(current.mousePosition))
+            {
+                selectedBuildCategory = categoryIndex;
+                current.Use();
+            }
+
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 5f, rect.width - 24f, 20f), title, labelStyle);
+            GUI.Label(new Rect(rect.x + 12f, rect.y + 24f, rect.width - 24f, 16f), subtitle, smallStyle);
+        }
+
+        private void DrawBuildCatalogContent(Rect rect)
+        {
+            DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.64f));
+            DrawBorder(rect, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
+
+            string heading = selectedBuildCategory == 0 ? "Housing" : selectedBuildCategory == 1 ? "Fire & Light" : "Animal Pens";
+            GUI.Label(new Rect(rect.x + 18f, rect.y + 14f, rect.width - 36f, 24f), heading, titleStyle);
+
+            Rect grid = new Rect(rect.x + 18f, rect.y + 52f, rect.width - 36f, rect.height - 72f);
+            const float cardWidth = 220f;
+            const float cardHeight = 242f;
+            const float gap = 18f;
+            int columns = Mathf.Max(1, Mathf.FloorToInt((grid.width + gap) / (cardWidth + gap)));
+
+            if (selectedBuildCategory == 0)
+            {
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Cabin", "Starter home with bed and interior.", "Housing", GetBuildingDefinition("building.cabin"), "Cabin", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Stone Cottage", "Larger stone home prototype.", "Housing", GetBuildingDefinition("building.stone-cottage"), "Cottage", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 2), "Storage Shed", "Small utility storage building.", "Housing", GetBuildingDefinition("building.storage-shed"), "Shed", true);
+                return;
+            }
+
+            if (selectedBuildCategory == 1)
+            {
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Campfire", "Small outdoor fire, light source, and cooking spot.", "Fire & Light", GetBuildingDefinition("building.campfire"), "Campfire", true);
+                DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Cooking Hearth", "Stronger cooking station with warm light.", "Fire & Light", GetBuildingDefinition("building.cooking-hearth"), "Hearth", true);
+                return;
+            }
+
+            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 0), "Small Animal Pen", "Square fenced yard. Produces eggs in prototype.", "Animal Pens", GetBuildingDefinition("building.animal-pen-small"), "PenSquare", true);
+            DrawBuildCatalogCard(GetBuildCardRect(grid, cardWidth, cardHeight, gap, columns, 1), "Long Animal Pen", "Rectangle fenced yard. Produces wool in prototype.", "Animal Pens", GetBuildingDefinition("building.animal-pen-long"), "PenLong", true);
+        }
+
+        private BuildingDefinition GetBuildingDefinition(string buildingId)
+        {
+            if (sliceController == null) return placementController != null && placementController.BuildingDefinition != null && placementController.BuildingDefinition.BuildingId == buildingId
+                ? placementController.BuildingDefinition
+                : null;
+
+            return sliceController.GetBuildingDefinition(buildingId);
+        }
+
+        private static Rect GetBuildCardRect(Rect grid, float cardWidth, float cardHeight, float gap, int columns, int index)
+        {
+            int column = index % columns;
+            int row = index / columns;
+            return new Rect(grid.x + column * (cardWidth + gap), grid.y + row * (cardHeight + gap), cardWidth, cardHeight);
+        }
+
+        private void DrawBuildCatalogCard(Rect rect, string name, string description, string category, BuildingDefinition definition, string glyph, bool buildable)
+        {
+            bool canBuild = buildable && definition != null && placementController != null;
+            DrawRect(rect, buildable ? InkSoft : new Color(0.055f, 0.052f, 0.048f, 0.86f));
+            DrawBorder(rect, buildable ? GoldDim : new Color(0.20f, 0.18f, 0.16f, 1f), 1f);
+
+            Rect icon = new Rect(rect.x + 18f, rect.y + 18f, 70f, 62f);
+            DrawBuildingGlyph(icon, glyph);
+
+            GUI.Label(new Rect(rect.x + 100f, rect.y + 15f, rect.width - 114f, 22f), name, labelStyle);
+            GUI.Label(new Rect(rect.x + 100f, rect.y + 38f, rect.width - 114f, 18f), category, smallStyle);
+            GUI.Label(new Rect(rect.x + 100f, rect.y + 58f, rect.width - 114f, 44f), description, smallStyle);
+
+            Rect requirements = new Rect(rect.x + 16f, rect.y + 104f, rect.width - 32f, 74f);
+            DrawRect(requirements, new Color(0.030f, 0.026f, 0.022f, 0.78f));
+            DrawBorder(requirements, new Color(0.16f, 0.13f, 0.10f, 1f), 1f);
+            GUI.Label(new Rect(requirements.x + 10f, requirements.y + 6f, requirements.width - 20f, 18f), "Required items", smallStyle);
+
+            if (definition != null)
+            {
+                DrawBuildRequirements(requirements, definition.ConstructionCosts);
+            }
+            else
+            {
+                GUI.Label(new Rect(requirements.x + 10f, requirements.y + 30f, requirements.width - 20f, 34f), "Prototype: requirements not finalized yet.", smallStyle);
+            }
+
+            Rect action = new Rect(rect.x + 18f, rect.yMax - 48f, rect.width - 36f, 32f);
+            if (canBuild)
+            {
+                if (GUI.Button(action, "Select & Place"))
+                {
+                    placementController.BeginPlacement(definition);
+                    overlayMode = OverlayMode.None;
+                    activePromptText = name + " selected. Move cursor to a valid grid cell, then left click.";
+                    promptHideTime = UnityEngine.Time.unscaledTime + PromptVisibleSeconds;
+                }
+            }
+            else
+            {
+                DrawRect(action, new Color(0.11f, 0.10f, 0.09f, 0.90f));
+                DrawBorder(action, new Color(0.22f, 0.20f, 0.18f, 1f), 1f);
+                GUI.Label(action, buildable ? "Missing definition" : "Coming soon", centerStyle);
+            }
+        }
+
+        private void DrawBuildRequirements(Rect rect, BuildCostEntry[] costs)
+        {
+            if (costs == null || costs.Length == 0)
+            {
+                GUI.Label(new Rect(rect.x + 10f, rect.y + 30f, rect.width - 20f, 20f), "No material cost.", smallStyle);
+                return;
+            }
+
+            for (int i = 0; i < costs.Length && i < 3; i++)
+            {
+                BuildCostEntry cost = costs[i];
+                PrototypeItemInfo item = PrototypeItemCatalog.Get(cost.itemId);
+                int owned = GetQuantity(cost.itemId);
+                bool hasEnough = owned >= cost.quantity;
+                Rect row = new Rect(rect.x + 10f, rect.y + 29f + i * 18f, rect.width - 20f, 17f);
+                DrawRect(new Rect(row.x, row.y + 4f, 9f, 9f), item.Color);
+
+                Color previous = GUI.color;
+                GUI.color = hasEnough ? new Color(0.72f, 0.95f, 0.60f, 1f) : new Color(0.95f, 0.48f, 0.40f, 1f);
+                GUI.Label(new Rect(row.x + 16f, row.y - 1f, row.width - 16f, row.height), item.DisplayName + " " + owned + "/" + cost.quantity, smallStyle);
+                GUI.color = previous;
+            }
+        }
+
+        private void DrawBuildingGlyph(Rect rect, string glyph)
+        {
+            DrawRect(rect, new Color(0.025f, 0.022f, 0.018f, 1f));
+            DrawBorder(rect, Color.black, 1f);
+
+            if (glyph == "Campfire" || glyph == "Hearth")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.20f, rect.y + rect.height * 0.66f, rect.width * 0.60f, rect.height * 0.10f), new Color(0.30f, 0.24f, 0.18f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.30f, rect.y + rect.height * 0.50f, rect.width * 0.40f, rect.height * 0.14f), new Color(0.55f, 0.33f, 0.14f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.36f, rect.y + rect.height * 0.28f, rect.width * 0.28f, rect.height * 0.30f), new Color(0.96f, 0.30f, 0.08f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.44f, rect.y + rect.height * 0.20f, rect.width * 0.14f, rect.height * 0.28f), new Color(1f, 0.78f, 0.22f, 1f));
+                return;
+            }
+
+            if (glyph == "PenSquare" || glyph == "PenLong")
+            {
+                Rect fence = glyph == "PenLong"
+                    ? new Rect(rect.x + rect.width * 0.14f, rect.y + rect.height * 0.30f, rect.width * 0.72f, rect.height * 0.42f)
+                    : new Rect(rect.x + rect.width * 0.24f, rect.y + rect.height * 0.24f, rect.width * 0.52f, rect.height * 0.52f);
+                DrawBorder(fence, new Color(0.58f, 0.34f, 0.16f, 1f), 4f);
+                DrawRect(new Rect(fence.x + 5f, fence.y + 5f, fence.width - 10f, fence.height - 10f), new Color(0.12f, 0.28f, 0.12f, 1f));
+                DrawRect(new Rect(fence.x + fence.width * 0.46f, fence.yMax - 4f, fence.width * 0.18f, 5f), new Color(0.10f, 0.07f, 0.04f, 1f));
+                return;
+            }
+
+            if (glyph == "Shed")
+            {
+                DrawRect(new Rect(rect.x + rect.width * 0.24f, rect.y + rect.height * 0.46f, rect.width * 0.52f, rect.height * 0.30f), new Color(0.42f, 0.27f, 0.14f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.18f, rect.y + rect.height * 0.34f, rect.width * 0.64f, rect.height * 0.16f), new Color(0.26f, 0.16f, 0.10f, 1f));
+                DrawRect(new Rect(rect.x + rect.width * 0.42f, rect.y + rect.height * 0.56f, rect.width * 0.16f, rect.height * 0.20f), new Color(0.08f, 0.05f, 0.035f, 1f));
+                return;
+            }
+
+            DrawRect(new Rect(rect.x + rect.width * 0.18f, rect.y + rect.height * 0.46f, rect.width * 0.64f, rect.height * 0.34f), new Color(0.65f, 0.38f, 0.18f, 1f));
+            DrawRect(new Rect(rect.x + rect.width * 0.12f, rect.y + rect.height * 0.30f, rect.width * 0.76f, rect.height * 0.18f), new Color(0.44f, 0.16f, 0.10f, 1f));
+            DrawRect(new Rect(rect.x + rect.width * 0.42f, rect.y + rect.height * 0.57f, rect.width * 0.16f, rect.height * 0.23f), new Color(0.10f, 0.06f, 0.04f, 1f));
+            DrawRect(new Rect(rect.x + rect.width * 0.27f, rect.y + rect.height * 0.53f, rect.width * 0.14f, rect.height * 0.12f), new Color(0.40f, 0.62f, 0.76f, 1f));
         }
 
         private void DrawMapOverlay()
@@ -509,6 +737,9 @@ namespace TheOldRoad.UI
             PlayerCraftingInteractor crafting = FindAnyObjectByType<PlayerCraftingInteractor>();
             if (crafting != null && !string.IsNullOrWhiteSpace(crafting.CraftingHint)) AppendPrompt(ref prompt, crafting.CraftingHint);
 
+            PlayerCookingInteractor cooking = FindAnyObjectByType<PlayerCookingInteractor>();
+            if (cooking != null && !string.IsNullOrWhiteSpace(cooking.CookingHint)) AppendPrompt(ref prompt, cooking.CookingHint);
+
             PlayerLandmarkInteractor landmark = FindAnyObjectByType<PlayerLandmarkInteractor>();
             if (landmark != null && !string.IsNullOrWhiteSpace(landmark.InteractionHint)) AppendPrompt(ref prompt, landmark.InteractionHint);
 
@@ -519,6 +750,15 @@ namespace TheOldRoad.UI
             if (cabin != null && !string.IsNullOrWhiteSpace(cabin.InteractionHint)) AppendPrompt(ref prompt, cabin.InteractionHint);
 
             if (placementController != null && !string.IsNullOrWhiteSpace(placementController.LastStatus)) AppendPrompt(ref prompt, placementController.LastStatus);
+
+            foreach (AnimalPenController pen in FindObjectsByType<AnimalPenController>(FindObjectsInactive.Exclude))
+            {
+                if (pen != null && !string.IsNullOrWhiteSpace(pen.Status))
+                {
+                    AppendPrompt(ref prompt, pen.Status);
+                    break;
+                }
+            }
 
             return prompt;
         }
@@ -929,6 +1169,7 @@ namespace TheOldRoad.UI
         {
             None,
             Inventory,
+            BuildCatalog,
             Map,
             Journal
         }

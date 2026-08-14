@@ -12,3 +12,5 @@ Input is supplied through `IPlayerInputSource`. `KeyboardPlayerInputSource` is t
 `PlayerMovement` owns locomotion only. Combat, gathering, UI, and save logic remain separate.
 
 The current prototype uses transform-based movement to avoid editor package instability while preserving collision-ready architecture boundaries for later.
+
+`PlayerPixelAnimator` reads `PlayerMovement` state and swaps runtime-generated pixel sprites for a simple four-frame walking animation. It does not own input or movement.
