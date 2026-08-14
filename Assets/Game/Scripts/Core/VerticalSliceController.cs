@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using TheOldRoad.Building;
 using TheOldRoad.Construction;
+using TheOldRoad.Crafting;
 using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
@@ -18,10 +19,13 @@ namespace TheOldRoad.Core
     public sealed class VerticalSliceController : MonoBehaviour
     {
         private const string CabinId = "building.cabin";
+        private static readonly Vector2 WorldMin = new Vector2(-30f, -18f);
+        private static readonly Vector2 WorldMax = new Vector2(30f, 18f);
 
         [SerializeField] private BuildingDefinition cabinDefinition;
-        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-7, -4);
-        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(7, 4);
+        [SerializeField] private RecipeDefinition cabinPlankRecipe;
+        [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-20, -11);
+        [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(20, 11);
 
         private readonly Dictionary<string, ResourceNode> resourceNodes = new Dictionary<string, ResourceNode>();
         private readonly Dictionary<string, ConstructionJob> constructionJobs = new Dictionary<string, ConstructionJob>();
@@ -36,6 +40,7 @@ namespace TheOldRoad.Core
         public string SaveStatus => saveStatus;
         public int ActiveConstructionCount => constructionJobs.Count;
         public BuildingDefinition CabinDefinition => cabinDefinition;
+        public RecipeDefinition CabinPlankRecipe => cabinPlankRecipe;
 
         private void Awake()
         {
@@ -97,6 +102,12 @@ namespace TheOldRoad.Core
             SaveNow();
         }
 
+        public void NotifyCrafted(RecipeDefinition recipe)
+        {
+            if (recipe == null) return;
+            SaveNow();
+        }
+
         public SaveData CreateSaveData()
         {
             return new SaveData
@@ -119,14 +130,36 @@ namespace TheOldRoad.Core
         private void BuildRuntimeScene()
         {
             EnsureInputBridge();
+            EnsureGameTime();
             Camera mainCamera = EnsureCamera();
             EnsureGround();
+            EnsureLandmarks();
             inventorySession = EnsureInventorySession();
             EnsurePlayer(inventorySession);
-            EnsureResourceNode("node.tree.01", "Tree", new Vector3(-3.5f, 1.4f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
-            EnsureResourceNode("node.rock.01", "Rock", new Vector3(3.5f, -1.4f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureCameraFollow(mainCamera);
+            EnsureResourceNode("node.tree.01", "Roadside Pine", new Vector3(-3.5f, 1.4f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.02", "Old Forest Pine", new Vector3(-18f, 9f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.03", "Valen Birch", new Vector3(-12f, -7f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.04", "Hill Pine", new Vector3(7f, 10f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.05", "South Pine", new Vector3(18f, -5f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.06", "Westwood Pine", new Vector3(-24f, -1f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.tree.07", "Eastwood Pine", new Vector3(22f, 8f, 0f), "item.wood", 3, new Color(0.1f, 0.55f, 0.18f, 1f));
+            EnsureResourceNode("node.rock.01", "Road Stone", new Vector3(3.5f, -1.4f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.02", "River Stone", new Vector3(-15f, -10f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.03", "Broken Road Stone", new Vector3(4f, -9f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.04", "Old Wall Stone", new Vector3(12f, 3f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.05", "East Pass Stone", new Vector3(23f, -12f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
+            EnsureResourceNode("node.rock.06", "North Ridge Stone", new Vector3(-22f, 7f, 0f), "item.stone", 2, new Color(0.45f, 0.48f, 0.52f, 1f));
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
             EnsureHud(inventorySession, placement);
+        }
+
+        private void EnsureGameTime()
+        {
+            if (FindAnyObjectByType<GameTimeController>() != null) return;
+
+            GameObject timeObject = new GameObject("Game Time");
+            timeObject.AddComponent<GameTimeController>();
         }
 
         private void EnsureInputBridge()
@@ -166,19 +199,31 @@ namespace TheOldRoad.Core
 
         private void EnsureDefinitions()
         {
-            if (cabinDefinition != null) return;
+            if (cabinDefinition == null)
+            {
+                cabinDefinition = ScriptableObject.CreateInstance<BuildingDefinition>();
+                cabinDefinition.ConfigureForPrototype(
+                    CabinId,
+                    new Vector2Int(2, 2),
+                    new[]
+                    {
+                        new BuildCostEntry { itemId = "item.wood", quantity = 3 },
+                        new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                    },
+                    30f,
+                    new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
+            }
 
-            cabinDefinition = ScriptableObject.CreateInstance<BuildingDefinition>();
-            cabinDefinition.ConfigureForPrototype(
-                CabinId,
-                new Vector2Int(2, 2),
-                new[]
-                {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 3 },
-                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
-                },
-                30f,
-                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
+            if (cabinPlankRecipe != null) return;
+
+            cabinPlankRecipe = ScriptableObject.CreateInstance<RecipeDefinition>();
+            cabinPlankRecipe.ConfigureForPrototype(
+                "recipe.cabin-planks",
+                new[] { new IngredientRequirement { itemId = "item.wood", quantity = 2 } },
+                "item.cabin-plank",
+                1,
+                0f,
+                string.Empty);
         }
 
         private Camera EnsureCamera()
@@ -209,15 +254,44 @@ namespace TheOldRoad.Core
             return mainCamera;
         }
 
+        private void EnsureCameraFollow(Camera mainCamera)
+        {
+            if (mainCamera == null) return;
+
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player == null) return;
+
+            CameraFollow2D follow = mainCamera.GetComponent<CameraFollow2D>();
+            if (follow == null) follow = mainCamera.gameObject.AddComponent<CameraFollow2D>();
+            follow.Configure(player.transform, new Vector2(WorldMin.x + 7f, WorldMin.y + 5f), new Vector2(WorldMax.x - 7f, WorldMax.y - 5f), 0.12f);
+        }
+
         private void EnsureGround()
         {
-            if (GameObject.Find("Valen Outskirts Ground") != null) return;
+            GameObject existingGround = GameObject.Find("Valen Outskirts Ground");
+            if (existingGround != null)
+            {
+                SpriteRenderer existingRenderer = existingGround.GetComponent<SpriteRenderer>();
+                if (existingRenderer == null) existingRenderer = existingGround.AddComponent<SpriteRenderer>();
+                existingRenderer.sprite = PrototypePixelArtFactory.ValenOutskirtsGround();
+                existingRenderer.sortingOrder = -10000;
+                return;
+            }
 
             GameObject ground = new GameObject("Valen Outskirts Ground");
             ground.transform.position = Vector3.zero;
             SpriteRenderer renderer = ground.AddComponent<SpriteRenderer>();
             renderer.sprite = PrototypePixelArtFactory.ValenOutskirtsGround();
             renderer.sortingOrder = -10000;
+        }
+
+        private void EnsureLandmarks()
+        {
+            EnsureDecoration("Northern Waystone", PrototypePixelArtFactory.Waystone(), new Vector3(-21f, 13f, 0f), 10);
+            EnsureDecoration("Old Road Sign", PrototypePixelArtFactory.RoadSign(), new Vector3(-8f, 1.7f, 0f), 10);
+            EnsureDecoration("Broken Watch Arch", PrototypePixelArtFactory.RuinedArch(), new Vector3(16f, 8.5f, 0f), 10);
+            EnsureDecoration("River Footbridge", PrototypePixelArtFactory.Footbridge(), new Vector3(-14f, -4.2f, 0f), 10);
+            EnsureDecoration("Abandoned Camp", PrototypePixelArtFactory.Campfire(), new Vector3(8f, -11f, 0f), 10);
         }
 
         private InventorySession EnsureInventorySession()
@@ -251,16 +325,39 @@ namespace TheOldRoad.Core
 
             KeyboardPlayerInputSource input = player.GetComponent<KeyboardPlayerInputSource>();
             if (input == null) input = player.AddComponent<KeyboardPlayerInputSource>();
-            movement.Configure(input, 3f);
+
+            MobileJoystickInputSource joystick = player.GetComponent<MobileJoystickInputSource>();
+            if (joystick == null) joystick = player.AddComponent<MobileJoystickInputSource>();
+
+            CompositePlayerInputSource compositeInput = player.GetComponent<CompositePlayerInputSource>();
+            if (compositeInput == null) compositeInput = player.AddComponent<CompositePlayerInputSource>();
+            compositeInput.Configure(input, joystick);
+
+            movement.Configure(compositeInput, 3f);
+
+            PlayerVitals vitals = player.GetComponent<PlayerVitals>();
+            if (vitals == null) vitals = player.AddComponent<PlayerVitals>();
+            vitals.Configure(20, 20);
 
             PlayerGatheringInteractor gathering = player.GetComponent<PlayerGatheringInteractor>();
             if (gathering == null) gathering = player.AddComponent<PlayerGatheringInteractor>();
             gathering.Configure(session, this, 1.25f);
+
+            PlayerCraftingInteractor crafting = player.GetComponent<PlayerCraftingInteractor>();
+            if (crafting == null) crafting = player.AddComponent<PlayerCraftingInteractor>();
+            crafting.Configure(session, this, cabinPlankRecipe);
         }
 
         private void EnsureResourceNode(string nodeId, string displayName, Vector3 position, string itemId, int amount, Color color)
         {
             if (resourceNodes.ContainsKey(nodeId)) return;
+
+            foreach (ResourceNode existingNode in FindObjectsByType<ResourceNode>(FindObjectsInactive.Exclude))
+            {
+                if (existingNode == null || existingNode.NodeId != nodeId) continue;
+                resourceNodes[nodeId] = existingNode;
+                return;
+            }
 
             Sprite sprite = itemId == "item.wood" ? PrototypePixelArtFactory.Tree() : PrototypePixelArtFactory.Rock();
             GameObject nodeObject = CreateSpriteObject(displayName, sprite, position, 0);
@@ -346,6 +443,12 @@ namespace TheOldRoad.Core
             spriteRenderer.sprite = sprite;
             gameObject.AddComponent<YSortSprite>().Configure(sortingOffset);
             return gameObject;
+        }
+
+        private static void EnsureDecoration(string name, Sprite sprite, Vector3 position, int sortingOffset)
+        {
+            if (GameObject.Find(name) != null) return;
+            CreateSpriteObject(name, sprite, position, sortingOffset);
         }
 
         private static void EnsurePlayerVisual(GameObject player)

@@ -18,12 +18,16 @@
 - GAME-008: Timestamp-based construction timer.
 - GAME-009: Versioned save/load architecture.
 - GAME-010: Valen Outskirts vertical-slice integration.
+- GAME-011: Prototype camera follow and gathering interaction feedback.
+- GAME-012: Crafting micro-slice for Cabin Plank recipe.
+- GAME-013: Minecraft-like prototype HUD with health, minimap, hotbar, and time.
+- GAME-014: Inventory and expanded map overlays.
 
 ## Next
 
-- GAME-011: Technical audit before combat/NPC work.
-- GAME-012: Replace placeholder art with prototype pixel sprites.
-- GAME-013: Add first combat micro-slice.
+- GAME-015: Technical audit before combat/NPC work.
+- GAME-016: Replace placeholder art with prototype pixel sprites.
+- GAME-017: Add first combat micro-slice.
 
 ## Out Of Scope Until After Audit
 
