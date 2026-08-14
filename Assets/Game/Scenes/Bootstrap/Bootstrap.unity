@@ -1,0 +1,139 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!29 &1
+SceneSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_EnableFog: 0
+  m_Fog: 0
+--- !u!1 &1000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: GameBootstrap
+  m_Component:
+  - component: {fileID: 1001}
+  - component: {fileID: 1002}
+--- !u!4 &1001
+Transform:
+  m_GameObject: {fileID: 1000}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+--- !u!114 &1002
+MonoBehaviour:
+  m_GameObject: {fileID: 1000}
+  m_Script: {fileID: 11500000, guid: 4e2f0a6f79a84a4fa4f4f7b5a9b6c001, type: 3}
+  gameVersion: 0.1.0-sprint1
+--- !u!1 &2000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: Player
+  m_Component:
+  - component: {fileID: 2001}
+  - component: {fileID: 2002}
+  - component: {fileID: 2003}
+  - component: {fileID: 2004}
+  - component: {fileID: 2005}
+  - component: {fileID: 2006}
+--- !u!4 &2001
+Transform:
+  m_GameObject: {fileID: 2000}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+--- !u!212 &2002
+SpriteRenderer:
+  m_GameObject: {fileID: 2000}
+  m_Color: {r: 0.2, g: 0.65, b: 1, a: 1}
+  m_SortingLayerID: 0
+  m_OrderInLayer: 1
+--- !u!50 &2003
+Rigidbody2D:
+  m_GameObject: {fileID: 2000}
+  serializedVersion: 4
+  m_BodyType: 0
+  m_Simulated: 1
+  m_GravityScale: 0
+  m_FreezeRotation: 1
+--- !u!114 &2004
+MonoBehaviour:
+  m_GameObject: {fileID: 2000}
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000002, type: 3}
+--- !u!114 &2005
+MonoBehaviour:
+  m_GameObject: {fileID: 2000}
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000003, type: 3}
+  moveSpeed: 3
+  inputSourceComponent: {fileID: 2004}
+--- !u!114 &2006
+MonoBehaviour:
+  m_GameObject: {fileID: 2000}
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000072, type: 3}
+  interactionRadius: 1.25
+  inventorySession: {fileID: 4002}
+--- !u!1 &4000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: InventorySession
+  m_Component:
+  - component: {fileID: 4001}
+  - component: {fileID: 4002}
+--- !u!4 &4001
+Transform:
+  m_GameObject: {fileID: 4000}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+--- !u!114 &4002
+MonoBehaviour:
+  m_GameObject: {fileID: 4000}
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000071, type: 3}
+--- !u!1 &5000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: Development HUD
+  m_Component:
+  - component: {fileID: 5001}
+  - component: {fileID: 5002}
+--- !u!4 &5001
+Transform:
+  m_GameObject: {fileID: 5000}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+--- !u!114 &5002
+MonoBehaviour:
+  m_GameObject: {fileID: 5000}
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000081, type: 3}
+  inventorySession: {fileID: 4002}
+--- !u!1 &3000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_Name: Main Camera
+  m_Component:
+  - component: {fileID: 3001}
+  - component: {fileID: 3002}
+--- !u!4 &3001
+Transform:
+  m_GameObject: {fileID: 3000}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+--- !u!20 &3002
+Camera:
+  m_GameObject: {fileID: 3000}
+  m_Enabled: 1
+  orthographic: 1
+  orthographic size: 5
+  m_Depth: -1
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.08, g: 0.1, b: 0.14, a: 0}
+--- !u!1660057535 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 1000}
+  - {fileID: 2000}
+  - {fileID: 4000}
+  - {fileID: 5000}
+  - {fileID: 3000}
