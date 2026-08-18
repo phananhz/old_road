@@ -51,3 +51,4 @@ If Unity shows a broken scene, run:
 or batchmode:
 
 `E:\Unity Editor\6000.5.8f1\Editor\Unity.exe -batchmode -quit -projectPath "E:\Unity Project\Old Road" -executeMethod TheOldRoad.Editor.ProjectSetup.RebuildPrototypeProject`
+ 1   0=-090-+87\][POIYTREA.,mnbvcz ]

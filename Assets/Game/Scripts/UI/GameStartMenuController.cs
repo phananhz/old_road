@@ -78,76 +78,105 @@ namespace TheOldRoad.UI
 
         private void DrawTitlePanel()
         {
-            Rect panel = CenterRect(620f, 440f);
+            // Positioned elegantly in center-right to showcase the knight on left and castle on right
+            float panelWidth = Mathf.Min(560f, Screen.width - 40f);
+            float panelHeight = Mathf.Min(430f, Screen.height - 40f);
+            float panelX = (Screen.width - panelWidth) * 0.5f;
+            float panelY = (Screen.height - panelHeight) * 0.5f;
+            Rect panel = new Rect(panelX, panelY, panelWidth, panelHeight);
+
             DrawPanel(panel);
 
-            GUI.Label(new Rect(panel.x + 32f, panel.y + 32f, panel.width - 64f, 62f), "THE OLD ROAD", titleStyle);
+            // Title Banner
+            GUI.Label(new Rect(panel.x + 20f, panel.y + 24f, panel.width - 40f, 54f), "THE OLD ROAD", titleStyle);
+            
+            // Subtitle
             GUI.Label(
-                new Rect(panel.x + 42f, panel.y + 98f, panel.width - 84f, 76f),
+                new Rect(panel.x + 36f, panel.y + 80f, panel.width - 72f, 68f),
                 LocalizationRuntime.T("title.subtitle"),
                 subtitleStyle);
 
-            DrawDivider(new Rect(panel.x + 54f, panel.y + 188f, panel.width - 108f, 2f));
+            DrawDivider(new Rect(panel.x + 48f, panel.y + 160f, panel.width - 96f, 2f));
 
-            if (GUI.Button(new Rect(panel.x + 180f, panel.y + 220f, 260f, 48f), LocalizationRuntime.T("start"), buttonStyle))
+            // Ornate Action Buttons
+            float btnW = Mathf.Min(280f, panel.width - 80f);
+            float btnX = panel.x + (panel.width - btnW) * 0.5f;
+
+            if (GUI.Button(new Rect(btnX, panel.y + 185f, btnW, 50f), "⚔  " + LocalizationRuntime.T("start") + "  ⚔", buttonStyle))
             {
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
                 hasStarted = true;
                 settingsOpen = false;
                 ResumeGameplay();
             }
 
-            if (GUI.Button(new Rect(panel.x + 180f, panel.y + 282f, 260f, 44f), LocalizationRuntime.T("settings"), buttonStyle))
+            if (GUI.Button(new Rect(btnX, panel.y + 248f, btnW, 46f), "⚙  " + LocalizationRuntime.T("settings"), buttonStyle))
             {
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
                 settingsOpen = true;
             }
 
-            if (GUI.Button(new Rect(panel.x + 180f, panel.y + 340f, 260f, 44f), LocalizationRuntime.T("quit"), buttonStyle))
+            if (GUI.Button(new Rect(btnX, panel.y + 306f, btnW, 46f), "✕  " + LocalizationRuntime.T("quit"), buttonStyle))
             {
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
                 Application.Quit();
             }
 
-            GUI.Label(new Rect(panel.x + 44f, panel.yMax - 40f, panel.width - 88f, 22f), LocalizationRuntime.T("settings.tip"), smallStyle);
+            GUI.Label(new Rect(panel.x + 30f, panel.yMax - 36f, panel.width - 60f, 22f), LocalizationRuntime.T("settings.tip"), smallStyle);
         }
 
         private void DrawSettingsPanel()
         {
-            Rect panel = CenterRect(700f, 560f);
+            Rect panel = CenterRect(720f, 660f);
             DrawPanel(panel);
 
-            GUI.Label(new Rect(panel.x + 34f, panel.y + 28f, panel.width - 68f, 44f), LocalizationRuntime.T("settings").ToUpperInvariant(), titleStyle);
-            GUI.Label(new Rect(panel.x + 44f, panel.y + 78f, panel.width - 88f, 44f), LocalizationRuntime.T("settings.subtitle"), subtitleStyle);
+            GUI.Label(new Rect(panel.x + 34f, panel.y + 24f, panel.width - 68f, 40f), LocalizationRuntime.T("settings").ToUpperInvariant(), titleStyle);
+            GUI.Label(new Rect(panel.x + 44f, panel.y + 68f, panel.width - 88f, 36f), LocalizationRuntime.T("settings.subtitle"), subtitleStyle);
 
-            float y = panel.y + 140f;
-            GUI.Label(new Rect(panel.x + 54f, y, 210f, 28f), LocalizationRuntime.T("graphics_quality"), labelStyle);
-            DrawQualityButtons(new Rect(panel.x + 54f, y + 34f, panel.width - 108f, 44f));
+            float y = panel.y + 116f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("graphics_quality"), labelStyle);
+            DrawQualityButtons(new Rect(panel.x + 54f, y + 28f, panel.width - 108f, 38f));
 
-            y += 104f;
-            GUI.Label(new Rect(panel.x + 54f, y, 210f, 28f), LocalizationRuntime.T("frame_rate"), labelStyle);
-            DrawFrameRateButtons(new Rect(panel.x + 54f, y + 34f, panel.width - 108f, 44f));
+            y += 76f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("frame_rate"), labelStyle);
+            DrawFrameRateButtons(new Rect(panel.x + 54f, y + 28f, panel.width - 108f, 38f));
 
-            y += 104f;
-            GUI.Label(new Rect(panel.x + 54f, y, 210f, 28f), LocalizationRuntime.T("language"), labelStyle);
-            DrawLanguageButtons(new Rect(panel.x + 280f, y - 6f, 270f, 40f));
+            y += 76f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("language"), labelStyle);
+            DrawLanguageButtons(new Rect(panel.x + 280f, y - 4f, 270f, 36f));
 
-            y += 62f;
-            GUI.Label(new Rect(panel.x + 54f, y, 210f, 28f), LocalizationRuntime.T("sound"), labelStyle);
-            bool newSound = GUI.Toggle(new Rect(panel.x + 280f, y, 180f, 28f), GameSettingsRuntime.SoundEnabled, GameSettingsRuntime.SoundEnabled ? LocalizationRuntime.T("on") : LocalizationRuntime.T("off"), labelStyle);
+            y += 48f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("sound"), labelStyle);
+            bool newSound = GUI.Toggle(new Rect(panel.x + 280f, y, 180f, 26f), GameSettingsRuntime.SoundEnabled, GameSettingsRuntime.SoundEnabled ? LocalizationRuntime.T("on") : LocalizationRuntime.T("off"), labelStyle);
             if (newSound != GameSettingsRuntime.SoundEnabled) GameSettingsRuntime.SetSoundEnabled(newSound);
 
-            y += 62f;
-            GUI.Label(new Rect(panel.x + 54f, y, 210f, 28f), LocalizationRuntime.T("master_volume"), labelStyle);
-            float newVolume = GUI.HorizontalSlider(new Rect(panel.x + 280f, y + 8f, 230f, 24f), GameSettingsRuntime.MasterVolume, 0f, 1f);
-            if (Mathf.Abs(newVolume - GameSettingsRuntime.MasterVolume) > 0.001f) GameSettingsRuntime.SetMasterVolume(newVolume);
-            GUI.Label(new Rect(panel.x + 524f, y, 70f, 28f), Mathf.RoundToInt(GameSettingsRuntime.MasterVolume * 100f) + "%", labelStyle);
+            y += 44f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("master_volume"), labelStyle);
+            float newMaster = GUI.HorizontalSlider(new Rect(panel.x + 280f, y + 6f, 230f, 22f), GameSettingsRuntime.MasterVolume, 0f, 1f);
+            if (Mathf.Abs(newMaster - GameSettingsRuntime.MasterVolume) > 0.001f) GameSettingsRuntime.SetMasterVolume(newMaster);
+            GUI.Label(new Rect(panel.x + 524f, y, 70f, 26f), Mathf.RoundToInt(GameSettingsRuntime.MasterVolume * 100f) + "%", labelStyle);
+
+            y += 40f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("music_volume"), labelStyle);
+            float newMusic = GUI.HorizontalSlider(new Rect(panel.x + 280f, y + 6f, 230f, 22f), GameSettingsRuntime.MusicVolume, 0f, 1f);
+            if (Mathf.Abs(newMusic - GameSettingsRuntime.MusicVolume) > 0.001f) GameSettingsRuntime.SetMusicVolume(newMusic);
+            GUI.Label(new Rect(panel.x + 524f, y, 70f, 26f), Mathf.RoundToInt(GameSettingsRuntime.MusicVolume * 100f) + "%", labelStyle);
+
+            y += 40f;
+            GUI.Label(new Rect(panel.x + 54f, y, 210f, 26f), LocalizationRuntime.T("sfx_volume"), labelStyle);
+            float newSfx = GUI.HorizontalSlider(new Rect(panel.x + 280f, y + 6f, 230f, 22f), GameSettingsRuntime.SfxVolume, 0f, 1f);
+            if (Mathf.Abs(newSfx - GameSettingsRuntime.SfxVolume) > 0.001f) GameSettingsRuntime.SetSfxVolume(newSfx);
+            GUI.Label(new Rect(panel.x + 524f, y, 70f, 26f), Mathf.RoundToInt(GameSettingsRuntime.SfxVolume * 100f) + "%", labelStyle);
 
             GUI.Label(
-                new Rect(panel.x + 54f, panel.yMax - 128f, panel.width - 108f, 52f),
+                new Rect(panel.x + 54f, panel.yMax - 110f, panel.width - 108f, 44f),
                 LocalizationRuntime.T("current") + ": " + GameSettingsRuntime.QualityName + " | " + GameSettingsRuntime.FrameRateLabel + " | " + LocalizationRuntime.T("language") + " " + LocalizationRuntime.LanguageName + " | " + LocalizationRuntime.T("sound") + " " + (GameSettingsRuntime.SoundEnabled ? LocalizationRuntime.T("on") : LocalizationRuntime.T("off")) + "\n" + GameSettingsRuntime.Diagnostics,
                 smallStyle);
 
             string backText = hasStarted ? LocalizationRuntime.T("back_to_game") : LocalizationRuntime.T("back");
-            if (GUI.Button(new Rect(panel.x + 200f, panel.yMax - 66f, 260f, 42f), backText, buttonStyle))
+            if (GUI.Button(new Rect(panel.x + 230f, panel.yMax - 60f, 260f, 40f), backText, buttonStyle))
             {
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
                 settingsOpen = false;
                 if (hasStarted) ResumeGameplay();
             }
@@ -239,23 +268,56 @@ namespace TheOldRoad.UI
 
         private void DrawBackdrop()
         {
-            DrawRect(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0.005f, 0.008f, 0.010f, 1f));
-            DrawRect(new Rect(0f, 0f, Screen.width, Screen.height * 0.28f), new Color(0.10f, 0.07f, 0.04f, 0.55f));
-            DrawRect(new Rect(0f, Screen.height * 0.62f, Screen.width, Screen.height * 0.38f), new Color(0f, 0f, 0f, 0.42f));
+            Texture2D panorama = TheOldRoad.World.PrototypePixelArtFactory.TitleKnightSunsetTexture();
+            if (panorama != null)
+            {
+                GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), panorama, ScaleMode.ScaleAndCrop);
+            }
+            else
+            {
+                DrawRect(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0.005f, 0.008f, 0.010f, 1f));
+            }
+
+            // Floating sunset ember particles
+            float time = UnityEngine.Time.unscaledTime;
+            for (int i = 0; i < 36; i++)
+            {
+                float seedX = (i * 127.3f) % Screen.width;
+                float speed = 18f + (i % 7) * 4f;
+                float seedY = Screen.height - ((time * speed + i * 47.9f) % (Screen.height + 40f));
+                float sway = Mathf.Sin(time * 1.5f + i) * 12f;
+                float size = 2f + (i % 3);
+                float alpha = Mathf.Sin((seedY / Screen.height) * Mathf.PI) * 0.75f;
+
+                Color emberCol = (i % 2 == 0)
+                    ? new Color(1f, 0.78f, 0.28f, alpha)
+                    : new Color(1f, 0.45f, 0.18f, alpha * 0.85f);
+
+                DrawRect(new Rect(seedX + sway, seedY, size, size), emberCol);
+            }
+
+            // Top & bottom cinematic vignette gradients
+            DrawRect(new Rect(0f, 0f, Screen.width, Screen.height * 0.22f), new Color(0.04f, 0.02f, 0.06f, 0.45f));
+            DrawRect(new Rect(0f, Screen.height * 0.78f, Screen.width, Screen.height * 0.22f), new Color(0.02f, 0.01f, 0.03f, 0.55f));
         }
 
         private void DrawPanel(Rect rect)
         {
-            DrawRect(new Rect(rect.x + 8f, rect.y + 10f, rect.width, rect.height), new Color(0f, 0f, 0f, 0.45f));
-            DrawRect(rect, ink);
+            // Drop shadow
+            DrawRect(new Rect(rect.x + 6f, rect.y + 8f, rect.width, rect.height), new Color(0f, 0f, 0f, 0.65f));
+            // Dark forged iron plate
+            DrawRect(rect, new Color(0.06f, 0.045f, 0.04f, 0.94f));
+            // Gold filigree borders
             DrawBorder(rect, gold, 3f);
-            DrawBorder(new Rect(rect.x + 8f, rect.y + 8f, rect.width - 16f, rect.height - 16f), new Color(0.26f, 0.17f, 0.08f, 1f), 1f);
-            DrawRect(new Rect(rect.x, rect.y, rect.width, 8f), red);
+            DrawBorder(new Rect(rect.x + 5f, rect.y + 5f, rect.width - 10f, rect.height - 10f), new Color(0.38f, 0.26f, 0.12f, 1f), 1f);
+            DrawBorder(new Rect(rect.x + 8f, rect.y + 8f, rect.width - 16f, rect.height - 16f), new Color(0.18f, 0.12f, 0.08f, 0.8f), 1f);
+            // Scarlet header ribbon
+            DrawRect(new Rect(rect.x + 6f, rect.y + 4f, rect.width - 12f, 6f), red);
         }
 
         private void DrawDivider(Rect rect)
         {
-            DrawRect(rect, new Color(0.42f, 0.29f, 0.12f, 1f));
+            DrawRect(rect, new Color(0.55f, 0.38f, 0.16f, 1f));
         }
 
         private static Rect CenterRect(float width, float height)
@@ -299,7 +361,7 @@ namespace TheOldRoad.UI
             titleStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 34,
+                fontSize = 32,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = gold }
             };
@@ -307,14 +369,14 @@ namespace TheOldRoad.UI
             subtitleStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 15,
+                fontSize = 14,
                 wordWrap = true,
                 normal = { textColor = parchment }
             };
 
             labelStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 16,
+                fontSize = 15,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = parchment }
             };
@@ -324,12 +386,12 @@ namespace TheOldRoad.UI
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 12,
                 wordWrap = true,
-                normal = { textColor = new Color(0.70f, 0.66f, 0.56f, 1f) }
+                normal = { textColor = new Color(0.78f, 0.72f, 0.60f, 1f) }
             };
 
             buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 16,
+                fontSize = 15,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = parchment },
                 hover = { textColor = gold },

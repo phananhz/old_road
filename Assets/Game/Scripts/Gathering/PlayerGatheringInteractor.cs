@@ -41,7 +41,7 @@ namespace TheOldRoad.Gathering
 
             UpdateNearestNode(false);
 
-            if (!PrototypeInput.GetKeyDown(KeyCode.E) || inventorySession == null) return;
+            if ((!PrototypeInput.GetKeyDown(KeyCode.F) && !PrototypeInput.GetKeyDown(KeyCode.E)) || inventorySession == null) return;
             if (nearestNode == null)
             {
                 return;
@@ -110,6 +110,10 @@ namespace TheOldRoad.Gathering
             if (node.TryHarvest(inventorySession.Runtime))
             {
                 InteractionHint = "Gathered " + node.ResourceAmount + " " + node.ResourceItemId + ".";
+                if (node.ResourceItemId == "item.wood") TheOldRoad.Audio.AudioManager.PlayChopWood();
+                else if (node.ResourceItemId == "item.stone" || node.ResourceItemId == "item.iron-ore") TheOldRoad.Audio.AudioManager.PlayMineStone();
+                else TheOldRoad.Audio.AudioManager.PlayForage();
+
                 sliceController?.NotifyResourceHarvested(node);
                 node.SetHighlighted(false);
                 if (nearestNode == node) nearestNode = null;

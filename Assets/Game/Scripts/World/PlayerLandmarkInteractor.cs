@@ -37,7 +37,7 @@ namespace TheOldRoad.World
 
             UpdateNearestLandmark(false);
 
-            if (!PrototypeInput.GetKeyDown(KeyCode.E)) return;
+            if (!PrototypeInput.GetKeyDown(KeyCode.F) && !PrototypeInput.GetKeyDown(KeyCode.E)) return;
             if (nearestLandmark == null) return;
 
             BeginInspect(nearestLandmark);

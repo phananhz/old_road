@@ -17,19 +17,25 @@ namespace TheOldRoad.Building
         [SerializeField] private BuildCostEntry[] constructionCosts;
         [SerializeField, Min(0f)] private float constructionDurationSeconds;
         [SerializeField] private string[] constructionStages = { "Foundation", "Frame", "Walls", "Roof", "Complete" };
+        [SerializeField] private Sprite completeSprite;
+        [SerializeField] private Sprite[] stageSprites;
 
         public string BuildingId => buildingId;
         public Vector2Int Footprint => footprint;
         public BuildCostEntry[] ConstructionCosts => constructionCosts;
         public float ConstructionDurationSeconds => constructionDurationSeconds;
         public string[] ConstructionStages => constructionStages;
+        public Sprite CompleteSprite => completeSprite;
+        public Sprite[] StageSprites => stageSprites;
 
         public void ConfigureForPrototype(
             string buildingId,
             Vector2Int footprint,
             BuildCostEntry[] constructionCosts,
             float constructionDurationSeconds,
-            string[] constructionStages)
+            string[] constructionStages,
+            Sprite completeSprite = null,
+            Sprite[] stageSprites = null)
         {
             this.buildingId = buildingId;
             this.footprint = new Vector2Int(Mathf.Max(1, footprint.x), Mathf.Max(1, footprint.y));
@@ -38,6 +44,8 @@ namespace TheOldRoad.Building
             this.constructionStages = constructionStages == null || constructionStages.Length == 0
                 ? new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" }
                 : constructionStages;
+            if (completeSprite != null) this.completeSprite = completeSprite;
+            if (stageSprites != null) this.stageSprites = stageSprites;
         }
     }
 }

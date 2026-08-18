@@ -73,6 +73,7 @@ namespace TheOldRoad.Crafting
             }
 
             inventory.Add("item.cooked-meal", 1);
+            TheOldRoad.Audio.AudioManager.PlayCook();
             PlayerVitals vitals = GetComponent<PlayerVitals>();
             if (vitals != null) vitals.Heal(4);
             CookingHint = "Cooked meal prepared. Health restored.";

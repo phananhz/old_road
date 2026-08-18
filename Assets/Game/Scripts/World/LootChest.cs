@@ -43,6 +43,7 @@ namespace TheOldRoad.World
             if (opened || inventory == null || string.IsNullOrWhiteSpace(itemId) || quantity <= 0) return false;
 
             inventory.Add(itemId, quantity);
+            TheOldRoad.Audio.AudioManager.PlayLoot();
             SetOpened(true);
             return true;
         }

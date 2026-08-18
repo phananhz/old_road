@@ -48,6 +48,7 @@ namespace TheOldRoad.Crafting
             if (CraftingRuntime.TryCraft(recipe, inventorySession.Runtime))
             {
                 CraftingHint = "Crafted " + recipe.ResultQuantity + " " + PrototypeItemCatalog.Get(recipe.ResultItemId).DisplayName + ".";
+                TheOldRoad.Audio.AudioManager.PlayCraft();
                 sliceController?.NotifyCrafted(recipe);
                 PlayerSpeechBubble.Say("speech.craft_done");
             }

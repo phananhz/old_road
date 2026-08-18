@@ -40,7 +40,7 @@ namespace TheOldRoad.World
 
             UpdateNearestChest(false);
 
-            if (!PrototypeInput.GetKeyDown(KeyCode.E) || inventorySession == null) return;
+            if ((!PrototypeInput.GetKeyDown(KeyCode.F) && !PrototypeInput.GetKeyDown(KeyCode.E)) || inventorySession == null) return;
             if (nearestChest == null) return;
 
             BeginOpen(nearestChest);

@@ -9,7 +9,7 @@ namespace TheOldRoad.Time
 
         [SerializeField, Min(1)] private int startDay = 1;
         [SerializeField, Range(0, 23)] private int startHour = 6;
-        [SerializeField, Range(0, 59)] private int startMinute;
+        [SerializeField, Range(0, 59)] private int startMinute = 0;
         [SerializeField, Min(0f)] private float gameMinutesPerRealSecond = 1.2f;
 
         private float elapsedGameMinutes;

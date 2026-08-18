@@ -84,7 +84,7 @@ namespace TheOldRoad.NPC
             if (screen.z < 0f) return;
 
             Rect rect = new Rect(screen.x - 54f, Screen.height - screen.y - 15f, 108f, 30f);
-            GUI.Label(rect, villagerName + "\n" + jobTitle, CreateNpcLabelStyle());
+            GUI.Label(rect, villagerName + "\n" + TheOldRoad.UI.LocalizationRuntime.NpcTitle(jobTitle), CreateNpcLabelStyle());
 
             if (string.IsNullOrWhiteSpace(CurrentSpeech)) return;
 
@@ -146,23 +146,7 @@ namespace TheOldRoad.NPC
 
         private string BuildDialogueLine()
         {
-            switch (jobTitle)
-            {
-                case "Miller":
-                    return "The old road woke before dawn. Follow it, but keep food in your pack.";
-                case "Woodcutter":
-                    return "Trees past the village are fair game. If the bark glows, your axe-hand is close enough.";
-                case "Herbalist":
-                    return "Berries, herbs, and mushrooms grow far from Valen. Gather them before night falls.";
-                case "Blacksmith":
-                    return "Iron from cave mouths carries old heat. Bring enough and better tools become possible.";
-                case "Guard":
-                    return "Travellers whisper about claw marks on the northern ridge. Not wolves. Bigger.";
-                case "Stablehand":
-                    return "The animals are harmless. They know which roads still feel safe.";
-                default:
-                    return "No one here means you harm. Roads bring trouble, but also trade.";
-            }
+            return TheOldRoad.UI.LocalizationRuntime.NpcDialogue(jobTitle);
         }
 
         private static int StableStringHash(string value)

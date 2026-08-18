@@ -1,0 +1,22 @@
+{
+    "name": "TheOldRoad.Tests.EditMode",
+    "rootNamespace": "TheOldRoad.Tests.EditMode",
+    "references": [
+        "TheOldRoad",
+        "TheOldRoad.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

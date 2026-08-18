@@ -8,7 +8,7 @@ namespace TheOldRoad.Input
     /// </summary>
     public sealed class MobileJoystickInputSource : MonoBehaviour, IPlayerInputSource
     {
-        [SerializeField, Min(48f)] private float radius = 58f;
+        [SerializeField, Min(28f)] private float radius = 38f;
         [SerializeField, Range(0f, 1f)] private float deadZone = 0.12f;
 
         private Vector2 move;
@@ -27,7 +27,7 @@ namespace TheOldRoad.Input
             }
         }
 
-        private Vector2 JoystickCenter => new Vector2(94f, Screen.height - 106f);
+        private Vector2 JoystickCenter => new Vector2(58f, Screen.height - 62f);
 
         private void OnGUI()
         {

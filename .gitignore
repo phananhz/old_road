@@ -25,3 +25,7 @@
 *.userprefs
 
 sysinfo.txt
+*.zip
+*.dll
+Assets/_Recovery/
+Assets/_Recovery.meta

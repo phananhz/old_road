@@ -19,7 +19,7 @@ Transform:
 --- !u!212 &100002
 SpriteRenderer:
   m_GameObject: {fileID: 100000}
-  m_Color: {r: 0.2, g: 0.65, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_SortingLayerID: 0
   m_OrderInLayer: 1
 --- !u!50 &100003

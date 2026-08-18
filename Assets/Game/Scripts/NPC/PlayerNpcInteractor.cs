@@ -1,6 +1,7 @@
 using UnityEngine;
 using TheOldRoad.Core;
 using TheOldRoad.Input;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.NPC
 {
@@ -33,10 +34,10 @@ namespace TheOldRoad.NPC
                 return;
             }
 
-            InteractionHint = "Press E to talk with " + nearestVillager.VillagerName + " (" + nearestVillager.JobTitle + ").";
+            InteractionHint = (LocalizationRuntime.IsVietnamese ? "Bấm F/E để nói chuyện với " : "Press F/E to talk with ") + nearestVillager.VillagerName + " (" + LocalizationRuntime.NpcTitle(nearestVillager.JobTitle) + ").";
             hintHideTime = UnityEngine.Time.unscaledTime + 0.35f;
 
-            if (!PrototypeInput.GetKeyDown(KeyCode.E)) return;
+            if (!PrototypeInput.GetKeyDown(KeyCode.F) && !PrototypeInput.GetKeyDown(KeyCode.E)) return;
 
             string line = nearestVillager.Talk();
             InteractionHint = nearestVillager.VillagerName + ": " + line;

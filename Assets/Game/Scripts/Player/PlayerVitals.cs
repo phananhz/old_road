@@ -28,6 +28,46 @@ namespace TheOldRoad.Player
         {
             if (amount <= 0) return;
             currentHealth = Mathf.Clamp(currentHealth - amount, 0, maxHealth);
+            TheOldRoad.Audio.AudioManager.PlayPlayerHurt();
+        }
+
+        public void TakeDamage(int amount)
+        {
+            Damage(amount);
+        }
+
+        public bool TryConsumeFood(string itemId, out int healedAmount)
+        {
+            healedAmount = 0;
+            switch (itemId)
+            {
+                case "item.wild-berries":
+                    healedAmount = 2;
+                    break;
+                case "item.medicinal-herb":
+                    healedAmount = 5;
+                    break;
+                case "item.cooked-meal":
+                    healedAmount = 12;
+                    break;
+                case "item.egg":
+                    healedAmount = 3;
+                    break;
+                case "item.milk":
+                    healedAmount = 4;
+                    break;
+                default:
+                    return false;
+            }
+
+            if (currentHealth >= maxHealth && healedAmount > 0)
+            {
+                // Already full health
+                return false;
+            }
+
+            Heal(healedAmount);
+            return true;
         }
     }
 }

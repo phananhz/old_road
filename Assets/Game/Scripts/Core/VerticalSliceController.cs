@@ -4,14 +4,18 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using TheOldRoad.Building;
+using TheOldRoad.Combat;
 using TheOldRoad.Construction;
 using TheOldRoad.Crafting;
+using TheOldRoad.Economy;
+using TheOldRoad.Farming;
 using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
 using TheOldRoad.Items;
 using TheOldRoad.NPC;
 using TheOldRoad.Player;
+using TheOldRoad.Quest;
 using TheOldRoad.Save;
 using TheOldRoad.Time;
 using TheOldRoad.UI;
@@ -28,6 +32,19 @@ namespace TheOldRoad.Core
         private const string AnimalPenLongId = "building.animal-pen-long";
         private const string StorageShedId = "building.storage-shed";
         private const string StoneCottageId = "building.stone-cottage";
+        private const string HerbalistHutId = "building.herbalist-hut";
+        private const string LookoutTowerId = "building.lookout-tower";
+        private const string FarmBarnId = "building.farm-barn";
+        private const string FenceId = "building.fence";
+        private const string GateId = "building.gate";
+        private const string PerimeterFenceDragId = "building.perimeter-fence-drag";
+        private const string PerimeterFenceSmallId = "building.perimeter-fence-small";
+        private const string PerimeterFenceMediumId = "building.perimeter-fence-medium";
+        private const string PerimeterFenceLargeId = "building.perimeter-fence-large";
+        private const string PerimeterFenceGrandId = "building.perimeter-fence-grand";
+        private const string PathDirtId = "building.path-dirt";
+        private const string PathCobblestoneId = "building.path-cobblestone";
+        private const string ScarecrowId = "building.scarecrow";
         private const int WorldSeed = 43129;
         private static readonly Vector2 WorldMin = new Vector2(-60f, -36f);
         private static readonly Vector2 WorldMax = new Vector2(60f, 36f);
@@ -39,9 +56,25 @@ namespace TheOldRoad.Core
         [SerializeField] private BuildingDefinition animalPenLongDefinition;
         [SerializeField] private BuildingDefinition storageShedDefinition;
         [SerializeField] private BuildingDefinition stoneCottageDefinition;
+        [SerializeField] private BuildingDefinition herbalistHutDefinition;
+        [SerializeField] private BuildingDefinition lookoutTowerDefinition;
+        [SerializeField] private BuildingDefinition farmBarnDefinition;
+        [SerializeField] private BuildingDefinition fenceDefinition;
+        [SerializeField] private BuildingDefinition gateDefinition;
+        [SerializeField] private BuildingDefinition perimeterFenceDragDefinition;
+        [SerializeField] private BuildingDefinition perimeterFenceSmallDefinition;
+        [SerializeField] private BuildingDefinition perimeterFenceMediumDefinition;
+        [SerializeField] private BuildingDefinition perimeterFenceLargeDefinition;
+        [SerializeField] private BuildingDefinition perimeterFenceGrandDefinition;
+        [SerializeField] private BuildingDefinition pathDirtDefinition;
+        [SerializeField] private BuildingDefinition pathCobblestoneDefinition;
+        [SerializeField] private BuildingDefinition scarecrowDefinition;
         [SerializeField] private RecipeDefinition cabinPlankRecipe;
         [SerializeField] private RecipeDefinition wornAxeRecipe;
         [SerializeField] private RecipeDefinition stonePickRecipe;
+        [SerializeField] private RecipeDefinition fenceRecipe;
+        [SerializeField] private RecipeDefinition gateRecipe;
+        [SerializeField] private RecipeDefinition wateringCanRecipe;
         [SerializeField] private Vector2Int buildAreaMin = new Vector2Int(-100000, -100000);
         [SerializeField] private Vector2Int buildAreaMax = new Vector2Int(100000, 100000);
         [SerializeField, Min(1f)] private float autosaveIntervalSeconds = 10f;
@@ -60,6 +93,7 @@ namespace TheOldRoad.Core
         private string saveStatus = "Save not initialized.";
         private float autosaveTimer;
         private bool talkedToVillager;
+        private readonly HashSet<string> completedStoryStepIds = new HashSet<string>();
 
         public InventoryRuntime Inventory => inventorySession != null ? inventorySession.Runtime : null;
         public string SaveStatus => saveStatus;
@@ -78,6 +112,19 @@ namespace TheOldRoad.Core
         public RecipeDefinition CabinPlankRecipe => cabinPlankRecipe;
         public string[] ObjectiveDisplayLines => BuildObjectiveStates()
             .Select(state => (state.completed ? "[x] " : "[ ] ") + state.text)
+            .ToArray();
+        public string CurrentStoryTitle => BuildStoryProgress().ActiveStep != null
+            ? BuildStoryProgress().ActiveStep.Title
+            : "The Old Road Awaits";
+        public string CurrentStoryDetail => BuildStoryProgress().ActiveStep != null
+            ? BuildStoryProgress().ActiveStep.Detail
+            : "The opening Roadwarden arc is complete. The Blackwood expedition is ready for the next update.";
+        public string[] StoryChapterLines => BuildStoryProgress().Chapters
+            .Select(chapter => chapter.Title + " — " + chapter.Summary)
+            .ToArray();
+        public string[] StoryJournalLines => BuildStoryProgress().CompletedSteps
+            .Where(step => !string.IsNullOrWhiteSpace(step.StoryEntry))
+            .Select(step => step.Title + ": " + step.StoryEntry)
             .ToArray();
 
         public bool IsResourceNodeHarvested(string nodeId)
@@ -136,12 +183,14 @@ namespace TheOldRoad.Core
                 HasOverlap(origin, footprint));
         }
 
-        public bool TryBeginConstruction(BuildingDefinition definition, Vector2Int origin, out string status)
+        public bool TryBeginConstruction(BuildingDefinition definition, Vector2Int origin, out string status, Vector2Int? customFootprint = null)
         {
             status = "No building selected.";
             if (definition == null) return false;
 
-            if (!IsPlacementValid(origin, definition.Footprint))
+            Vector2Int footprint = customFootprint ?? definition.Footprint;
+
+            if (!IsPlacementValid(origin, footprint))
             {
                 status = "Invalid placement.";
                 return false;
@@ -155,23 +204,109 @@ namespace TheOldRoad.Core
             }
 
             constructionJobs[job.constructionId] = job;
-            MarkOccupied(job.Placement, definition.Footprint);
-            CreateConstructionSite(job, definition);
+            MarkOccupied(job.Placement, footprint);
+            CreateConstructionSite(job, definition, footprint);
+            RefreshStoryProgressStatus("Construction started: " + GetBuildingDisplayName(definition.BuildingId) + ".");
             SaveNow();
             status = "Construction started.";
             return true;
+        }
+
+        public bool TryDemolishBuilding(Vector2 worldPosition, out string status)
+        {
+            status = "No building found at this location.";
+            ConstructionSite[] sites = FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude);
+            ConstructionSite targetSite = null;
+            float nearestDist = 3.5f;
+
+            foreach (var site in sites)
+            {
+                if (site == null || site.Job == null) continue;
+                Vector2Int fp = site.Definition != null ? site.Definition.Footprint : new Vector2Int(1, 1);
+
+                float minX = site.Job.gridX - 0.5f;
+                float maxX = site.Job.gridX + fp.x - 0.5f;
+                float minY = site.Job.gridY - 0.5f;
+                float maxY = site.Job.gridY + fp.y - 0.5f;
+
+                if (worldPosition.x >= minX && worldPosition.x <= maxX &&
+                    worldPosition.y >= minY && worldPosition.y <= maxY)
+                {
+                    targetSite = site;
+                    break;
+                }
+
+                float dist = Vector2.Distance(worldPosition, site.transform.position);
+                if (dist < nearestDist)
+                {
+                    nearestDist = dist;
+                    targetSite = site;
+                }
+            }
+
+            if (targetSite == null) return false;
+
+            BuildingDefinition definition = targetSite.Definition ?? GetBuildingDefinition(targetSite.Job.buildingId);
+            Vector2Int footprint = definition != null ? definition.Footprint : new Vector2Int(1, 1);
+
+            // 100% full material refund
+            if (definition != null && definition.ConstructionCosts != null)
+            {
+                foreach (var cost in definition.ConstructionCosts)
+                {
+                    if (cost.quantity > 0 && !string.IsNullOrWhiteSpace(cost.itemId))
+                    {
+                        Inventory.Add(cost.itemId, cost.quantity);
+                        FloatingTextController.Spawn($"+{cost.quantity} {LocalizationRuntime.T(cost.itemId)}", targetSite.transform.position + Vector3.up * 1.2f, new Color(0.3f, 0.95f, 0.4f, 1f));
+                    }
+                }
+            }
+
+            // Unmark occupied grid cells
+            UnmarkOccupied(targetSite.Job.Placement, footprint);
+
+            // Remove from jobs map
+            if (constructionJobs.ContainsKey(targetSite.Job.constructionId))
+            {
+                constructionJobs.Remove(targetSite.Job.constructionId);
+            }
+
+            TheOldRoad.Audio.AudioManager.PlayChopWood();
+            Destroy(targetSite.gameObject);
+            SaveNow();
+
+            string bName = GetBuildingDisplayName(targetSite.Job.buildingId);
+            status = LocalizationRuntime.IsVietnamese
+                ? $"Đã xóa {bName} và thu hồi 100% vật phẩm!"
+                : $"Demolished {bName} and refunded 100% materials!";
+
+            PlayerSpeechBubble.Say(status);
+            return true;
+        }
+
+        private void UnmarkOccupied(Vector2Int origin, Vector2Int footprint)
+        {
+            for (int x = 0; x < footprint.x; x++)
+            {
+                for (int y = 0; y < footprint.y; y++)
+                {
+                    occupiedCells.Remove(new Vector2Int(origin.x + x, origin.y + y));
+                }
+            }
         }
 
         public void NotifyResourceHarvested(ResourceNode node)
         {
             if (node == null) return;
             if (!string.IsNullOrWhiteSpace(node.NodeId) && node.IsHarvested) harvestedResourceNodeIds.Add(node.NodeId);
+            RefreshStoryProgressStatus("Supplies gathered for the road.");
             SaveNow();
         }
 
         public void NotifyCrafted(RecipeDefinition recipe)
         {
             if (recipe == null) return;
+            RefreshStoryProgressStatus("Crafted: " + recipe.ResultItemId + ".");
             SaveNow();
         }
 
@@ -189,6 +324,7 @@ namespace TheOldRoad.Core
                 lootChests = lootChests.Values
                     .Select(chest => new LootChestSaveEntry { chestId = chest.ChestId, opened = chest.IsOpened })
                     .ToArray(),
+                completedStorySteps = BuildCompletedStoryStepSaveEntries(),
                 player = CreatePlayerSaveEntry(),
                 gameTime = CreateGameTimeSaveEntry(),
                 talkedToVillager = talkedToVillager
@@ -216,6 +352,16 @@ namespace TheOldRoad.Core
                 .ToArray();
         }
 
+        private StoryStepSaveEntry[] BuildCompletedStoryStepSaveEntries()
+        {
+            BuildStoryProgress();
+            return completedStoryStepIds
+                .Where(stepId => !string.IsNullOrWhiteSpace(stepId))
+                .OrderBy(stepId => stepId)
+                .Select(stepId => new StoryStepSaveEntry { stepId = stepId, completed = true })
+                .ToArray();
+        }
+
         public void SaveNow()
         {
             if (saveRepository == null) return;
@@ -226,31 +372,43 @@ namespace TheOldRoad.Core
         public void NotifyLandmarkDiscovered(DiscoverableLandmark landmark)
         {
             if (landmark == null) return;
-            LastDiscoveryStatus = "Journal updated: " + landmark.Title + ".";
+            RefreshStoryProgressStatus("Journal updated: " + landmark.Title + ".");
             SaveNow();
         }
 
         public void NotifyLootChestOpened(LootChest chest)
         {
             if (chest == null) return;
-            LastDiscoveryStatus = "Loot found: " + chest.DisplayName + ".";
+            RefreshStoryProgressStatus("Loot found: " + chest.DisplayName + ".");
             SaveNow();
         }
 
         public void NotifyPrototypeStateChanged(string status)
         {
-            if (!string.IsNullOrWhiteSpace(status)) LastDiscoveryStatus = status;
+            if (!string.IsNullOrWhiteSpace(status)) RefreshStoryProgressStatus(status);
             SaveNow();
         }
 
         public void NotifyVillagerTalked(VillagerNpcController villager)
         {
             talkedToVillager = true;
+            string fallback = "Spoke with a villager.";
             if (villager != null)
             {
-                LastDiscoveryStatus = "Spoke with " + villager.VillagerName + " the " + villager.JobTitle + ".";
+                fallback = "Spoke with " + villager.VillagerName + " the " + villager.JobTitle + ".";
             }
+            RefreshStoryProgressStatus(fallback);
             SaveNow();
+        }
+
+        private void RefreshStoryProgressStatus(string fallbackStatus)
+        {
+            HashSet<string> previous = new HashSet<string>(completedStoryStepIds);
+            StoryQuestProgress progress = BuildStoryProgress();
+            StoryQuestStep newStep = progress.CompletedSteps.LastOrDefault(step => !previous.Contains(step.StepId));
+            LastDiscoveryStatus = newStep != null
+                ? "Story updated: " + newStep.Title + "."
+                : fallbackStatus;
         }
 
         private PlayerSaveEntry CreatePlayerSaveEntry()
@@ -280,36 +438,38 @@ namespace TheOldRoad.Core
 
         private (string text, bool completed)[] BuildObjectiveStates()
         {
+            StoryQuestProgress progress = BuildStoryProgress();
+            return progress.VisibleSteps
+                .Select(step => (step.Title, completedStoryStepIds.Contains(step.StepId)))
+                .ToArray();
+        }
+
+        private StoryQuestProgress BuildStoryProgress()
+        {
             RefreshConstructionJobs();
             InventoryRuntime inventory = Inventory;
-
-            return new[]
+            StoryQuestContext context = new StoryQuestContext
             {
-                ("Inspect an old-road landmark", DiscoveredLandmarkCount > 0),
-                ("Open an old chest", OpenedLootChestCount > 0),
-                ("Recover Father's Roadwarden journal page", inventory != null && inventory.GetQuantity("item.roadwarden-page") > 0),
-                ("Speak with a village NPC", talkedToVillager),
-                ("Craft a worn axe", inventory != null && inventory.GetQuantity("item.tool-axe") > 0),
-                ("Gather 3 wood", inventory != null && inventory.GetQuantity("item.wood") >= 3),
-                ("Gather 2 stone", inventory != null && inventory.GetQuantity("item.stone") >= 2),
-                ("Craft a stone pick", inventory != null && inventory.GetQuantity("item.tool-pickaxe") > 0),
-                ("Mine iron ore", inventory != null && inventory.GetQuantity("item.iron-ore") > 0),
-                ("Forage any wild food or herb", inventory != null && HasAnyForagedItem(inventory)),
-                ("Craft 1 cabin plank", inventory != null && inventory.GetQuantity("item.cabin-plank") >= 1),
-                ("Start cabin construction", constructionJobs.Count > 0),
-                ("Complete the first cabin", HasCompletedBuilding(CabinId)),
-                ("Find the first bell fragment", inventory != null && inventory.GetQuantity("item.bell-fragment") > 0),
-                ("Build a campfire", HasCompletedBuilding(CampfireId)),
-                ("Cook one meal", inventory != null && inventory.GetQuantity("item.cooked-meal") > 0),
-                ("Build an animal pen", HasCompletedBuilding(AnimalPenSmallId) || HasCompletedBuilding(AnimalPenLongId)),
-                ("Find a cave entrance", HasDiscoveredLandmark("landmark.cave.blackwood")),
-                ("Read the dragon-scarred ridge", HasDiscoveredLandmark("landmark.dragon.ridge"))
+                GetItemQuantity = itemId => inventory != null ? inventory.GetQuantity(itemId) : 0,
+                HasStartedBuilding = HasStartedBuilding,
+                HasCompletedBuilding = HasCompletedBuilding,
+                HasDiscoveredLandmark = HasDiscoveredLandmark,
+                TalkedToVillager = talkedToVillager,
+                OpenedLootChestCount = OpenedLootChestCount,
+                DiscoveredLandmarkCount = DiscoveredLandmarkCount
             };
+
+            return StoryQuestRuntime.Evaluate(context, completedStoryStepIds);
         }
 
         private bool HasCompletedBuilding(string buildingId)
         {
             return constructionJobs.Values.Any(job => job != null && job.buildingId == buildingId && job.state == ConstructionState.Completed);
+        }
+
+        private bool HasStartedBuilding(string buildingId)
+        {
+            return constructionJobs.Values.Any(job => job != null && job.buildingId == buildingId);
         }
 
         private bool HasDiscoveredLandmark(string landmarkId)
@@ -353,9 +513,81 @@ namespace TheOldRoad.Core
             EnsureInfiniteWorldStreamer();
             EnsureDayNightLighting(mainCamera, gameTime, inventorySession);
             EnsureProceduralResourceNodes();
+            EnsurePrototypeEnemies();
             BuildingPlacementController placement = EnsureBuildingPlacement(mainCamera, inventorySession);
             EnsureHud(inventorySession, placement);
             EnsureStartMenu();
+            EnsureAudioManager();
+            EnsureWeather();
+            EnsureHomeStorage();
+            EnsureBellTowerPuzzle();
+            EnsureMerchant();
+            EnsurePlayerFarming();
+            EnsureNightMonsters();
+        }
+
+        private void EnsureBellTowerPuzzle()
+        {
+            if (FindAnyObjectByType<AncientBellTowerPuzzle>() != null) return;
+            GameObject ruinsObj = new GameObject("Ancient Bell Tower Ruins Puzzle");
+            ruinsObj.AddComponent<AncientBellTowerPuzzle>();
+        }
+
+        private void EnsureMerchant()
+        {
+            if (FindAnyObjectByType<MerchantNpcController>() != null) return;
+            GameObject merchantObj = new GameObject("Travelling Merchant Eldon");
+            merchantObj.AddComponent<MerchantNpcController>();
+        }
+
+        private void EnsurePlayerFarming()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player != null && player.GetComponent<PlayerFarmingInteractor>() == null)
+            {
+                PlayerFarmingInteractor farming = player.gameObject.AddComponent<PlayerFarmingInteractor>();
+                farming.Configure(inventorySession);
+            }
+        }
+
+        private void EnsureNightMonsters()
+        {
+            if (FindAnyObjectByType<NightMonsterController>() != null) return;
+
+            GameObject monsterObj1 = new GameObject("Shadow Beast");
+            monsterObj1.transform.position = new Vector3(26f, -16f, 0f);
+            monsterObj1.AddComponent<SpriteRenderer>().sprite = PrototypePixelArtFactory.NightMonsterSprite(0);
+            monsterObj1.AddComponent<CircleCollider2D>().isTrigger = true;
+            monsterObj1.AddComponent<NightMonsterController>();
+
+            GameObject monsterObj2 = new GameObject("Shadow Beast");
+            monsterObj2.transform.position = new Vector3(-35f, 18f, 0f);
+            monsterObj2.AddComponent<SpriteRenderer>().sprite = PrototypePixelArtFactory.NightMonsterSprite(0);
+            monsterObj2.AddComponent<CircleCollider2D>().isTrigger = true;
+            monsterObj2.AddComponent<NightMonsterController>();
+        }
+
+        private void EnsureWeather()
+        {
+            if (FindAnyObjectByType<WeatherController>() != null) return;
+            GameObject weatherObj = new GameObject("Weather Controller");
+            weatherObj.AddComponent<WeatherController>();
+        }
+
+        private void EnsureHomeStorage()
+        {
+            if (FindAnyObjectByType<HomeStorageChest>() != null) return;
+            GameObject storageObj = new GameObject("Home Storage Chest Manager");
+            storageObj.AddComponent<HomeStorageChest>();
+        }
+
+        private void EnsureAudioManager()
+        {
+            var audio = TheOldRoad.Audio.AudioManager.Instance;
+            if (audio != null)
+            {
+                audio.EnsureInitialized();
+            }
         }
 
         private GameTimeController EnsureGameTime()
@@ -408,6 +640,12 @@ namespace TheOldRoad.Core
                 {
                     chest.SetOpened(chestSave.opened);
                 }
+            }
+
+            foreach (StoryStepSaveEntry storySave in data.completedStorySteps ?? Array.Empty<StoryStepSaveEntry>())
+            {
+                if (storySave == null || string.IsNullOrWhiteSpace(storySave.stepId) || !storySave.completed) continue;
+                completedStoryStepIds.Add(storySave.stepId);
             }
 
             foreach (ConstructionSaveEntry constructionSave in data.constructionJobs ?? Array.Empty<ConstructionSaveEntry>())
@@ -550,6 +788,146 @@ namespace TheOldRoad.Core
                 60f,
                 new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
 
+            herbalistHutDefinition ??= CreatePrototypeBuilding(
+                HerbalistHutId,
+                new Vector2Int(3, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 4 },
+                    new BuildCostEntry { itemId = "item.medicinal-herb", quantity = 2 }
+                },
+                40f,
+                new[] { "Foundation", "Frame", "Thatch", "Garden", "Ready" });
+
+            lookoutTowerDefinition ??= CreatePrototypeBuilding(
+                LookoutTowerId,
+                new Vector2Int(2, 2),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
+                    new BuildCostEntry { itemId = "item.iron-ore", quantity = 3 },
+                    new BuildCostEntry { itemId = "item.torch", quantity = 1 }
+                },
+                35f,
+                new[] { "Stilts", "Braces", "Platform", "Beacon", "Ready" });
+
+            farmBarnDefinition ??= CreatePrototypeBuilding(
+                FarmBarnId,
+                new Vector2Int(4, 3),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 12 },
+                    new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 4 }
+                },
+                50f,
+                new[] { "Foundation", "Frame", "Tin Roof", "Haystack", "Ready" });
+
+            fenceDefinition ??= CreatePrototypeBuilding(
+                FenceId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 2 }
+                },
+                0f,
+                new[] { "Placed" });
+
+            gateDefinition ??= CreatePrototypeBuilding(
+                GateId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 4 }
+                },
+                0f,
+                new[] { "Placed" });
+
+            perimeterFenceDragDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceDragId,
+                new Vector2Int(10, 8),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 10 }
+                },
+                10f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            perimeterFenceSmallDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceSmallId,
+                new Vector2Int(6, 4),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 }
+                },
+                10f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            perimeterFenceMediumDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceMediumId,
+                new Vector2Int(10, 8),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 12 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                },
+                15f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            perimeterFenceLargeDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceLargeId,
+                new Vector2Int(16, 12),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 18 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 4 }
+                },
+                20f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            perimeterFenceGrandDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceGrandId,
+                new Vector2Int(24, 16),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 25 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 6 }
+                },
+                25f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            pathDirtDefinition ??= CreatePrototypeBuilding(
+                PathDirtId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 1 }
+                },
+                0f,
+                new[] { "Paved" });
+
+            pathCobblestoneDefinition ??= CreatePrototypeBuilding(
+                PathCobblestoneId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.stone", quantity = 1 }
+                },
+                0f,
+                new[] { "Paved" });
+
+            scarecrowDefinition ??= CreatePrototypeBuilding(
+                ScarecrowId,
+                new Vector2Int(1, 1),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 2 },
+                    new BuildCostEntry { itemId = "item.wheat", quantity = 2 }
+                },
+                5f,
+                new[] { "Frame", "Clothes", "Hat", "Ready" });
+
             RegisterBuildingDefinition(cabinDefinition);
             RegisterBuildingDefinition(campfireDefinition);
             RegisterBuildingDefinition(cookingHearthDefinition);
@@ -557,6 +935,19 @@ namespace TheOldRoad.Core
             RegisterBuildingDefinition(animalPenLongDefinition);
             RegisterBuildingDefinition(storageShedDefinition);
             RegisterBuildingDefinition(stoneCottageDefinition);
+            RegisterBuildingDefinition(herbalistHutDefinition);
+            RegisterBuildingDefinition(lookoutTowerDefinition);
+            RegisterBuildingDefinition(farmBarnDefinition);
+            RegisterBuildingDefinition(fenceDefinition);
+            RegisterBuildingDefinition(gateDefinition);
+            RegisterBuildingDefinition(perimeterFenceDragDefinition);
+            RegisterBuildingDefinition(perimeterFenceSmallDefinition);
+            RegisterBuildingDefinition(perimeterFenceMediumDefinition);
+            RegisterBuildingDefinition(perimeterFenceLargeDefinition);
+            RegisterBuildingDefinition(perimeterFenceGrandDefinition);
+            RegisterBuildingDefinition(pathDirtDefinition);
+            RegisterBuildingDefinition(pathCobblestoneDefinition);
+            RegisterBuildingDefinition(scarecrowDefinition);
 
             cabinPlankRecipe ??= CreatePrototypeRecipe(
                 "recipe.cabin-planks",
@@ -582,6 +973,28 @@ namespace TheOldRoad.Core
                     new IngredientRequirement { itemId = "item.stone", quantity = 3 }
                 },
                 "item.tool-pickaxe",
+                1);
+
+            fenceRecipe ??= CreatePrototypeRecipe(
+                "recipe.wood-fence",
+                new[] { new IngredientRequirement { itemId = "item.wood", quantity = 1 } },
+                "item.fence-wood",
+                2);
+
+            gateRecipe ??= CreatePrototypeRecipe(
+                "recipe.wood-gate",
+                new[] { new IngredientRequirement { itemId = "item.wood", quantity = 2 } },
+                "item.gate-wood",
+                1);
+
+            wateringCanRecipe ??= CreatePrototypeRecipe(
+                "recipe.watering-can",
+                new[]
+                {
+                    new IngredientRequirement { itemId = "item.iron-ore", quantity = 2 },
+                    new IngredientRequirement { itemId = "item.wood", quantity = 1 }
+                },
+                "item.watering-can",
                 1);
         }
 
@@ -627,6 +1040,7 @@ namespace TheOldRoad.Core
                 mainCamera.orthographicSize = 6f;
                 mainCamera.clearFlags = CameraClearFlags.SolidColor;
                 mainCamera.backgroundColor = new Color(0.05f, 0.07f, 0.08f, 1f);
+                EnsureAudioListener(mainCamera.gameObject);
                 return mainCamera;
             }
 
@@ -639,7 +1053,16 @@ namespace TheOldRoad.Core
             mainCamera.orthographicSize = 6f;
             mainCamera.clearFlags = CameraClearFlags.SolidColor;
             mainCamera.backgroundColor = new Color(0.05f, 0.07f, 0.08f, 1f);
+            EnsureAudioListener(cameraObject);
             return mainCamera;
+        }
+
+        private static void EnsureAudioListener(GameObject target)
+        {
+            if (FindAnyObjectByType<AudioListener>() == null && target != null)
+            {
+                target.AddComponent<AudioListener>();
+            }
         }
 
         private void EnsureCameraFollow(Camera mainCamera)
@@ -759,6 +1182,14 @@ namespace TheOldRoad.Core
                 new Vector3(-38f, 25f, 0f));
 
             EnsureLandmark(
+                "landmark.ridge.dragon",
+                "Dragon-Scarred Ridge",
+                "Dragon-Scarred Ridge",
+                "Black glass and fused stone mark where dragon flame hit the northern rock. Old ash still smells bitter.",
+                PrototypePixelArtFactory.RuinedArch(),
+                new Vector3(34f, 27f, 0f));
+
+            EnsureLandmark(
                 "landmark.ruin.south",
                 "South Ruin Gate",
                 "South Ruin Gate",
@@ -781,6 +1212,60 @@ namespace TheOldRoad.Core
                 "The stone is glassy and black where something vast burned across it. Villagers call this proof that an ancient dragon still sleeps beyond the northern road.",
                 PrototypePixelArtFactory.Waystone(),
                 new Vector3(52f, 25f, 0f));
+        }
+
+        private void EnsurePrototypeEnemies()
+        {
+            if (FindAnyObjectByType<EnemyController>() != null) return;
+
+            // Forest Wolf near eastern woods
+            CreateEnemy("enemy.forest-wolf.1", "Forest Wolf", 10, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(32f, 12f, 0f), new[]
+            {
+                new EnemyLootEntry { itemId = "item.wool", minQuantity = 1, maxQuantity = 2, dropChance = 0.9f },
+                new EnemyLootEntry { itemId = "item.wild-berries", minQuantity = 1, maxQuantity = 2, dropChance = 0.5f }
+            });
+
+            // Forest Wolf near northern trees
+            CreateEnemy("enemy.forest-wolf.2", "Forest Wolf", 10, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(-28f, 20f, 0f), new[]
+            {
+                new EnemyLootEntry { itemId = "item.wool", minQuantity = 1, maxQuantity = 2, dropChance = 0.9f }
+            });
+
+            // Bandit Scout near broken arch
+            CreateEnemy("enemy.bandit.1", "Bandit Scout", 14, 1.9f, 4, 1.1f, 6.0f, 1.5f, new Vector3(22f, 9.5f, 0f), new[]
+            {
+                new EnemyLootEntry { itemId = "item.old-coin", minQuantity = 2, maxQuantity = 5, dropChance = 1.0f },
+                new EnemyLootEntry { itemId = "item.torch", minQuantity = 1, maxQuantity = 1, dropChance = 0.6f }
+            });
+        }
+
+        private GameObject CreateEnemy(string id, string name, int hp, float speed, int damage, float range, float detection, float cooldown, Vector3 position, EnemyLootEntry[] loot)
+        {
+            GameObject enemyObj = new GameObject(name);
+            enemyObj.transform.position = position;
+
+            EnemyDefinition def = ScriptableObject.CreateInstance<EnemyDefinition>();
+            def.ConfigureForPrototype(id, name, hp, speed, damage, range, detection, cooldown, loot);
+
+            EnemyController enemy = enemyObj.AddComponent<EnemyController>();
+            enemy.Configure(def);
+            return enemyObj;
+        }
+
+        public void OnPlayerDied()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player != null)
+            {
+                PlayerVitals vitals = player.GetComponent<PlayerVitals>();
+                if (vitals != null)
+                {
+                    vitals.Heal(vitals.MaxHealth / 2);
+                }
+
+                player.transform.position = Vector3.zero;
+                FloatingTextController.Spawn(TheOldRoad.UI.LocalizationRuntime.T("ui.player_respawn"), Vector3.zero + Vector3.up * 0.8f, new Color(1f, 0.4f, 0.2f, 1f), 2.5f);
+            }
         }
 
         private InventorySession EnsureInventorySession()
@@ -822,8 +1307,8 @@ namespace TheOldRoad.Core
             else
             {
                 player = movement.gameObject;
-                EnsurePlayerVisual(player);
             }
+            EnsurePlayerVisual(player);
 
             KeyboardPlayerInputSource input = player.GetComponent<KeyboardPlayerInputSource>();
             if (input == null) input = player.AddComponent<KeyboardPlayerInputSource>();
@@ -876,6 +1361,10 @@ namespace TheOldRoad.Core
             PlayerNpcInteractor npcInteractor = player.GetComponent<PlayerNpcInteractor>();
             if (npcInteractor == null) npcInteractor = player.AddComponent<PlayerNpcInteractor>();
             npcInteractor.Configure(this, 1.55f);
+
+            PlayerCombatController combat = player.GetComponent<PlayerCombatController>();
+            if (combat == null) combat = player.AddComponent<PlayerCombatController>();
+            combat.Configure(session);
         }
 
         private void EnsureDayNightLighting(Camera mainCamera, GameTimeController gameTime, InventorySession session)
@@ -1043,10 +1532,11 @@ namespace TheOldRoad.Core
             menuObject.AddComponent<GameStartMenuController>();
         }
 
-        private void CreateConstructionSite(ConstructionJob job, BuildingDefinition definition)
+        private void CreateConstructionSite(ConstructionJob job, BuildingDefinition definition, Vector2Int? customFootprint = null)
         {
             string buildingName = GetBuildingDisplayName(definition != null ? definition.BuildingId : job.buildingId);
-            GameObject site = CreateSpriteObject(buildingName + " Construction Site", PrototypePixelArtFactory.BuildingConstruction(job.buildingId, 0), new Vector3(job.gridX, job.gridY, 0f), 0);
+            Sprite initSprite = (job.buildingId != null && job.buildingId.Contains("perimeter-fence")) ? null : PrototypePixelArtFactory.BuildingConstruction(job.buildingId, 0);
+            GameObject site = CreateSpriteObject(buildingName + " Construction Site", initSprite, new Vector3(job.gridX, job.gridY, 0f), 0);
             site.name = buildingName + " Construction Site";
             ConstructionSite constructionSite = site.AddComponent<ConstructionSite>();
             constructionSite.Configure(job, definition, clock);
@@ -1058,14 +1548,14 @@ namespace TheOldRoad.Core
                 light.Configure(constructionSite, FindAnyObjectByType<GameTimeController>());
             }
 
-            if (job.buildingId == CabinId || job.buildingId == StoneCottageId)
+            if (job.buildingId == CabinId || job.buildingId == StoneCottageId || job.buildingId == HerbalistHutId || job.buildingId == LookoutTowerId)
             {
                 HouseLightController houseLight = site.GetComponent<HouseLightController>();
                 if (houseLight == null) houseLight = site.AddComponent<HouseLightController>();
                 Vector3 chimneyOffset = job.buildingId == StoneCottageId
                     ? new Vector3(1.20f, 2.75f, 0f)
-                    : new Vector3(1.00f, 2.60f, 0f);
-                float glowScale = job.buildingId == StoneCottageId ? 1.15f : 0.95f;
+                    : (job.buildingId == LookoutTowerId ? new Vector3(0f, 3.2f, 0f) : new Vector3(1.00f, 2.60f, 0f));
+                float glowScale = job.buildingId == StoneCottageId ? 1.15f : (job.buildingId == LookoutTowerId ? 1.4f : 0.95f);
                 houseLight.Configure(constructionSite, FindAnyObjectByType<GameTimeController>(), chimneyOffset, glowScale);
             }
 
@@ -1076,6 +1566,46 @@ namespace TheOldRoad.Core
                 string product = job.buildingId == AnimalPenLongId ? "item.wool" : "item.egg";
                 float seconds = job.buildingId == AnimalPenLongId ? 60f : 45f;
                 pen.Configure(constructionSite, inventorySession, this, product, seconds);
+            }
+
+            if (job.buildingId == FarmBarnId)
+            {
+                HappyFarmBarnController barn = site.GetComponent<HappyFarmBarnController>();
+                if (barn == null) barn = site.AddComponent<HappyFarmBarnController>();
+                barn.Configure(inventorySession);
+            }
+
+            if (job.buildingId.Contains("perimeter-fence"))
+            {
+                SpriteRenderer rootSr = site.GetComponent<SpriteRenderer>();
+                if (rootSr != null) rootSr.sprite = null;
+
+                PerimeterFenceController fence = site.GetComponent<PerimeterFenceController>();
+                if (fence == null) fence = site.AddComponent<PerimeterFenceController>();
+                Vector2Int fp = customFootprint ?? (definition != null ? definition.Footprint : new Vector2Int(10, 8));
+                fence.Configure(fp.x, fp.y);
+            }
+
+            // Attach solid colliders to prevent walking through walls
+            BoxCollider2D collider = site.GetComponent<BoxCollider2D>();
+            if (collider == null && !job.buildingId.StartsWith("building.path") && !job.buildingId.Contains("perimeter-fence"))
+            {
+                collider = site.AddComponent<BoxCollider2D>();
+                if (job.buildingId == CabinId) { collider.size = new Vector2(3.2f, 1.8f); collider.offset = new Vector2(0f, 0.4f); }
+                else if (job.buildingId == StoneCottageId) { collider.size = new Vector2(3.6f, 2.0f); collider.offset = new Vector2(0f, 0.5f); }
+                else if (job.buildingId == StorageShedId) { collider.size = new Vector2(2.6f, 1.6f); collider.offset = new Vector2(0f, 0.4f); }
+                else if (job.buildingId == HerbalistHutId) { collider.size = new Vector2(3.2f, 1.8f); collider.offset = new Vector2(0f, 0.4f); }
+                else if (job.buildingId == LookoutTowerId) { collider.size = new Vector2(2.2f, 2.0f); collider.offset = new Vector2(0f, 0.6f); }
+                else if (job.buildingId == FarmBarnId) { collider.size = new Vector2(4.2f, 2.0f); collider.offset = new Vector2(0f, 0.6f); }
+                else if (job.buildingId == FenceId) { collider.size = new Vector2(1.0f, 0.8f); collider.offset = new Vector2(0f, 0.1f); }
+                else if (job.buildingId == ScarecrowId) { collider.size = new Vector2(0.8f, 1.2f); collider.offset = new Vector2(0f, 0.2f); }
+            }
+            else if (job.buildingId.StartsWith("building.path") && collider == null)
+            {
+                collider = site.AddComponent<BoxCollider2D>();
+                collider.isTrigger = true;
+                collider.size = new Vector2(1f, 1f);
+                site.name = "Path_" + job.buildingId;
             }
         }
 
@@ -1089,6 +1619,19 @@ namespace TheOldRoad.Core
                 case AnimalPenLongId: return "Long Animal Pen";
                 case StorageShedId: return "Storage Shed";
                 case StoneCottageId: return "Stone Cottage";
+                case HerbalistHutId: return "Herbalist Hut";
+                case LookoutTowerId: return "Lookout Tower";
+                case FarmBarnId: return "Farm Barn";
+                case FenceId: return "Wood Fence";
+                case GateId: return "Wood Gate";
+                case PerimeterFenceDragId: return "Custom Perimeter Fence";
+                case PerimeterFenceSmallId: return "Small Yard Fence (6x4)";
+                case PerimeterFenceMediumId: return "Medium Estate Fence (10x8)";
+                case PerimeterFenceLargeId: return "Large Farmstead Fence (16x12)";
+                case PerimeterFenceGrandId: return "Grand Homestead Fence (24x16)";
+                case PathDirtId: return "Dirt Path";
+                case PathCobblestoneId: return "Cobblestone Path";
+                case ScarecrowId: return "Scarecrow";
                 default: return "Cabin";
             }
         }
@@ -1160,9 +1703,12 @@ namespace TheOldRoad.Core
 
         private static void EnsurePlayerVisual(GameObject player)
         {
+            if (player == null) return;
+
             SpriteRenderer spriteRenderer = player.GetComponent<SpriteRenderer>();
             if (spriteRenderer == null) spriteRenderer = player.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = PrototypePixelArtFactory.Player();
+            spriteRenderer.color = Color.white;
             spriteRenderer.enabled = true;
             spriteRenderer.shadowCastingMode = ShadowCastingMode.Off;
             spriteRenderer.receiveShadows = false;
@@ -1179,11 +1725,7 @@ namespace TheOldRoad.Core
 
                 renderer.shadowCastingMode = ShadowCastingMode.Off;
                 renderer.receiveShadows = false;
-
-                if (renderer is MeshRenderer || renderer.name.ToLowerInvariant().Contains("shadow"))
-                {
-                    renderer.enabled = false;
-                }
+                renderer.enabled = false;
             }
         }
 

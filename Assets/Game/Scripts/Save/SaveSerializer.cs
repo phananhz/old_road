@@ -1,22 +1,17 @@
 using System;
-using System.Text.Json;
+using UnityEngine;
 
 namespace TheOldRoad.Save
 {
     public static class SaveSerializer
     {
-        public const int CurrentVersion = 2;
-        private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
-        {
-            IncludeFields = true,
-            WriteIndented = true
-        };
+        public const int CurrentVersion = 3;
 
         public static string Serialize(SaveData data)
         {
             if (data == null) throw new ArgumentNullException(nameof(data));
             data.saveVersion = CurrentVersion;
-            return JsonSerializer.Serialize(data, Options);
+            return JsonUtility.ToJson(data, true);
         }
 
         public static bool TryDeserialize(string json, out SaveData data)
@@ -26,7 +21,7 @@ namespace TheOldRoad.Save
 
             try
             {
-                SaveData candidate = JsonSerializer.Deserialize<SaveData>(json, Options);
+                SaveData candidate = JsonUtility.FromJson<SaveData>(json);
                 if (candidate == null || candidate.saveVersion < 1 || candidate.saveVersion > CurrentVersion) return false;
                 data = candidate;
                 return true;

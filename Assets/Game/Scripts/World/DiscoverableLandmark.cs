@@ -16,8 +16,12 @@ namespace TheOldRoad.World
         private Color baseColor = Color.white;
 
         public string LandmarkId => landmarkId;
-        public string Title => string.IsNullOrWhiteSpace(title) ? gameObject.name : title;
-        public string JournalText => journalText;
+        public string Title => TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".title") != landmarkId + ".title"
+            ? TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".title")
+            : (string.IsNullOrWhiteSpace(title) ? gameObject.name : title);
+        public string JournalText => TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".journal") != landmarkId + ".journal"
+            ? TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".journal")
+            : journalText;
         public bool IsDiscovered => discovered;
 
         private void Awake()
@@ -37,6 +41,7 @@ namespace TheOldRoad.World
         public bool Discover()
         {
             if (discovered || string.IsNullOrWhiteSpace(landmarkId)) return false;
+            TheOldRoad.Audio.AudioManager.PlayLoot();
             SetDiscovered(true);
             return true;
         }

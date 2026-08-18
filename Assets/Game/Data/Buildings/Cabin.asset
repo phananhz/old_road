@@ -1,0 +1,35 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91e3f70b58f54bf1a2bf1c3d00000041, type: 3}
+  m_Name: Cabin
+  m_EditorClassIdentifier:
+  buildingId: building.cabin
+  footprint: {x: 2, y: 2}
+  constructionCosts:
+  - itemId: item.wood
+    quantity: 3
+  - itemId: item.stone
+    quantity: 2
+  constructionDurationSeconds: 30
+  constructionStages:
+  - Foundation
+  - Frame
+  - Walls
+  - Roof
+  - Complete
+  completeSprite: {fileID: 21300000, guid: e05b7496af28174453c9f8ce8bc65000, type: 3}
+  stageSprites:
+  - {fileID: 21300000, guid: 82e3ffbd9b9791a9fb62674fc33bfee2, type: 3}
+  - {fileID: 21300000, guid: 8f9360bbe7c8f99118a836183e30b988, type: 3}
+  - {fileID: 21300000, guid: 358d7fdf279f682ca0f23cc28aec5067, type: 3}
+  - {fileID: 21300000, guid: dc62a2632f5282e97d4f8400544d1349, type: 3}
+  - {fileID: 21300000, guid: 68102de7a9c850f93d80d63ba43babd0, type: 3}

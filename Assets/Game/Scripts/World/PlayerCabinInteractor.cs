@@ -58,7 +58,7 @@ namespace TheOldRoad.World
             }
 
             RefreshActionState();
-            if (!CanUseAction || !PrototypeInput.GetKeyDown(KeyCode.F)) return;
+            if (!CanUseAction || (!PrototypeInput.GetKeyDown(KeyCode.F) && !PrototypeInput.GetKeyDown(KeyCode.E))) return;
 
             ExecuteAction();
         }
@@ -80,7 +80,7 @@ namespace TheOldRoad.World
                 }
 
                 ActionButtonLabel = "Exit";
-                InteractionHint = "Press F to exit the cabin.";
+                InteractionHint = "Press F to exit.";
                 return;
             }
 
@@ -94,7 +94,7 @@ namespace TheOldRoad.World
 
             CanUseAction = true;
             ActionButtonLabel = "Enter";
-            InteractionHint = "Press F to enter the cabin.";
+            InteractionHint = "Press F to enter.";
         }
 
         private void ExecuteAction()
@@ -113,6 +113,7 @@ namespace TheOldRoad.World
                 interior.Exit(player);
                 hasInteriorValidPosition = false;
                 InteractionHint = interior.Status;
+                TheOldRoad.Audio.AudioManager.PlayDoor();
                 PlayerSpeechBubble.Say("speech.exit_home");
                 return;
             }
@@ -120,10 +121,11 @@ namespace TheOldRoad.World
             if (nearestCabin == null) nearestCabin = FindNearestCompletedCabin();
             if (nearestCabin == null || interior == null) return;
 
-            interior.Enter(player, nearestCabin.transform.position);
+            interior.Enter(player, nearestCabin.transform.position, nearestCabin.BuildingId);
             lastInteriorValidPosition = player.transform.position;
             hasInteriorValidPosition = true;
             InteractionHint = interior.Status;
+            TheOldRoad.Audio.AudioManager.PlayDoor();
             PlayerSpeechBubble.Say("speech.enter_home");
         }
 
@@ -156,6 +158,7 @@ namespace TheOldRoad.World
         private void ConfirmSleep()
         {
             sleepConfirmationOpen = false;
+            TheOldRoad.Audio.AudioManager.PlaySleepMorning();
             if (interior != null) interior.SleepEightHours(gameTime);
             InteractionHint = interior != null ? interior.Status : "Slept 8 hours.";
             PlayerSpeechBubble.Say("speech.sleep_done");
@@ -168,17 +171,28 @@ namespace TheOldRoad.World
             PlayerSpeechBubble.Say("speech.sleep_cancelled");
         }
 
+        private static bool IsEnterableBuilding(string buildingId)
+        {
+            return buildingId == "building.cabin" ||
+                   buildingId == "building.stone-cottage" ||
+                   buildingId == "building.herbalist-hut" ||
+                   buildingId == "building.storage-shed" ||
+                   buildingId == "building.lookout-tower";
+        }
+
         private ConstructionSite FindNearestCompletedCabin()
         {
             ConstructionSite nearest = null;
             float nearestDistance = float.MaxValue;
+            float scanRadius = Mathf.Max(3.5f, interactionRadius);
             ConstructionSite[] sites = FindObjectsByType<ConstructionSite>(FindObjectsInactive.Exclude);
             foreach (ConstructionSite site in sites)
             {
                 if (site == null || site.Job == null || site.Job.state != ConstructionState.Completed) continue;
+                if (!IsEnterableBuilding(site.Job.buildingId)) continue;
 
                 float distance = Vector2.Distance(transform.position, site.transform.position);
-                if (distance > interactionRadius || distance >= nearestDistance) continue;
+                if (distance > scanRadius || distance >= nearestDistance) continue;
 
                 nearest = site;
                 nearestDistance = distance;
@@ -227,15 +241,15 @@ namespace TheOldRoad.World
                 normal = { textColor = new Color(0.92f, 0.88f, 0.78f, 1f) }
             };
 
-            GUI.Label(new Rect(panel.x + 24f, panel.y + 20f, panel.width - 48f, 32f), "Use Bed", titleStyle);
-            GUI.Label(new Rect(panel.x + 36f, panel.y + 62f, panel.width - 72f, 48f), "Do you want to sleep for 8 in-game hours?", bodyStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 20f, panel.width - 48f, 32f), LocalizationRuntime.T("ui.use_bed"), titleStyle);
+            GUI.Label(new Rect(panel.x + 36f, panel.y + 62f, panel.width - 72f, 48f), LocalizationRuntime.T("ui.sleep_confirm_question"), bodyStyle);
 
-            if (GUI.Button(new Rect(panel.x + 52f, panel.y + 126f, 140f, 40f), "Yes (Y)"))
+            if (GUI.Button(new Rect(panel.x + 52f, panel.y + 126f, 140f, 40f), LocalizationRuntime.T("ui.yes_key")))
             {
                 ConfirmSleep();
             }
 
-            if (GUI.Button(new Rect(panel.xMax - 192f, panel.y + 126f, 140f, 40f), "No (N)"))
+            if (GUI.Button(new Rect(panel.xMax - 192f, panel.y + 126f, 140f, 40f), LocalizationRuntime.T("ui.no_key")))
             {
                 CancelSleep();
             }

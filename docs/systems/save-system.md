@@ -22,4 +22,4 @@ Save data stores stable IDs and plain values. It does not store Unity InstanceID
 
 Autosave runs every 10 seconds during play and also runs on important state changes such as gathering, crafting, construction, discovery, cooking, passive production, application pause, and application quit.
 
-Save version 2 adds player position and clock time. Version 1 saves remain readable for the prototype; missing new fields are treated as optional.
+Save version 2 adds player position and clock time. Save version 3 adds completed story step IDs for the opening Roadwarden story arc. Older saves remain readable for the prototype; missing new fields are treated as optional.

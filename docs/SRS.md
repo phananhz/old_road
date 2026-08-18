@@ -49,6 +49,9 @@
 - FR-EXPLORE-006: The prototype objective tracker shall include cave discovery and dragon-foreshadowing exploration steps.
 - FR-QUEST-001: The vertical slice shall show a current objective tracker for the core prototype flow.
 - FR-QUEST-002: Objective completion shall be derived from gameplay state rather than directly edited by UI.
+- FR-QUEST-003: The prototype shall provide authored opening story chapters with stable story step IDs.
+- FR-QUEST-004: Completed story step IDs shall persist in save data so unlocked story journal notes remain unlocked.
+- FR-QUEST-005: The journal overlay shall show the current story task and unlocked Roadwarden story notes alongside landmark records.
 - FR-CRAFT-001: Recipes shall define stable recipe ID, ingredients, result, optional duration, and optional workstation.
 - FR-CRAFT-002: The prototype shall expose at least one manually testable crafting action through gameplay input.
 - FR-COOK-001: Completed campfire or cooking hearth buildings shall allow the player to cook a prototype meal from gathered food ingredients.

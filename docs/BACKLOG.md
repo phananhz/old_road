@@ -22,12 +22,12 @@
 - GAME-012: Crafting micro-slice for Cabin Plank recipe.
 - GAME-013: Minecraft-like prototype HUD with health, minimap, hotbar, and time.
 - GAME-014: Inventory and expanded map overlays.
+- GAME-016: Replace placeholder art with prototype pixel sprites.
+- GAME-017: Add first combat micro-slice.
 
 ## Next
 
 - GAME-015: Technical audit before combat/NPC work.
-- GAME-016: Replace placeholder art with prototype pixel sprites.
-- GAME-017: Add first combat micro-slice.
 
 ## Out Of Scope Until After Audit
 

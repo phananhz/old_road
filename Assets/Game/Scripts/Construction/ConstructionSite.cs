@@ -55,9 +55,16 @@ namespace TheOldRoad.Construction
             long now = clock?.NowUnixSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             float progress = job.GetProgress(now);
             int stageIndex = job.GetStageIndex(now, 5);
-            siteRenderer.sprite = job.state == ConstructionState.Completed
-                ? PrototypePixelArtFactory.BuildingComplete(job.buildingId)
-                : PrototypePixelArtFactory.BuildingConstruction(job.buildingId, stageIndex);
+            if (job.buildingId != null && job.buildingId.Contains("perimeter-fence"))
+            {
+                siteRenderer.sprite = null;
+            }
+            else
+            {
+                siteRenderer.sprite = job.state == ConstructionState.Completed
+                    ? PrototypePixelArtFactory.BuildingComplete(job.buildingId)
+                    : PrototypePixelArtFactory.BuildingConstruction(job.buildingId, stageIndex);
+            }
             siteRenderer.color = Color.white;
 
             string stageName = GetStageName(now);
@@ -69,23 +76,16 @@ namespace TheOldRoad.Construction
 
         private static string GetBuildingName(string buildingId)
         {
-            switch (buildingId)
-            {
-                case "building.campfire": return "Campfire";
-                case "building.cooking-hearth": return "Cooking Hearth";
-                case "building.animal-pen-small": return "Small Animal Pen";
-                case "building.animal-pen-long": return "Long Animal Pen";
-                case "building.storage-shed": return "Storage Shed";
-                case "building.stone-cottage": return "Stone Cottage";
-                default: return "Cabin";
-            }
+            return TheOldRoad.UI.LocalizationRuntime.BuildingName(buildingId);
         }
 
         private string GetStageName(long nowUnixSeconds)
         {
             string[] stages = buildingDefinition != null ? buildingDefinition.ConstructionStages : null;
-            if (stages == null || stages.Length == 0) return job.GetDefaultVisualStage(nowUnixSeconds).ToString();
-            return stages[job.GetStageIndex(nowUnixSeconds, stages.Length)];
+            string stage = (stages == null || stages.Length == 0)
+                ? job.GetDefaultVisualStage(nowUnixSeconds).ToString()
+                : stages[job.GetStageIndex(nowUnixSeconds, stages.Length)];
+            return TheOldRoad.UI.LocalizationRuntime.StageName(stage);
         }
 
         private void OnGUI()

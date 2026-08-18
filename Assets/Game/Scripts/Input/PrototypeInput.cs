@@ -87,6 +87,23 @@ namespace TheOldRoad.Input
             }
         }
 
+        public static bool GetMouseButtonUp(int button)
+        {
+            if (PrototypeGameState.GameplayInputBlocked) return false;
+
+            try
+            {
+                bool value = UnityEngine.Input.GetMouseButtonUp(button);
+                lastBackendStatus = "legacy=on";
+                return value;
+            }
+            catch (InvalidOperationException exception)
+            {
+                lastBackendStatus = "legacy=blocked " + exception.GetType().Name;
+                return false;
+            }
+        }
+
         public static Vector3 MousePosition
         {
             get

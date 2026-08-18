@@ -5,7 +5,10 @@ using TheOldRoad.Time;
 
 namespace TheOldRoad.World
 {
-    /// <summary>Runtime prototype cabin interior built away from the outdoor map.</summary>
+    /// <summary>
+    /// Multi-building interior controller supporting distinct layouts for
+    /// Starter Cabin, Stone Cottage, and Storage Shed.
+    /// </summary>
     public sealed class CabinInteriorController : MonoBehaviour
     {
         private static readonly Vector3 InteriorOrigin = new Vector3(200f, 200f, 0f);
@@ -17,40 +20,121 @@ namespace TheOldRoad.World
         private GameObject interiorRoot;
         private Transform bedTransform;
         private Transform doorTransform;
+        private Transform chestTransform;
         private Vector3 lastOutdoorPosition;
+        private string currentBuildingType = "building.cabin";
         private bool inside;
         private string status = "Cabin interior ready.";
 
         public bool IsInside => inside;
         public Transform BedTransform => bedTransform;
         public Transform DoorTransform => doorTransform;
+        public Transform ChestTransform => chestTransform;
+        public string CurrentBuildingType => currentBuildingType;
         public string Status => status;
 
-        public void EnsureBuilt()
+        public void EnsureBuilt(string buildingType = "building.cabin")
         {
-            if (interiorRoot != null) return;
+            if (interiorRoot != null && currentBuildingType == buildingType) return;
 
-            interiorRoot = new GameObject("Cabin Interior");
+            if (interiorRoot != null)
+            {
+                Destroy(interiorRoot);
+            }
+
+            currentBuildingType = string.IsNullOrEmpty(buildingType) ? "building.cabin" : buildingType;
+            interiorRoot = new GameObject("Interior - " + currentBuildingType);
             interiorRoot.transform.position = InteriorOrigin;
             interiorRoot.SetActive(false);
 
-            CreateInteriorSprite("Interior Floor - Bedroom Living Kitchen", PrototypePixelArtFactory.CabinInteriorFloor(), new Vector3(0f, -0.45f, 0f), -9300, new Vector3(1.25f, 1.25f, 1f));
-            CreateInteriorSprite("Interior Back Wall - Shelves and Windows", PrototypePixelArtFactory.CabinInteriorWall(), new Vector3(0f, 3.55f, 0f), -9200, new Vector3(1.25f, 1f, 1f));
+            if (currentBuildingType == "building.stone-cottage")
+            {
+                BuildStoneCottageInterior();
+            }
+            else if (currentBuildingType == "building.storage-shed")
+            {
+                BuildStorageShedInterior();
+            }
+            else
+            {
+                BuildStarterCabinInterior();
+            }
+        }
+
+        private void BuildStarterCabinInterior()
+        {
+            // Starter Cabin: 3 Cozy Segments (Bedroom, Living room, Kitchen)
+            CreateInteriorSprite("Floor - Wood Planks", PrototypePixelArtFactory.CabinInteriorFloor(), new Vector3(0f, -0.45f, 0f), -9300, new Vector3(1.25f, 1.25f, 1f));
+            CreateInteriorSprite("Wall - Log Backwall", PrototypePixelArtFactory.CabinInteriorWall(), new Vector3(0f, 3.55f, 0f), -9200, new Vector3(1.25f, 1f, 1f));
             CreateInteriorSprite("Bedroom Partition Wall", PrototypePixelArtFactory.CabinPartitionWall(), new Vector3(-2.75f, -0.35f, 0f), -9100, Vector3.one);
             CreateInteriorSprite("Kitchen Partition Wall", PrototypePixelArtFactory.CabinPartitionWall(), new Vector3(2.75f, -0.35f, 0f), -9100, Vector3.one);
 
+            // Left: Bedroom
             bedTransform = CreateInteriorSprite("Bed - Sleeping Nook", PrototypePixelArtFactory.CabinBed(), new Vector3(-4.55f, -1.95f, 0f), -8900, Vector3.one).transform;
+            chestTransform = CreateInteriorSprite("Personal Storage Chest", PrototypePixelArtFactory.ChestClosed(), new Vector3(-4.55f, 0.85f, 0f), -8920, new Vector3(1.2f, 1.2f, 1f)).transform;
+
+            // Center: Living Room
             CreateInteriorSprite("Bench - Living Room", PrototypePixelArtFactory.CabinBench(), new Vector3(-0.65f, 0.85f, 0f), -8950, Vector3.one);
             CreateInteriorSprite("Table - Living Room", PrototypePixelArtFactory.CabinTable(), new Vector3(0.65f, -0.35f, 0f), -8945, Vector3.one);
+
+            // Right: Kitchen
             CreateInteriorSprite("Kitchen Counter", PrototypePixelArtFactory.CabinKitchenCounter(), new Vector3(4.25f, 0.60f, 0f), -8950, Vector3.one);
             CreateInteriorSprite("Hearth - Kitchen", PrototypePixelArtFactory.CabinHearth(), new Vector3(4.50f, 2.05f, 0f), -8940, Vector3.one);
+
             doorTransform = CreateInteriorSprite("Cabin Door", PrototypePixelArtFactory.CabinDoorMarker(), new Vector3(0f, -4.25f, 0f), -8850, Vector3.one).transform;
         }
 
-        public void Enter(PlayerMovement player, Vector3 outdoorCabinPosition)
+        private void BuildStoneCottageInterior()
+        {
+            // Stone Cottage: 3 Grand Segments (Master Suite, Great Hall, Alchemical Library)
+            CreateInteriorSprite("Floor - Flagstone", PrototypePixelArtFactory.CabinInteriorFloor(), new Vector3(0f, -0.45f, 0f), -9300, new Vector3(1.35f, 1.25f, 1f));
+            CreateInteriorSprite("Wall - Cobblestone", PrototypePixelArtFactory.CabinInteriorWall(), new Vector3(0f, 3.55f, 0f), -9200, new Vector3(1.35f, 1f, 1f));
+            CreateInteriorSprite("Stone Partition Left", PrototypePixelArtFactory.CabinPartitionWall(), new Vector3(-2.95f, -0.35f, 0f), -9100, Vector3.one);
+            CreateInteriorSprite("Stone Partition Right", PrototypePixelArtFactory.CabinPartitionWall(), new Vector3(2.95f, -0.35f, 0f), -9100, Vector3.one);
+
+            // Left: Master Bedroom
+            bedTransform = CreateInteriorSprite("Royal Bed", PrototypePixelArtFactory.CabinBed(), new Vector3(-4.75f, -1.85f, 0f), -8900, new Vector3(1.15f, 1.15f, 1f)).transform;
+            chestTransform = CreateInteriorSprite("Heirloom Wardrobe Chest", PrototypePixelArtFactory.ChestClosed(), new Vector3(-4.75f, 1.15f, 0f), -8920, new Vector3(1.3f, 1.3f, 1f)).transform;
+
+            // Center: Great Hall & Grand Fireplace
+            CreateInteriorSprite("Grand Hearth", PrototypePixelArtFactory.CabinHearth(), new Vector3(0f, 2.35f, 0f), -8940, new Vector3(1.3f, 1.3f, 1f));
+            CreateInteriorSprite("Dining Table", PrototypePixelArtFactory.CabinTable(), new Vector3(0f, -0.25f, 0f), -8945, new Vector3(1.25f, 1.2f, 1f));
+            CreateInteriorSprite("Hall Bench Left", PrototypePixelArtFactory.CabinBench(), new Vector3(-1.35f, -0.25f, 0f), -8950, Vector3.one);
+            CreateInteriorSprite("Hall Bench Right", PrototypePixelArtFactory.CabinBench(), new Vector3(1.35f, -0.25f, 0f), -8950, Vector3.one);
+
+            // Right: Roadwarden Study & Alchemy Desk
+            CreateInteriorSprite("Roadwarden Bookcase", PrototypePixelArtFactory.CabinKitchenCounter(), new Vector3(4.55f, 1.25f, 0f), -8950, Vector3.one);
+            CreateInteriorSprite("Study Table", PrototypePixelArtFactory.CabinTable(), new Vector3(4.55f, -1.05f, 0f), -8945, Vector3.one);
+
+            doorTransform = CreateInteriorSprite("Cottage Arch Door", PrototypePixelArtFactory.CabinDoorMarker(), new Vector3(0f, -4.25f, 0f), -8850, Vector3.one).transform;
+        }
+
+        private void BuildStorageShedInterior()
+        {
+            // Storage Shed: 3 Functional Segments (Raw Material Crates, Carpenter Workbench, Dry Goods)
+            CreateInteriorSprite("Floor - Rustic Timber", PrototypePixelArtFactory.CabinInteriorFloor(), new Vector3(0f, -0.45f, 0f), -9300, new Vector3(1.25f, 1.25f, 1f));
+            CreateInteriorSprite("Wall - Timber Siding", PrototypePixelArtFactory.CabinInteriorWall(), new Vector3(0f, 3.55f, 0f), -9200, new Vector3(1.25f, 1f, 1f));
+
+            // Left: Heavy Material Crates & Storage
+            chestTransform = CreateInteriorSprite("Primary Material Vault", PrototypePixelArtFactory.ChestClosed(), new Vector3(-4.55f, 0.45f, 0f), -8920, new Vector3(1.4f, 1.4f, 1f)).transform;
+            CreateInteriorSprite("Material Crates", PrototypePixelArtFactory.ChestClosed(), new Vector3(-4.55f, -1.85f, 0f), -8920, new Vector3(1.2f, 1.2f, 1f));
+
+            // Center: Carpenter Workshop Workbench
+            CreateInteriorSprite("Carpenter Worktable", PrototypePixelArtFactory.CabinTable(), new Vector3(0f, 0.25f, 0f), -8945, new Vector3(1.3f, 1.2f, 1f));
+            CreateInteriorSprite("Workshop Tool Rack", PrototypePixelArtFactory.CabinKitchenCounter(), new Vector3(0f, 2.35f, 0f), -8950, Vector3.one);
+
+            // Right: Dry Goods & Herbal Storage
+            CreateInteriorSprite("Dry Goods Chest", PrototypePixelArtFactory.ChestClosed(), new Vector3(4.55f, 0.45f, 0f), -8920, new Vector3(1.3f, 1.3f, 1f));
+            CreateInteriorSprite("Storage Bench", PrototypePixelArtFactory.CabinBench(), new Vector3(4.55f, -1.85f, 0f), -8950, Vector3.one);
+
+            bedTransform = null; // No bed in shed
+            doorTransform = CreateInteriorSprite("Shed Barn Door", PrototypePixelArtFactory.CabinDoorMarker(), new Vector3(0f, -4.25f, 0f), -8850, Vector3.one).transform;
+        }
+
+        public void Enter(PlayerMovement player, Vector3 outdoorCabinPosition, string buildingType = "building.cabin")
         {
             if (player == null) return;
-            EnsureBuilt();
+            EnsureBuilt(buildingType);
 
             lastOutdoorPosition = outdoorCabinPosition + new Vector3(0f, -2.2f, 0f);
             inside = true;
@@ -58,7 +142,7 @@ namespace TheOldRoad.World
             player.transform.position = InteriorOrigin + new Vector3(0f, -3.15f, 0f);
             SetPlayerInteriorRenderMode(player.gameObject, true);
             ConfigureInteriorCamera(player.transform);
-            status = "Entered cabin. Stand by the bed and press F to sleep.";
+            status = "Entered " + (buildingType == "building.stone-cottage" ? "Stone Cottage" : buildingType == "building.storage-shed" ? "Storage Shed" : "Cabin") + ".";
         }
 
         public void Exit(PlayerMovement player)
@@ -70,7 +154,7 @@ namespace TheOldRoad.World
             SetPlayerInteriorRenderMode(player.gameObject, false);
             player.transform.position = lastOutdoorPosition;
             ConfigureWorldCamera(player.transform);
-            status = "Exited cabin.";
+            status = "Exited building.";
         }
 
         public void SleepEightHours(GameTimeController gameTime)
@@ -87,17 +171,12 @@ namespace TheOldRoad.World
 
         public bool IsNearBed(Transform actor)
         {
-            return inside && actor != null && bedTransform != null && Vector2.Distance(actor.position, bedTransform.position) <= 1.35f;
+            return inside && actor != null && bedTransform != null && Vector2.Distance(actor.position, bedTransform.position) <= 1.45f;
         }
 
-        public void ClampActorInside(Transform actor)
+        public bool IsNearChest(Transform actor)
         {
-            if (!inside || actor == null) return;
-
-            Vector3 position = actor.position;
-            position.x = Mathf.Clamp(position.x, InteriorBoundsMin.x, InteriorBoundsMax.x);
-            position.y = Mathf.Clamp(position.y, InteriorBoundsMin.y, InteriorBoundsMax.y);
-            actor.position = position;
+            return inside && actor != null && chestTransform != null && Vector2.Distance(actor.position, chestTransform.position) <= 1.85f;
         }
 
         public void ConstrainActorInside(Transform actor, ref Vector3 previousValidPosition)
@@ -110,13 +189,17 @@ namespace TheOldRoad.World
 
             Vector3 local = position - InteriorOrigin;
             Vector3 previousLocal = previousValidPosition - InteriorOrigin;
-            bool blockedPartition =
-                CrossedBlockedPartition(previousLocal, local, -2.75f)
-                || CrossedBlockedPartition(previousLocal, local, 2.75f);
 
-            if (blockedPartition)
+            if (currentBuildingType != "building.storage-shed")
             {
-                position.x = previousValidPosition.x;
+                bool blockedPartition =
+                    CrossedBlockedPartition(previousLocal, local, -2.75f)
+                    || CrossedBlockedPartition(previousLocal, local, 2.75f);
+
+                if (blockedPartition)
+                {
+                    position.x = previousValidPosition.x;
+                }
             }
 
             actor.position = position;

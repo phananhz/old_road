@@ -1,17 +1,24 @@
 using UnityEngine;
+using TheOldRoad.Audio;
 using TheOldRoad.Input;
 
 namespace TheOldRoad.Player
 {
-    /// <summary>Moves a player in 8 directions without knowing the input device.</summary>
+    /// <summary>
+    /// Moves a player in 8 directions with Sprint (Shift), river wading sounds,
+    /// and footstep handling.
+    /// </summary>
     public sealed class PlayerMovement : MonoBehaviour
     {
-        [SerializeField, Min(0f)] private float moveSpeed = 3f;
+        [SerializeField, Min(0f)] private float moveSpeed = 3.2f;
+        [SerializeField, Min(0f)] private float sprintMultiplier = 1.6f;
         [SerializeField] private MonoBehaviour inputSourceComponent;
 
         private IPlayerInputSource inputSource;
+        private float footstepTimer;
 
         public float MoveSpeed => moveSpeed;
+        public bool IsSprinting { get; private set; }
         public Vector2 LastMoveDirection { get; private set; }
         public bool IsMoving { get; private set; }
 
@@ -52,13 +59,47 @@ namespace TheOldRoad.Player
             {
                 LastMoveDirection = Vector2.zero;
                 IsMoving = false;
+                IsSprinting = false;
                 return;
             }
 
             Vector2 direction = Vector2.ClampMagnitude(inputSource.Move, 1f);
             LastMoveDirection = direction;
             IsMoving = direction.sqrMagnitude > 0.001f;
-            transform.position += new Vector3(direction.x, direction.y, 0f) * (moveSpeed * UnityEngine.Time.deltaTime);
+
+            bool shiftPressed = UnityEngine.Input.GetKey(KeyCode.LeftShift) || UnityEngine.Input.GetKey(KeyCode.RightShift);
+            IsSprinting = IsMoving && shiftPressed;
+            
+            float pathBonus = 1.0f;
+            Collider2D pathHit = Physics2D.OverlapPoint(transform.position);
+            if (pathHit != null && pathHit.gameObject.name.Contains("Path"))
+            {
+                pathBonus = 1.15f;
+            }
+
+            float currentSpeed = moveSpeed * (IsSprinting ? sprintMultiplier : 1f) * pathBonus;
+
+            if (IsMoving)
+            {
+                float stepInterval = IsSprinting ? 0.22f : 0.32f;
+                if (UnityEngine.Time.unscaledTime >= footstepTimer)
+                {
+                    footstepTimer = UnityEngine.Time.unscaledTime + stepInterval;
+
+                    // Check if player is wading through the river (approx Y between -5.5 and -3.0)
+                    bool inRiver = transform.position.y >= -5.5f && transform.position.y <= -3.0f && transform.position.x < 150f;
+                    if (inRiver)
+                    {
+                        AudioManager.PlayWaterSplash();
+                    }
+                    else
+                    {
+                        AudioManager.PlayFootstep();
+                    }
+                }
+            }
+
+            transform.position += new Vector3(direction.x, direction.y, 0f) * (currentSpeed * UnityEngine.Time.deltaTime);
         }
     }
 }

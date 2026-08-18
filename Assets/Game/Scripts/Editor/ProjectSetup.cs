@@ -17,13 +17,26 @@ namespace TheOldRoad.Editor
         public static void RebuildPrototypeProject()
         {
             EnsureFolders();
-            CreateItem("Assets/Game/Data/Items/Wood.asset", "item.wood", "Wood", 99);
-            CreateItem("Assets/Game/Data/Items/Stone.asset", "item.stone", "Stone", 99);
-            CreateItem("Assets/Game/Data/Items/CabinPlank.asset", "item.cabin-plank", "Cabin Plank", 99);
-            CreateItem("Assets/Game/Data/Items/CookedMeal.asset", "item.cooked-meal", "Cooked Meal", 20);
-            CreateItem("Assets/Game/Data/Items/Egg.asset", "item.egg", "Egg", 50);
-            CreateItem("Assets/Game/Data/Items/Wool.asset", "item.wool", "Wool", 50);
-            CreateItem("Assets/Game/Data/Items/Milk.asset", "item.milk", "Milk", 50);
+            AssetSpriteGenerator.GenerateAllSprites();
+
+            CreateItem("Assets/Game/Data/Items/Wood.asset", "item.wood", "Wood", 99, "Assets/Game/Art/Items/Wood.png");
+            CreateItem("Assets/Game/Data/Items/Stone.asset", "item.stone", "Stone", 99, "Assets/Game/Art/Items/Stone.png");
+            CreateItem("Assets/Game/Data/Items/CabinPlank.asset", "item.cabin-plank", "Cabin Plank", 99, "Assets/Game/Art/Items/CabinPlank.png");
+            CreateItem("Assets/Game/Data/Items/WildBerries.asset", "item.wild-berries", "Wild Berries", 99, "Assets/Game/Art/Items/WildBerries.png");
+            CreateItem("Assets/Game/Data/Items/MedicinalHerb.asset", "item.medicinal-herb", "Medicinal Herb", 99, "Assets/Game/Art/Items/MedicinalHerb.png");
+            CreateItem("Assets/Game/Data/Items/Mushroom.asset", "item.mushroom", "Mushroom", 99, "Assets/Game/Art/Items/Mushroom.png");
+            CreateItem("Assets/Game/Data/Items/IronOre.asset", "item.iron-ore", "Iron Ore", 99, "Assets/Game/Art/Items/IronOre.png");
+            CreateItem("Assets/Game/Data/Items/OldCoin.asset", "item.old-coin", "Old Coin", 999, "Assets/Game/Art/Items/OldCoin.png");
+            CreateItem("Assets/Game/Data/Items/Torch.asset", "item.torch", "Torch", 20, "Assets/Game/Art/Items/Torch.png");
+            CreateItem("Assets/Game/Data/Items/ToolAxe.asset", "item.tool-axe", "Worn Axe", 1, "Assets/Game/Art/Items/ToolAxe.png");
+            CreateItem("Assets/Game/Data/Items/ToolPickaxe.asset", "item.tool-pickaxe", "Stone Pick", 1, "Assets/Game/Art/Items/ToolPickaxe.png");
+            CreateItem("Assets/Game/Data/Items/RoadwardenPage.asset", "item.roadwarden-page", "Journal Page", 10, "Assets/Game/Art/Items/RoadwardenPage.png");
+            CreateItem("Assets/Game/Data/Items/BellFragment.asset", "item.bell-fragment", "Bell Fragment", 50, "Assets/Game/Art/Items/BellFragment.png");
+            CreateItem("Assets/Game/Data/Items/CookedMeal.asset", "item.cooked-meal", "Cooked Meal", 20, "Assets/Game/Art/Items/CookedMeal.png");
+            CreateItem("Assets/Game/Data/Items/Egg.asset", "item.egg", "Egg", 50, "Assets/Game/Art/Items/Egg.png");
+            CreateItem("Assets/Game/Data/Items/Wool.asset", "item.wool", "Wool", 50, "Assets/Game/Art/Items/Wool.png");
+            CreateItem("Assets/Game/Data/Items/Milk.asset", "item.milk", "Milk", 50, "Assets/Game/Art/Items/Milk.png");
+
             CreateRecipe();
             CreateCabin();
             CreatePrototypeBuilding(
@@ -36,7 +49,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
                 12f,
-                new[] { "Ring", "Kindling", "Flame" });
+                new[] { "Ring", "Kindling", "Flame" },
+                "Assets/Game/Art/Buildings/Campfire.png");
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/CookingHearth.asset",
                 "building.cooking-hearth",
@@ -48,7 +62,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 }
                 },
                 25f,
-                new[] { "Base", "Chamber", "Ready" });
+                new[] { "Base", "Chamber", "Ready" },
+                "Assets/Game/Art/Buildings/CookingHearth.png");
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/SmallAnimalPen.asset",
                 "building.animal-pen-small",
@@ -59,7 +74,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
                 35f,
-                new[] { "Posts", "Rails", "Gate", "Ready" });
+                new[] { "Posts", "Rails", "Gate", "Ready" },
+                "Assets/Game/Art/Buildings/AnimalPenSmall.png");
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/LongAnimalPen.asset",
                 "building.animal-pen-long",
@@ -70,7 +86,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.stone", quantity = 4 }
                 },
                 45f,
-                new[] { "Posts", "Rails", "Gate", "Ready" });
+                new[] { "Posts", "Rails", "Gate", "Ready" },
+                "Assets/Game/Art/Buildings/AnimalPenLong.png");
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/StorageShed.asset",
                 "building.storage-shed",
@@ -82,7 +99,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
                 30f,
-                new[] { "Foundation", "Frame", "Roof", "Ready" });
+                new[] { "Foundation", "Frame", "Roof", "Ready" },
+                "Assets/Game/Art/Buildings/StorageShed.png");
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/StoneCottage.asset",
                 "building.stone-cottage",
@@ -94,7 +112,8 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 }
                 },
                 60f,
-                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
+                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" },
+                "Assets/Game/Art/Buildings/StoneCottage.png");
             CreateBootstrapScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -137,10 +156,11 @@ namespace TheOldRoad.Editor
             }
         }
 
-        private static void CreateItem(string path, string itemId, string displayName, int maxStack)
+        private static void CreateItem(string path, string itemId, string displayName, int maxStack, string spritePath = null)
         {
             ItemDefinition item = LoadOrCreate<ItemDefinition>(path);
-            item.ConfigureForPrototype(itemId, displayName, maxStack);
+            Sprite icon = !string.IsNullOrEmpty(spritePath) ? AssetDatabase.LoadAssetAtPath<Sprite>(spritePath) : null;
+            item.ConfigureForPrototype(itemId, displayName, maxStack, icon);
             EditorUtility.SetDirty(item);
         }
 
@@ -159,6 +179,13 @@ namespace TheOldRoad.Editor
 
         private static void CreateCabin()
         {
+            Sprite completeSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Game/Art/Buildings/Cabin_Complete.png");
+            Sprite[] stages = new Sprite[5];
+            for (int i = 0; i < 5; i++)
+            {
+                stages[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Game/Art/Buildings/Cabin_Stage_{i}.png");
+            }
+
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/Cabin.asset",
                 "building.cabin",
@@ -169,13 +196,24 @@ namespace TheOldRoad.Editor
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
                 30f,
-                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
+                new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" },
+                "Assets/Game/Art/Buildings/Cabin_Complete.png",
+                stages);
         }
 
-        private static void CreatePrototypeBuilding(string path, string buildingId, Vector2Int footprint, BuildCostEntry[] costs, float duration, string[] stages)
+        private static void CreatePrototypeBuilding(
+            string path,
+            string buildingId,
+            Vector2Int footprint,
+            BuildCostEntry[] costs,
+            float duration,
+            string[] stages,
+            string completeSpritePath = null,
+            Sprite[] stageSprites = null)
         {
             BuildingDefinition building = LoadOrCreate<BuildingDefinition>(path);
-            building.ConfigureForPrototype(buildingId, footprint, costs, duration, stages);
+            Sprite completeSprite = !string.IsNullOrEmpty(completeSpritePath) ? AssetDatabase.LoadAssetAtPath<Sprite>(completeSpritePath) : null;
+            building.ConfigureForPrototype(buildingId, footprint, costs, duration, stages, completeSprite, stageSprites);
             EditorUtility.SetDirty(building);
         }
 

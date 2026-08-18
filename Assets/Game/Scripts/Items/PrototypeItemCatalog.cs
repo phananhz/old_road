@@ -24,7 +24,21 @@ namespace TheOldRoad.Items
             new PrototypeItemInfo("item.cooked-meal", "Cooked Meal", "F", "Cooked food; restores health in the prototype", new Color(0.92f, 0.55f, 0.22f, 1f)),
             new PrototypeItemInfo("item.egg", "Egg", "E", "Prototype animal product", new Color(0.96f, 0.88f, 0.62f, 1f)),
             new PrototypeItemInfo("item.wool", "Wool", "W", "Prototype animal product", new Color(0.86f, 0.84f, 0.76f, 1f)),
-            new PrototypeItemInfo("item.milk", "Milk", "M", "Prototype animal product", new Color(0.88f, 0.94f, 0.96f, 1f))
+            new PrototypeItemInfo("item.milk", "Milk", "M", "Prototype animal product", new Color(0.88f, 0.94f, 0.96f, 1f)),
+            new PrototypeItemInfo("item.silver-coin", "Silver Coin", "🪙", "Valen silver currency", new Color(0.92f, 0.94f, 0.98f, 1f)),
+            new PrototypeItemInfo("item.watering-can", "Watering Can", "💧", "Water tilled crops or collect river water", new Color(0.35f, 0.65f, 0.95f, 1f)),
+            new PrototypeItemInfo("item.seed-wheat", "Wheat Seeds", "🌱", "Plant in tilled soil", new Color(0.85f, 0.78f, 0.35f, 1f)),
+            new PrototypeItemInfo("item.seed-corn", "Corn Seeds", "🌱", "Plant in tilled soil", new Color(0.95f, 0.85f, 0.25f, 1f)),
+            new PrototypeItemInfo("item.seed-carrot", "Carrot Seeds", "🌱", "Plant in tilled soil", new Color(0.95f, 0.50f, 0.20f, 1f)),
+            new PrototypeItemInfo("item.wheat", "Golden Wheat", "🌾", "Freshly harvested crop", new Color(0.92f, 0.82f, 0.38f, 1f)),
+            new PrototypeItemInfo("item.corn", "Sweet Corn", "🌽", "Freshly harvested crop", new Color(0.98f, 0.88f, 0.28f, 1f)),
+            new PrototypeItemInfo("item.carrot", "Crisp Carrot", "🥕", "Freshly harvested crop", new Color(0.98f, 0.48f, 0.15f, 1f)),
+            new PrototypeItemInfo("item.fence-wood", "Wood Fence", "🪵", "Enclose property or animals", new Color(0.55f, 0.38f, 0.22f, 1f)),
+            new PrototypeItemInfo("item.gate-wood", "Wood Gate", "🚪", "Openable gate for fences", new Color(0.62f, 0.42f, 0.24f, 1f)),
+            new PrototypeItemInfo("item.seed-pineapple", "Pineapple Seeds", "🍍", "Plant in tilled soil", new Color(0.95f, 0.78f, 0.22f, 1f)),
+            new PrototypeItemInfo("item.seed-tomato", "Tomato Seeds", "🍅", "Plant in tilled soil", new Color(0.92f, 0.25f, 0.20f, 1f)),
+            new PrototypeItemInfo("item.pineapple", "Sweet Pineapple", "🍍", "Juicy golden pineapple", new Color(0.96f, 0.82f, 0.20f, 1f)),
+            new PrototypeItemInfo("item.tomato", "Ripe Tomato", "🍅", "Fresh farm tomato", new Color(0.92f, 0.22f, 0.18f, 1f))
         };
 
         public static PrototypeItemInfo[] All => Items;

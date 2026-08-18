@@ -3,18 +3,22 @@ using System.Reflection;
 
 namespace TheOldRoad.UI
 {
-    /// <summary>PlayerPrefs-backed prototype settings for graphics quality and master audio.</summary>
+    /// <summary>PlayerPrefs-backed settings for graphics quality, language, frame rate, and audio volumes.</summary>
     public static class GameSettingsRuntime
     {
         private const string QualityPrefKey = "the_old_road.settings.quality";
         private const string SoundEnabledPrefKey = "the_old_road.settings.sound_enabled";
         private const string VolumePrefKey = "the_old_road.settings.master_volume";
+        private const string MusicVolumePrefKey = "the_old_road.settings.music_volume";
+        private const string SfxVolumePrefKey = "the_old_road.settings.sfx_volume";
         private const string FrameRatePrefKey = "the_old_road.settings.frame_rate_option";
         private static readonly int[] FrameRateOptions = { 30, 60, 90, 120, -1 };
 
         public static int QualityIndex { get; private set; }
         public static bool SoundEnabled { get; private set; } = true;
         public static float MasterVolume { get; private set; } = 0.85f;
+        public static float MusicVolume { get; private set; } = 0.80f;
+        public static float SfxVolume { get; private set; } = 0.90f;
         public static int FrameRateOptionIndex { get; private set; } = 1;
         public static float MeasuredFps { get; private set; }
 
@@ -83,6 +87,8 @@ namespace TheOldRoad.UI
             QualityIndex = Mathf.Clamp(PlayerPrefs.GetInt(QualityPrefKey, currentQuality), 0, maxQuality);
             SoundEnabled = PlayerPrefs.GetInt(SoundEnabledPrefKey, 1) != 0;
             MasterVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(VolumePrefKey, 0.85f));
+            MusicVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(MusicVolumePrefKey, 0.80f));
+            SfxVolume = Mathf.Clamp01(PlayerPrefs.GetFloat(SfxVolumePrefKey, 0.90f));
             FrameRateOptionIndex = Mathf.Clamp(PlayerPrefs.GetInt(FrameRatePrefKey, 1), 0, FrameRateOptions.Length - 1);
             Apply();
         }
@@ -104,6 +110,18 @@ namespace TheOldRoad.UI
         public static void SetMasterVolume(float volume)
         {
             MasterVolume = Mathf.Clamp01(volume);
+            ApplyAndSave();
+        }
+
+        public static void SetMusicVolume(float volume)
+        {
+            MusicVolume = Mathf.Clamp01(volume);
+            ApplyAndSave();
+        }
+
+        public static void SetSfxVolume(float volume)
+        {
+            SfxVolume = Mathf.Clamp01(volume);
             ApplyAndSave();
         }
 
@@ -156,6 +174,11 @@ namespace TheOldRoad.UI
 
         private static void ApplyAudioByReflection()
         {
+            TheOldRoad.Audio.AudioManager.MasterVolume = MasterVolume;
+            TheOldRoad.Audio.AudioManager.MusicVolume = MusicVolume;
+            TheOldRoad.Audio.AudioManager.SfxVolume = SfxVolume;
+            TheOldRoad.Audio.AudioManager.IsMuted = !SoundEnabled;
+
             System.Type audioListenerType = System.Type.GetType("UnityEngine.AudioListener, UnityEngine.AudioModule");
             if (audioListenerType == null) return;
 
@@ -171,6 +194,8 @@ namespace TheOldRoad.UI
             PlayerPrefs.SetInt(QualityPrefKey, QualityIndex);
             PlayerPrefs.SetInt(SoundEnabledPrefKey, SoundEnabled ? 1 : 0);
             PlayerPrefs.SetFloat(VolumePrefKey, MasterVolume);
+            PlayerPrefs.SetFloat(MusicVolumePrefKey, MusicVolume);
+            PlayerPrefs.SetFloat(SfxVolumePrefKey, SfxVolume);
             PlayerPrefs.SetInt(FrameRatePrefKey, FrameRateOptionIndex);
             PlayerPrefs.Save();
         }

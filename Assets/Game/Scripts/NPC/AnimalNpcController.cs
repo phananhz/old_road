@@ -78,7 +78,10 @@ namespace TheOldRoad.NPC
             if (screen.z < 0f) return;
 
             Rect rect = new Rect(screen.x - 42f, Screen.height - screen.y - 12f, 84f, 20f);
-            GUI.Label(rect, animalName, CreateLabelStyle());
+            string displayAnimal = TheOldRoad.UI.LocalizationRuntime.T("animal." + animalName.ToLowerInvariant()) != "animal." + animalName.ToLowerInvariant()
+                ? TheOldRoad.UI.LocalizationRuntime.T("animal." + animalName.ToLowerInvariant())
+                : animalName;
+            GUI.Label(rect, displayAnimal, CreateLabelStyle());
         }
 
         private void EnsureRenderer()
