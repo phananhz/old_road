@@ -47,6 +47,7 @@ namespace TheOldRoad.UI
         private int selectedSlot;
         private OverlayMode overlayMode;
         private int selectedBuildCategory;
+        private string selectedInventoryItemId = "item.wood";
         private Vector2 buildCatalogScrollPosition;
         private string activePromptText = string.Empty;
         private float promptHideTime;
@@ -444,61 +445,154 @@ namespace TheOldRoad.UI
 
         private void DrawInventoryOverlay()
         {
-            float width = Mathf.Min(760f, Screen.width - 70f);
-            float height = Mathf.Min(500f, Screen.height - 110f);
+            float width = Mathf.Min(980f, Screen.width - 30f);
+            float height = Mathf.Min(560f, Screen.height - 40f);
             Rect panel = new Rect((Screen.width - width) * 0.5f, (Screen.height - height) * 0.5f, width, height);
             DrawCard(panel, Ink);
             DrawCornerAccents(panel, Gold);
-            DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 44));
+            DrawHeaderStrip(new Rect(panel.x, panel.y, panel.width, 44f));
 
-            GUI.Label(new Rect(panel.x + 24, panel.y + 9, panel.width - 48, 28), LocalizationRuntime.T("pack_title"), gameTitleStyle);
-            GUI.Label(new Rect(panel.x + panel.width - 190, panel.y + 14, 170, 20), LocalizationRuntime.T("inventory_close"), smallStyle);
+            GUI.Label(new Rect(panel.x + 24f, panel.y + 9f, panel.width - 48f, 28f), LocalizationRuntime.T("pack_title"), gameTitleStyle);
+            GUI.Label(new Rect(panel.x + panel.width - 210f, panel.y + 14f, 190f, 20f), LocalizationRuntime.T("inventory_close"), smallStyle);
 
-            GUI.Label(new Rect(panel.x + 26, panel.y + 54, panel.width - 52, 20), LocalizationRuntime.T("pack_subtitle"), smallStyle);
-            Rect grid = new Rect(panel.x + 24, panel.y + 82, panel.width - 48, panel.height - 110);
-            DrawInventoryGrid(grid);
+            float detailWidth = Mathf.Min(290f, panel.width * 0.32f);
+            float contentY = panel.y + 54f;
+            float contentHeight = panel.height - 68f;
+
+            Rect gridRect = new Rect(panel.x + 16f, contentY, panel.width - detailWidth - 36f, contentHeight);
+            Rect detailRect = new Rect(gridRect.xMax + 12f, contentY, detailWidth, contentHeight);
+
+            DrawInventoryGrid(gridRect);
+            DrawInventoryDetailPane(detailRect);
         }
 
         private void DrawInventoryGrid(Rect rect)
         {
-            DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.64f));
-            DrawBorder(rect, new Color(0.18f, 0.15f, 0.11f, 1f), 2f);
+            DrawRect(rect, new Color(0.025f, 0.023f, 0.02f, 0.75f));
+            DrawBorder(rect, new Color(0.22f, 0.18f, 0.12f, 1f), 2f);
 
             PrototypeItemInfo[] items = PrototypeItemCatalog.All;
 
-            const float slotSize = 76f;
-            const float gap = 10f;
-            int columns = Mathf.Max(1, Mathf.FloorToInt((rect.width - 24f + gap) / (slotSize + gap)));
+            const float slotSize = 68f;
+            const float gap = 8f;
+            int columns = Mathf.Max(1, Mathf.FloorToInt((rect.width - 20f + gap) / (slotSize + gap)));
 
             for (int i = 0; i < items.Length; i++)
             {
                 PrototypeItemInfo item = items[i];
                 int column = i % columns;
                 int row = i / columns;
-                Rect slot = new Rect(rect.x + 14 + column * (slotSize + gap), rect.y + 14 + row * (slotSize + gap), slotSize, slotSize);
+                Rect slot = new Rect(rect.x + 10f + column * (slotSize + gap), rect.y + 10f + row * (slotSize + gap), slotSize, slotSize);
                 DrawInventorySlot(slot, item);
             }
         }
 
         private void DrawInventorySlot(Rect slot, PrototypeItemInfo item)
         {
+            Event current = Event.current;
+            if (current != null && current.type == EventType.MouseDown && current.button == 0 && slot.Contains(current.mousePosition))
+            {
+                selectedInventoryItemId = item.ItemId;
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
+                current.Use();
+            }
+
+            bool isSelected = string.Equals(selectedInventoryItemId, item.ItemId, StringComparison.Ordinal);
             int quantity = GetQuantity(item.ItemId);
             bool hasItem = quantity > 0;
-            DrawRect(slot, hasItem ? InkSoft : new Color(0.045f, 0.041f, 0.037f, 0.88f));
-            DrawBorder(slot, hasItem ? GoldDim : new Color(0.20f, 0.18f, 0.15f, 1f), 1f);
 
-            Rect icon = new Rect(slot.x + 13f, slot.y + 8f, slot.width - 26f, 38f);
+            // Highlight effect for selected item
+            if (isSelected)
+            {
+                float pulse = 0.6f + Mathf.PingPong(UnityEngine.Time.unscaledTime * 3f, 0.4f);
+                DrawRect(new Rect(slot.x - 3f, slot.y - 3f, slot.width + 6f, slot.height + 6f), new Color(1f, 0.85f, 0.25f, pulse * 0.45f));
+                DrawRect(slot, new Color(0.40f, 0.26f, 0.09f, 0.98f));
+                DrawBorder(slot, Gold, 2.5f);
+                // Top-right golden indicator notch
+                DrawRect(new Rect(slot.xMax - 6f, slot.y + 2f, 4f, 4f), Gold);
+            }
+            else
+            {
+                DrawRect(slot, hasItem ? InkSoft : new Color(0.045f, 0.041f, 0.037f, 0.88f));
+                DrawBorder(slot, hasItem ? GoldDim : new Color(0.20f, 0.18f, 0.15f, 1f), 1f);
+            }
+
+            Rect icon = new Rect(slot.x + 11f, slot.y + 6f, slot.width - 22f, 34f);
             Color previous = GUI.color;
-            GUI.color = hasItem ? Color.white : new Color(1f, 1f, 1f, 0.42f);
+            GUI.color = hasItem ? Color.white : new Color(1f, 1f, 1f, 0.40f);
             DrawItemGlyph(icon, new HotbarItem(item.ItemId, item.DisplayName, item.Icon, quantity, item.Color));
             GUI.color = previous;
 
-            Rect quantityBadge = new Rect(slot.xMax - 34f, slot.yMax - 25f, 27f, 18f);
+            Rect quantityBadge = new Rect(slot.xMax - 30f, slot.yMax - 22f, 26f, 16f);
             DrawRect(quantityBadge, hasItem ? new Color(0.02f, 0.018f, 0.015f, 0.92f) : new Color(0.02f, 0.018f, 0.015f, 0.55f));
-            DrawBorder(quantityBadge, hasItem ? GoldDim : new Color(0.18f, 0.16f, 0.14f, 1f), 1f);
+            DrawBorder(quantityBadge, isSelected ? Gold : (hasItem ? GoldDim : new Color(0.18f, 0.16f, 0.14f, 1f)), 1f);
             GUI.Label(quantityBadge, quantity.ToString(), centerStyle);
 
-            GUI.Label(new Rect(slot.x + 5f, slot.yMax - 43f, slot.width - 10f, 18f), GetShortItemName(LocalizeItemName(item.ItemId, item.DisplayName)), centerStyle);
+            GUI.Label(new Rect(slot.x + 2f, slot.yMax - 38f, slot.width - 4f, 16f), GetShortItemName(LocalizeItemName(item.ItemId, item.DisplayName)), centerStyle);
+        }
+
+        private void DrawInventoryDetailPane(Rect rect)
+        {
+            DrawCard(rect, new Color(0.06f, 0.045f, 0.04f, 0.96f));
+            DrawBorder(rect, Gold, 2f);
+            DrawHeaderStrip(new Rect(rect.x, rect.y, rect.width, 36f));
+
+            PrototypeItemInfo item = PrototypeItemCatalog.Get(selectedInventoryItemId);
+            int quantity = GetQuantity(item.ItemId);
+            bool hasItem = quantity > 0;
+
+            // Header Item Name
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 7f, rect.width - 20f, 22f), LocalizationRuntime.ItemName(item.ItemId), titleStyle);
+
+            // Category Badge
+            Rect catBadge = new Rect(rect.x + 16f, rect.y + 44f, rect.width - 32f, 22f);
+            DrawRect(catBadge, new Color(0.16f, 0.11f, 0.07f, 0.92f));
+            DrawBorder(catBadge, GoldDim, 1f);
+            GUI.Label(catBadge, LocalizationRuntime.ItemCategory(item.ItemId), smallStyle);
+
+            // Large Icon Preview Box
+            float boxSz = 68f;
+            Rect previewBox = new Rect(rect.x + (rect.width - boxSz) * 0.5f, rect.y + 72f, boxSz, boxSz);
+            DrawRect(new Rect(previewBox.x - 2f, previewBox.y - 2f, boxSz + 4f, boxSz + 4f), new Color(0.35f, 0.24f, 0.10f, 0.55f));
+            DrawRect(previewBox, new Color(0.12f, 0.09f, 0.07f, 1f));
+            DrawBorder(previewBox, Gold, 2f);
+
+            Rect previewIcon = new Rect(previewBox.x + 10f, previewBox.y + 10f, previewBox.width - 20f, previewBox.height - 20f);
+            Color prevColor = GUI.color;
+            GUI.color = hasItem ? Color.white : new Color(1f, 1f, 1f, 0.6f);
+            DrawItemGlyph(previewIcon, new HotbarItem(item.ItemId, item.DisplayName, item.Icon, quantity, item.Color));
+            GUI.color = prevColor;
+
+            // Quantity Label
+            string countText = LocalizationRuntime.IsVietnamese ? ("Sở hữu:  <b>" + quantity + "</b>") : ("In Bag:  <b>" + quantity + "</b>");
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 148f, rect.width - 32f, 24f), countText, labelStyle);
+
+            // Divider
+            DrawRect(new Rect(rect.x + 16f, rect.y + 176f, rect.width - 32f, 1f), GoldDim);
+
+            // Full Item Description
+            GUI.Label(new Rect(rect.x + 14f, rect.y + 184f, rect.width - 28f, 170f), LocalizationRuntime.ItemDescription(item.ItemId), subtitleStyle);
+
+            // Bottom Usage Tip / Action Box
+            Rect actionBox = new Rect(rect.x + 12f, rect.yMax - 82f, rect.width - 24f, 70f);
+            DrawRect(actionBox, new Color(0.10f, 0.07f, 0.05f, 0.90f));
+            DrawBorder(actionBox, new Color(0.38f, 0.28f, 0.14f, 1f), 1f);
+
+            if (item.ItemId == "item.wild-berries" || item.ItemId == "item.mushroom" || item.ItemId == "item.cooked-meal")
+            {
+                if (hasItem && GUI.Button(new Rect(actionBox.x + 10f, actionBox.y + 8f, actionBox.width - 20f, 32f), "♥  " + (LocalizationRuntime.IsVietnamese ? "Ăn Hồi Máu (Q)" : "Eat (Q)"), buttonStyle))
+                {
+                    TryConsumeSelectedItem();
+                }
+                GUI.Label(new Rect(actionBox.x + 4f, actionBox.y + 44f, actionBox.width - 8f, 20f), LocalizationRuntime.IsVietnamese ? "Hồi phục sinh lực cho người chơi" : "Restores player vitality", smallStyle);
+            }
+            else
+            {
+                string usageText = LocalizationRuntime.IsVietnamese
+                    ? "Dùng phím số 1-9 để chọn trên thanh công cụ"
+                    : "Assign to Hotbar 1-9 to use in world";
+                GUI.Label(new Rect(actionBox.x + 6f, actionBox.y + 14f, actionBox.width - 12f, 44f), usageText, smallStyle);
+            }
         }
 
         private void DrawBuildCatalogOverlay()
@@ -1033,10 +1127,30 @@ namespace TheOldRoad.UI
 
         private void DrawLandmarkDots(Rect map)
         {
+            bool isLargeMap = map.width > 220f;
             foreach (DiscoverableLandmark landmark in cachedLandmarks)
             {
                 if (landmark == null) continue;
-                DrawMapDot(map, landmark.transform.position, new Color(0.68f, 0.42f, 0.92f, 1f), map.width > 220f ? 9f : 5f);
+                Vector2 mapPoint = WorldToMap(map, landmark.transform.position);
+
+                if (landmark.IsDiscovered)
+                {
+                    // Discovered landmark: distinct gold marker
+                    float sz = isLargeMap ? 10f : 6f;
+                    DrawMapDot(map, landmark.transform.position, new Color(0.95f, 0.78f, 0.25f, 1f), sz);
+                }
+                else
+                {
+                    // Undiscovered landmark: prominent "?" question mark badge so players can easily locate and travel to it
+                    float sz = isLargeMap ? 18f : 13f;
+                    Rect qRect = new Rect(mapPoint.x - sz * 0.5f, mapPoint.y - sz * 0.5f, sz, sz);
+                    // Outer glow
+                    DrawRect(new Rect(qRect.x - 1f, qRect.y - 1f, sz + 2f, sz + 2f), new Color(1f, 0.25f, 0.25f, 0.45f));
+                    // Badge background
+                    DrawRect(qRect, new Color(0.78f, 0.14f, 0.14f, 0.96f));
+                    DrawBorder(qRect, Gold, 1.5f);
+                    GUI.Label(new Rect(qRect.x, qRect.y - 1f, qRect.width, qRect.height), "?", numberStyle);
+                }
             }
         }
 
@@ -1481,19 +1595,21 @@ namespace TheOldRoad.UI
         {
             DrawRect(rect, new Color(0.03f, 0.026f, 0.022f, 0.84f));
             DrawBorder(rect, GoldDim, 1f);
-            GUI.Label(new Rect(rect.x + 14, rect.y + 12, rect.width - 28, 24), LocalizationRuntime.T("legend"), titleStyle);
-            DrawLegendRow(rect.x + 16, rect.y + 54, new Color(0.25f, 0.62f, 1f, 1f), LocalizationRuntime.T("legend_player"));
-            DrawLegendRow(rect.x + 16, rect.y + 84, new Color(1f, 0.82f, 0.24f, 1f), LocalizationRuntime.T("legend_home"));
-            DrawLegendRow(rect.x + 16, rect.y + 114, new Color(0.95f, 0.62f, 0.22f, 1f), LocalizationRuntime.T("legend_building"));
-            DrawLegendRow(rect.x + 16, rect.y + 144, new Color(0.86f, 0.42f, 1f, 1f), LocalizationRuntime.T("legend_waypoint"));
+            GUI.Label(new Rect(rect.x + 14, rect.y + 10, rect.width - 28, 22), LocalizationRuntime.T("legend"), titleStyle);
+            DrawLegendRow(rect.x + 16, rect.y + 44, new Color(0.25f, 0.62f, 1f, 1f), LocalizationRuntime.T("legend_player"));
+            DrawLegendRow(rect.x + 16, rect.y + 68, new Color(1f, 0.82f, 0.24f, 1f), LocalizationRuntime.T("legend_home"));
+            DrawLegendRow(rect.x + 16, rect.y + 92, new Color(0.95f, 0.62f, 0.22f, 1f), LocalizationRuntime.T("legend_building"));
+            DrawLegendRow(rect.x + 16, rect.y + 116, new Color(0.86f, 0.42f, 1f, 1f), LocalizationRuntime.T("legend_waypoint"));
+            DrawLegendRow(rect.x + 16, rect.y + 140, new Color(0.85f, 0.18f, 0.18f, 1f), LocalizationRuntime.IsVietnamese ? "?  Địa danh chưa khám phá" : "?  Undiscovered Area");
+            DrawLegendRow(rect.x + 16, rect.y + 164, new Color(0.95f, 0.78f, 0.25f, 1f), LocalizationRuntime.IsVietnamese ? "★  Địa danh đã khám phá" : "★  Discovered Landmark");
 
-            GUI.Label(new Rect(rect.x + 14, rect.y + 178f, rect.width - 28, 62f), LocalizationRuntime.T("map_pin_hint"), smallStyle);
-            if (hasWaypoint && GUI.Button(new Rect(rect.x + 22f, rect.y + 250f, rect.width - 44f, 32f), LocalizationRuntime.T("clear_waypoint")))
+            GUI.Label(new Rect(rect.x + 14, rect.y + 192f, rect.width - 28, 54f), LocalizationRuntime.T("map_pin_hint"), smallStyle);
+            if (hasWaypoint && GUI.Button(new Rect(rect.x + 22f, rect.y + 250f, rect.width - 44f, 30f), LocalizationRuntime.T("clear_waypoint")))
             {
                 hasWaypoint = false;
             }
 
-            GUI.Label(new Rect(rect.x + 14, rect.yMax - 58, rect.width - 28, 44), LocalizationRuntime.T("legend_clean_map_hint"), smallStyle);
+            GUI.Label(new Rect(rect.x + 14, rect.yMax - 54, rect.width - 28, 44), LocalizationRuntime.T("legend_clean_map_hint"), smallStyle);
         }
 
         private void HandleMapPinInput(Rect mapRect)

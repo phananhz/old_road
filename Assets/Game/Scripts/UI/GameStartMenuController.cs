@@ -174,11 +174,22 @@ namespace TheOldRoad.UI
                 smallStyle);
 
             string backText = hasStarted ? LocalizationRuntime.T("back_to_game") : LocalizationRuntime.T("back");
-            if (GUI.Button(new Rect(panel.x + 230f, panel.yMax - 60f, 260f, 40f), backText, buttonStyle))
+            float btnW = 230f;
+            float btnH = 42f;
+            float totalButtonsW = btnW * 2f + 20f;
+            float startBtnX = panel.x + (panel.width - totalButtonsW) * 0.5f;
+
+            if (GUI.Button(new Rect(startBtnX, panel.yMax - 60f, btnW, btnH), "↩  " + backText, buttonStyle))
             {
                 TheOldRoad.Audio.AudioManager.PlayUiClick();
                 settingsOpen = false;
                 if (hasStarted) ResumeGameplay();
+            }
+
+            if (GUI.Button(new Rect(startBtnX + btnW + 20f, panel.yMax - 60f, btnW, btnH), "✕  " + LocalizationRuntime.T("quit"), buttonStyle))
+            {
+                TheOldRoad.Audio.AudioManager.PlayUiClick();
+                Application.Quit();
             }
         }
 

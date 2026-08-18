@@ -67,6 +67,137 @@ namespace TheOldRoad.UI
             return T(key);
         }
 
+        public static string ItemCategory(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId)) return string.Empty;
+            switch (itemId)
+            {
+                case "item.wood":
+                case "item.stone":
+                case "item.cabin-plank":
+                case "item.iron-ore":
+                    return IsVietnamese ? "Nguyên liệu xây dựng" : "Building Material";
+                case "item.tool-axe":
+                case "item.tool-pickaxe":
+                case "item.watering-can":
+                case "item.torch":
+                    return IsVietnamese ? "Công cụ & Trang bị" : "Tool & Equipment";
+                case "item.wild-berries":
+                case "item.mushroom":
+                case "item.cooked-meal":
+                    return IsVietnamese ? "Thực phẩm hồi sức" : "Consumable Food";
+                case "item.medicinal-herb":
+                    return IsVietnamese ? "Dược liệu & Bào chế" : "Herbal & Apothecary";
+                case "item.old-coin":
+                case "item.silver-coin":
+                    return IsVietnamese ? "Tiền tệ & Trao đổi" : "Currency & Trade";
+                case "item.roadwarden-page":
+                case "item.bell-fragment":
+                    return IsVietnamese ? "Cổ vật & Nhiệm vụ" : "Artifact & Quest";
+                case "item.seed-wheat":
+                case "item.seed-corn":
+                case "item.seed-carrot":
+                case "item.seed-pineapple":
+                case "item.seed-tomato":
+                    return IsVietnamese ? "Hạt giống nông trại" : "Farm Seeds";
+                case "item.wheat":
+                case "item.corn":
+                case "item.carrot":
+                case "item.pineapple":
+                case "item.tomato":
+                case "item.egg":
+                case "item.wool":
+                case "item.milk":
+                    return IsVietnamese ? "Nông sản & Sản vật" : "Farm Produce";
+                case "item.fence-wood":
+                case "item.gate-wood":
+                    return IsVietnamese ? "Vật phẩm kiến trúc" : "Structure Part";
+                default:
+                    return IsVietnamese ? "Vật phẩm thông thường" : "Standard Item";
+            }
+        }
+
+        public static string ItemDescription(string itemId)
+        {
+            if (string.IsNullOrEmpty(itemId)) return string.Empty;
+            if (IsVietnamese)
+            {
+                switch (itemId)
+                {
+                    case "item.wood": return "Gỗ sồi chắc chắn thu thập từ các cây đại thụ. Dùng trong chế tạo công cụ, nhóm lửa và dựng các công trình cơ bản.";
+                    case "item.stone": return "Đá tảng cứng cáp khai thác từ các mỏ đá ven đường. Dùng làm móng kiên cố cho nhà cửa và công trình đá.";
+                    case "item.cabin-plank": return "Ván gỗ dày dặn được xẻ và vát mịn cẩn thận. Vật liệu cốt lõi để dựng cabin và rương chứa đồ.";
+                    case "item.tool-axe": return "Rìu tiều phu đã qua sử dụng nhưng lưỡi vẫn sắc bén. Cho phép chặt gỗ nhanh hơn và khai hoang các rào chắn.";
+                    case "item.tool-pickaxe": return "Cuốc đá thô sơ dùng để đào đá và khai thác các vỉa quặng sắt quý giá ẩn sâu trong lòng đất.";
+                    case "item.iron-ore": return "Quặng sắt nguyên chất chứa kim loại cứng cáp. Cần thiết để rèn trang bị, vũ khí và công cụ cao cấp.";
+                    case "item.wild-berries": return "Những chùm quả mọng đỏ ngọt mọc tự nhiên. Có thể ăn ngay (nhấn Q) để hồi máu hoặc dùng nấu nướng.";
+                    case "item.medicinal-herb": return "Thảo dược hoang dã tỏa hương thơm thanh mát. Dùng để bào chế thuốc và nấu các bữa ăn bổ dưỡng.";
+                    case "item.mushroom": return "Nấm rừng béo ngậy mọc dưới tán lá ẩm ướt. Gia vị tuyệt hảo cho các món hầm trên bếp lửa.";
+                    case "item.cooked-meal": return "Bữa ăn nóng sốt nấu từ quả dại và nấm thảo mộc. Hồi phục lượng lớn sinh lực khi tiêu thụ (nhấn Q).";
+                    case "item.torch": return "Ngọn đuốc tẩm dầu sáng rực. Xua tan bóng đêm u tối và bảo vệ người lữ hành khỏi quái vật săn đêm.";
+                    case "item.roadwarden-page": return "Trang nhật ký ố vàng của cha - người Roadwarden tiền nhiệm, ghi lại các bí mật về Con Đường Cũ.";
+                    case "item.bell-fragment": return "Mảnh vỡ kim loại cổ phát ra âm vang vi vu bí ẩn, tàn tích của mạng lưới tháp chuông xưa.";
+                    case "item.silver-coin": return "Đồng bạc chạm khắc gia huy vương quốc. Tiền tệ chính để giao thương mua bán vật phẩm với thương nhân.";
+                    case "item.old-coin": return "Đồng xu cổ xỉn màu có niên đại hàng thế kỷ từ thời kỳ Con Đường Cũ hưng thịnh.";
+                    case "item.watering-can": return "Bình tưới nước bằng sắt. Dùng để tưới ẩm các luống đất đã cuốc giúp cây trồng sinh trưởng nhanh.";
+                    case "item.seed-wheat": return "Hạt giống lúa mì chọn lọc. Gieo vào đất đã xới để thu hoạch những bông lúa mì vàng óng.";
+                    case "item.seed-corn": return "Hạt bắp giống chất lượng. Gieo trồng trên đất ẩm để thu hoạch những bắp ngô ngọt bùi.";
+                    case "item.seed-carrot": return "Hạt giống cà rốt tươi tốt. Trồng và tưới nước đều đặn để thu hoạch củ cà rốt giòn ngọt.";
+                    case "item.seed-pineapple": return "Hạt giống dứa nhiệt đới quý hiếm. Trồng để thu hoạch quả dứa vàng mật thơm ngon.";
+                    case "item.seed-tomato": return "Hạt giống cà chua đỏ mọng. Dễ trồng và cho năng suất quả cao.";
+                    case "item.wheat": return "Bông lúa mì vàng óng ả vừa thu hoạch. Nguyên liệu quan trọng cho các bữa ăn no nê.";
+                    case "item.corn": return "Bắp ngô vàng ngọt bùi đậm đà hương vị đồng quê.";
+                    case "item.carrot": return "Củ cà rốt tươi ngon bổ dưỡng, có thể dùng làm thức ăn trực tiếp hoặc nấu nướng.";
+                    case "item.pineapple": return "Quả dứa vàng mật ngọt ngào, chứa nhiều nước và giá trị dinh dưỡng cao.";
+                    case "item.tomato": return "Quả cà chua mọng nước, gia vị tuyệt vời cho các bữa ăn ấm áp.";
+                    case "item.egg": return "Trứng gà tươi thu gom từ ổ rơm chuồng nuôi. Thực phẩm giàu đạm.";
+                    case "item.wool": return "Bó len mềm mịn thu hoạch từ cừu. Nguyên liệu dệt may và lót ấm.";
+                    case "item.milk": return "Bình sữa tươi nguyên chất từ bò sữa Valen. Thức uống bổ dưỡng hồi phục thể lực.";
+                    case "item.fence-wood": return "Đoạn hàng rào gỗ mộc mạc dùng để bao quanh và bảo vệ khuôn viên nông trại.";
+                    case "item.gate-wood": return "Cánh cổng rào gỗ có then cài. Cho phép đóng mở lối ra vào chuồng trại.";
+                    default: return "Vật phẩm được lưu giữ an toàn trong túi hành lý của bạn.";
+                }
+            }
+            else
+            {
+                switch (itemId)
+                {
+                    case "item.wood": return "Sturdy oak timber gathered from ancient trees. Used in crafting tools, lighting fires, and constructing shelters.";
+                    case "item.stone": return "Solid rock quarried along the old paths. Used as a strong foundation for cabins and stonework.";
+                    case "item.cabin-plank": return "Carefully cut and planed wooden planks. Essential component for cabin construction and storage chests.";
+                    case "item.tool-axe": return "A worn woodcutter's axe with a sharp edge. Allows faster wood chopping and clearing road blockades.";
+                    case "item.tool-pickaxe": return "A sturdy stone pickaxe used for mining rocks and precious iron ore veins underground.";
+                    case "item.iron-ore": return "Pure unrefined iron ore. Essential for forging high-tier metal gear and advanced tools.";
+                    case "item.wild-berries": return "Sweet red forest berries. Can be eaten raw (press Q) to restore health or used in cooking.";
+                    case "item.medicinal-herb": return "Fragrant wild herbs with soothing properties. Used in brewing remedies and nutritious meals.";
+                    case "item.mushroom": return "Earthy wild mushrooms gathered in damp soil. A flavorful ingredient for warm cooking pot stews.";
+                    case "item.cooked-meal": return "A steaming hot cooked meal prepared on a campfire. Restores significant health (press Q).";
+                    case "item.torch": return "A flaming resin-soaked torch. Wards off darkness and lurking nighttime predators.";
+                    case "item.roadwarden-page": return "A weathered journal page from your father, the former Roadwarden, recording regional lore.";
+                    case "item.bell-fragment": return "An ancient metallic chime fragment resonating with strange echoes of the old bell towers.";
+                    case "item.silver-coin": return "Minted Valen silver currency. Used to trade and buy valuable goods from visiting merchants.";
+                    case "item.old-coin": return "A tarnished ancient coin from the prosperity era of The Old Road.";
+                    case "item.watering-can": return "An iron watering can. Used to water tilled soil plots to accelerate crop growth.";
+                    case "item.seed-wheat": return "Carefully sorted wheat seeds. Plant in tilled soil to grow golden wheat crops.";
+                    case "item.seed-corn": return "Fresh corn seeds. Plant in moist soil to grow sweet farm corn.";
+                    case "item.seed-carrot": return "Crisp carrot seeds. Cultivate and water regularly to harvest fresh carrots.";
+                    case "item.seed-pineapple": return "Rare sweet pineapple seeds. Cultivate to produce juicy tropical pineapples.";
+                    case "item.seed-tomato": return "Ripe tomato seeds. Fast-growing crop yielding juicy red tomatoes.";
+                    case "item.wheat": return "Golden wheat sheaf harvested from the field. Staple grain for cooking meals.";
+                    case "item.corn": return "Sweet golden corn cob, freshly picked from the farm plots.";
+                    case "item.carrot": return "Crisp nutritious carrot, ready to eat or cook into stews.";
+                    case "item.pineapple": return "Juicy golden pineapple packed with sweetness and nutrients.";
+                    case "item.tomato": return "Plump farm-fresh tomato, great for culinary recipes.";
+                    case "item.egg": return "Fresh egg gathered from poultry nests in the animal pens.";
+                    case "item.wool": return "Soft fleece wool sheared from livestock for crafting and bedding.";
+                    case "item.milk": return "Fresh dairy milk jug collected from cows at the Valen barn.";
+                    case "item.fence-wood": return "Rustic wooden fence section to enclose farm animals and protect crops.";
+                    case "item.gate-wood": return "A latchable wooden gate section for easy access into fenced areas.";
+                    default: return "A useful item stored safely in your adventurer's backpack.";
+                }
+            }
+        }
+
         public static string BuildingName(string buildingId)
         {
             if (string.IsNullOrEmpty(buildingId)) return string.Empty;
