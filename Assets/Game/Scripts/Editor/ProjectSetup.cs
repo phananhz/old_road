@@ -67,11 +67,11 @@ namespace TheOldRoad.Editor
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/SmallAnimalPen.asset",
                 "building.animal-pen-small",
-                new Vector2Int(3, 2),
+                new Vector2Int(7, 5),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 6 },
-                    new BuildCostEntry { itemId = "item.stone", quantity = 2 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 4 }
                 },
                 35f,
                 new[] { "Posts", "Rails", "Gate", "Ready" },
@@ -79,11 +79,11 @@ namespace TheOldRoad.Editor
             CreatePrototypeBuilding(
                 "Assets/Game/Data/Buildings/LongAnimalPen.asset",
                 "building.animal-pen-long",
-                new Vector2Int(4, 2),
+                new Vector2Int(11, 6),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
-                    new BuildCostEntry { itemId = "item.stone", quantity = 4 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 14 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 6 }
                 },
                 45f,
                 new[] { "Posts", "Rails", "Gate", "Ready" },

@@ -34,15 +34,20 @@ namespace TheOldRoad.Combat
             inventorySession = session;
         }
 
+        private bool isBlocking;
+        public bool IsBlocking => isBlocking;
+
         private void Update()
         {
             UpdateFacing();
 
+            // Check shield block (Right Click or V key)
+            isBlocking = (UnityEngine.Input.GetKey(KeyCode.V) || UnityEngine.Input.GetMouseButton(1)) && HasShield();
+
             // Keyboard / Mouse attack input
             if (UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetMouseButtonDown(0))
             {
-                // Ensure not clicking on UI overlay
-                TryAttack();
+                if (!isBlocking) TryAttack();
             }
         }
 
@@ -65,10 +70,29 @@ namespace TheOldRoad.Combat
 
         private void ExecuteAttack()
         {
-            GetEquippedWeaponStats(out int damage, out float range, out float knockback, out Color slashColor, out DamageType damageType);
-
+            string currentItem = GetSelectedItemId();
             Vector2 attackDir = lastFacingDirection;
             Vector3 attackOrigin = transform.position;
+
+            // Check if Bow is equipped
+            if (currentItem == "item.weapon-bow")
+            {
+                InventoryRuntime inv = inventorySession != null ? inventorySession.Runtime : null;
+                if (inv != null && inv.GetQuantity("item.ammo-arrow") > 0)
+                {
+                    inv.TryRemove("item.ammo-arrow", 1);
+                    ArrowProjectile.Launch(attackOrigin, attackDir, 6);
+                    TheOldRoad.Audio.AudioManager.PlaySwordSlash();
+                    return;
+                }
+                else
+                {
+                    FloatingTextController.Spawn(UI.LocalizationRuntime.IsVietnamese ? "Hết tên!" : "No arrows!", attackOrigin + Vector3.up * 0.6f, Color.red, 0.8f);
+                    return;
+                }
+            }
+
+            GetEquippedWeaponStats(out int damage, out float range, out float knockback, out Color slashColor, out DamageType damageType);
 
             // Visual slash arc
             SlashVfx.Create(attackOrigin, attackDir, slashColor, range);
@@ -128,6 +152,13 @@ namespace TheOldRoad.Combat
 
             switch (currentItemId)
             {
+                case "item.weapon-sword":
+                    damage = 7;
+                    range = 1.55f;
+                    knockback = 4.2f;
+                    slashColor = new Color(1f, 0.88f, 0.40f, 0.95f);
+                    damageType = DamageType.Slashing;
+                    break;
                 case "item.tool-axe":
                     damage = 4;
                     range = 1.35f;
@@ -152,12 +183,19 @@ namespace TheOldRoad.Combat
             }
         }
 
+        public bool HasShield()
+        {
+            TheOldRoad.Core.VerticalSliceController vsc = FindAnyObjectByType<TheOldRoad.Core.VerticalSliceController>();
+            return vsc != null && vsc.Inventory != null && vsc.Inventory.GetQuantity("item.shield-wood") > 0;
+        }
+
         private string GetSelectedItemId()
         {
-            // Read selected item from VerticalSliceController or active slot
             TheOldRoad.Core.VerticalSliceController vsc = FindAnyObjectByType<TheOldRoad.Core.VerticalSliceController>();
             if (vsc != null && vsc.Inventory != null)
             {
+                if (vsc.Inventory.GetQuantity("item.weapon-sword") > 0) return "item.weapon-sword";
+                if (vsc.Inventory.GetQuantity("item.weapon-bow") > 0) return "item.weapon-bow";
                 if (vsc.Inventory.GetQuantity("item.tool-axe") > 0) return "item.tool-axe";
                 if (vsc.Inventory.GetQuantity("item.tool-pickaxe") > 0) return "item.tool-pickaxe";
                 if (vsc.Inventory.GetQuantity("item.torch") > 0) return "item.torch";
@@ -168,6 +206,14 @@ namespace TheOldRoad.Combat
         public void TakeDamageFromEnemy(int damage, Vector2 knockbackDir)
         {
             if (isInvincible || vitals == null) return;
+
+            if (isBlocking)
+            {
+                // Shield blocks 75% damage
+                damage = Mathf.Max(1, Mathf.RoundToInt(damage * 0.25f));
+                TheOldRoad.Audio.AudioManager.PlayHitImpact();
+                FloatingTextController.Spawn("BLOCKED", transform.position + Vector3.up * 0.7f, Color.cyan, 0.8f);
+            }
 
             vitals.TakeDamage(damage);
             FloatingTextController.SpawnPlayerDamage(damage, transform.position);

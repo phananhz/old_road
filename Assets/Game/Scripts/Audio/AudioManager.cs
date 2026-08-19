@@ -15,6 +15,7 @@ namespace TheOldRoad.Audio
         private static AudioManager instance;
 
         private AudioSource musicSource;
+        private AudioSource musicNightSource;
         private AudioSource ambientDaySource;
         private AudioSource ambientNightSource;
         private AudioSource rainSource;
@@ -182,6 +183,48 @@ namespace TheOldRoad.Audio
         public static void PlayMiningImpact() => PlayMineStone();
         public static void PlayAttackImpact() => PlayHitImpact();
         public static void PlayAttackSwing() => PlaySwordSlash();
+        public static void PlayItemPickup() => PlayLoot();
+        public static void PlayHarvestProduce() => PlayCropHarvest();
+        public static void PlaySlashVfx() => PlaySwordSlash();
+        public static void PlayLandmarkDiscovered() => PlayQuestComplete();
+
+        // Nông nghiệp & Trồng trọt
+        public static void PlayTillSoil() => PlaySfx(PrototypeAudioFactory.TillSoil, 0.95f, 0.06f);
+        public static void PlayWaterPour() => PlaySfx(PrototypeAudioFactory.WaterPour, 0.90f, 0.05f);
+        public static void PlayPlantSeed() => PlaySfx(PrototypeAudioFactory.PlantSeed, 0.85f, 0.05f);
+        public static void PlayCropFertilize() => PlaySfx(PrototypeAudioFactory.CropFertilize, 0.90f, 0.04f);
+        public static void PlayCropHarvest() => PlaySfx(PrototypeAudioFactory.CropHarvest, 0.95f, 0.05f);
+        public static void PlaySprinkler() => PlaySfx(PrototypeAudioFactory.SprinklerSpray, 0.70f, 0.03f);
+
+        // Chăn nuôi & Thú cưng
+        public static void PlayCowMoo() => PlaySfx(PrototypeAudioFactory.CowMoo, 0.90f, 0.04f);
+        public static void PlayCowMilking() => PlaySfx(PrototypeAudioFactory.CowMilking, 0.85f, 0.04f);
+        public static void PlaySheepBaa() => PlaySfx(PrototypeAudioFactory.SheepBaa, 0.85f, 0.05f);
+        public static void PlaySheepShearing() => PlaySfx(PrototypeAudioFactory.SheepShearing, 0.85f, 0.04f);
+        public static void PlayChickenCluck() => PlaySfx(PrototypeAudioFactory.ChickenCluck, 0.80f, 0.06f);
+        public static void PlayEggLaid() => PlaySfx(PrototypeAudioFactory.EggLaid, 0.85f, 0.04f);
+        public static void PlayDogBark() => PlaySfx(PrototypeAudioFactory.DogBark, 0.85f, 0.05f);
+        public static void PlayCatPurr() => PlaySfx(PrototypeAudioFactory.CatPurr, 0.75f, 0.03f);
+
+        // Câu cá
+        public static void PlayRodCast() => PlaySfx(PrototypeAudioFactory.RodCast, 0.85f, 0.05f);
+        public static void PlayFishBite() => PlaySfx(PrototypeAudioFactory.FishBite, 0.95f, 0.03f);
+        public static void PlayReelTension() => PlaySfx(PrototypeAudioFactory.ReelTension, 0.75f, 0.04f);
+        public static void PlayFishSuccess() => PlaySfx(PrototypeAudioFactory.FishCatchSuccess, 0.95f, 0f);
+
+        // Chiến đấu & Vũ khí
+        public static void PlayBowDraw() => PlaySfx(PrototypeAudioFactory.BowDraw, 0.85f, 0.04f);
+        public static void PlayArrowFly() => PlaySfx(PrototypeAudioFactory.ArrowFly, 0.80f, 0.06f);
+        public static void PlayShieldBlock() => PlaySfx(PrototypeAudioFactory.ShieldBlock, 0.95f, 0.05f);
+
+        // Thương nhân, Máy móc & Môi trường
+        public static void PlayMerchantBell() => PlaySfx(PrototypeAudioFactory.MerchantWagonBell, 1.0f, 0f);
+        public static void PlayCoinJingle() => PlaySfx(PrototypeAudioFactory.CoinJingle, 0.90f, 0.04f);
+        public static void PlayTreeFall() => PlaySfx(PrototypeAudioFactory.TreeCreakFall, 0.95f, 0.04f);
+        public static void PlayRockBreak() => PlaySfx(PrototypeAudioFactory.RockBreak, 0.95f, 0.05f);
+        public static void PlayGemDiscovery() => PlaySfx(PrototypeAudioFactory.GemDiscovery, 0.95f, 0f);
+        public static void PlayMachineProcess() => PlaySfx(PrototypeAudioFactory.MachineProcess, 0.80f, 0.04f);
+        public static void PlayRooster() => PlaySfx(PrototypeAudioFactory.MorningRooster, 0.85f, 0.03f);
 
         public void SetMasterVolume(float volume)
         {
@@ -233,6 +276,14 @@ namespace TheOldRoad.Audio
                 musicSource.spatialBlend = 0f;
             }
 
+            if (musicNightSource == null)
+            {
+                musicNightSource = gameObject.AddComponent<AudioSource>();
+                musicNightSource.loop = true;
+                musicNightSource.playOnAwake = false;
+                musicNightSource.spatialBlend = 0f;
+            }
+
             if (ambientDaySource == null)
             {
                 ambientDaySource = gameObject.AddComponent<AudioSource>();
@@ -274,6 +325,12 @@ namespace TheOldRoad.Audio
                 musicSource.Play();
             }
 
+            if (musicNightSource != null && !musicNightSource.isPlaying)
+            {
+                musicNightSource.clip = PrototypeAudioFactory.OverworldMusicNight;
+                musicNightSource.Play();
+            }
+
             if (ambientDaySource != null && !ambientDaySource.isPlaying)
             {
                 ambientDaySource.clip = PrototypeAudioFactory.AmbientDay;
@@ -300,6 +357,7 @@ namespace TheOldRoad.Audio
             if (muted)
             {
                 if (musicSource != null) musicSource.volume = 0f;
+                if (musicNightSource != null) musicNightSource.volume = 0f;
                 if (ambientDaySource != null) ambientDaySource.volume = 0f;
                 if (ambientNightSource != null) ambientNightSource.volume = 0f;
                 if (rainSource != null) rainSource.volume = 0f;
@@ -309,17 +367,22 @@ namespace TheOldRoad.Audio
             float effectiveMaster = masterVolume;
             if (musicSource != null)
             {
-                musicSource.volume = effectiveMaster * musicVolume * 0.6f;
+                musicSource.volume = effectiveMaster * musicVolume * (1f - currentNightBlend) * 0.65f;
+            }
+
+            if (musicNightSource != null)
+            {
+                musicNightSource.volume = effectiveMaster * musicVolume * currentNightBlend * 0.65f;
             }
 
             if (ambientDaySource != null)
             {
-                ambientDaySource.volume = effectiveMaster * (1f - currentNightBlend) * 0.5f;
+                ambientDaySource.volume = effectiveMaster * (1f - currentNightBlend) * 0.45f;
             }
 
             if (ambientNightSource != null)
             {
-                ambientNightSource.volume = effectiveMaster * currentNightBlend * 0.5f;
+                ambientNightSource.volume = effectiveMaster * currentNightBlend * 0.45f;
             }
 
             if (rainSource != null)

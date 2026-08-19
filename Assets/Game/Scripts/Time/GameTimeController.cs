@@ -24,14 +24,45 @@ namespace TheOldRoad.Time
 
         private float TotalMinutes => startHour * 60f + startMinute + elapsedGameMinutes;
 
+        private int lastCheckedDay = -1;
+
         private void Update()
         {
             elapsedGameMinutes += UnityEngine.Time.deltaTime * gameMinutesPerRealSecond;
+
+            if (Hour == 6 && lastCheckedDay != Day)
+            {
+                lastCheckedDay = Day;
+                TheOldRoad.Farming.SprinklerController.WaterAllSprinklersInWorld();
+            }
         }
 
         public void AdvanceHours(float hours)
         {
             elapsedGameMinutes += Mathf.Max(0f, hours) * 60f;
+            if (Hour >= 6 && lastCheckedDay != Day)
+            {
+                lastCheckedDay = Day;
+                TheOldRoad.Farming.SprinklerController.WaterAllSprinklersInWorld();
+            }
+        }
+
+        public void AdvanceTimeToMorning()
+        {
+            float currentMinutesToday = Mathf.Repeat(TotalMinutes, MinutesPerDay);
+            float targetMorningMinutes = 6f * 60f; // 6:00 AM
+            float minutesToAdvance;
+            if (currentMinutesToday < targetMorningMinutes)
+            {
+                minutesToAdvance = targetMorningMinutes - currentMinutesToday;
+            }
+            else
+            {
+                minutesToAdvance = (MinutesPerDay - currentMinutesToday) + targetMorningMinutes;
+            }
+            elapsedGameMinutes += Mathf.Max(60f, minutesToAdvance);
+            lastCheckedDay = Day;
+            TheOldRoad.Farming.SprinklerController.WaterAllSprinklersInWorld();
         }
 
         public void LoadAbsoluteMinute(int absoluteMinute)

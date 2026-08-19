@@ -108,7 +108,29 @@ namespace TheOldRoad.Tests.EditMode
 
                 Sprite bandit = PrototypePixelArtFactory.BanditSprite(f);
                 Assert.IsNotNull(bandit, $"Bandit sprite frame {f} should not be null");
+
+                Sprite stalker = PrototypePixelArtFactory.ShadowStalkerSprite(f);
+                Assert.IsNotNull(stalker, $"Shadow Stalker sprite frame {f} should not be null");
             }
+        }
+
+        [Test]
+        public void CombatWeaponItems_AreDefinedInItemCatalog()
+        {
+            Assert.IsTrue(TheOldRoad.Items.PrototypeItemCatalog.TryGet("item.weapon-sword", out var sword));
+            Assert.AreEqual("item.weapon-sword", sword.ItemId);
+
+            Assert.IsTrue(TheOldRoad.Items.PrototypeItemCatalog.TryGet("item.weapon-bow", out var bow));
+            Assert.AreEqual("item.weapon-bow", bow.ItemId);
+
+            Assert.IsTrue(TheOldRoad.Items.PrototypeItemCatalog.TryGet("item.ammo-arrow", out var arrow));
+            Assert.AreEqual("item.ammo-arrow", arrow.ItemId);
+
+            Assert.IsTrue(TheOldRoad.Items.PrototypeItemCatalog.TryGet("item.shield-wood", out var shield));
+            Assert.AreEqual("item.shield-wood", shield.ItemId);
+
+            Assert.IsTrue(TheOldRoad.Items.PrototypeItemCatalog.TryGet("item.armor-knight", out var armor));
+            Assert.AreEqual("item.armor-knight", armor.ItemId);
         }
     }
 }

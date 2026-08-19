@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.Combat
 {
@@ -100,10 +101,12 @@ namespace TheOldRoad.Combat
             Camera cam = Camera.main;
             if (cam == null) return;
 
+            UiFontHelper.EnsureGlobalSkinFont();
             if (textStyle == null)
             {
                 textStyle = new GUIStyle(GUI.skin.label)
                 {
+                    font = UiFontHelper.CleanFont,
                     fontSize = 14,
                     fontStyle = FontStyle.Bold,
                     alignment = TextAnchor.MiddleCenter

@@ -68,19 +68,45 @@ namespace TheOldRoad.World
             CanUseAction = false;
             InteractionHint = string.Empty;
             ActionButtonLabel = "Use";
+            bool vi = LocalizationRuntime.IsVietnamese;
 
             if (interior != null && interior.IsInside)
             {
-                CanUseAction = true;
-                if (interior.IsNearBed(transform))
+                if (interior.IsNearStairs(transform))
                 {
-                    ActionButtonLabel = "Sleep";
-                    InteractionHint = "Press F to use the bed.";
+                    CanUseAction = true;
+                    bool isF1 = interior.CurrentFloor == 1;
+                    ActionButtonLabel = isF1 ? (vi ? "Lên Tầng 2" : "Go Up") : (vi ? "Xuống Tầng 1" : "Go Down");
+                    InteractionHint = isF1
+                        ? (vi ? "Nhấn [F] hoặc [E] để Lên Tầng 2." : "Press [F] or [E] to go up to 2nd Floor.")
+                        : (vi ? "Nhấn [F] hoặc [E] để Xuống Tầng 1." : "Press [F] or [E] to go down to 1st Floor.");
                     return;
                 }
 
-                ActionButtonLabel = "Exit";
-                InteractionHint = "Press F to exit.";
+                if (interior.IsNearBed(transform))
+                {
+                    CanUseAction = true;
+                    ActionButtonLabel = vi ? "Ngủ" : "Sleep";
+                    InteractionHint = vi ? "Nhấn [F] để nghỉ ngơi ngủ 8 tiếng." : "Press [F] to sleep for 8 hours.";
+                    return;
+                }
+
+                if (interior.IsNearChest(transform))
+                {
+                    CanUseAction = true;
+                    ActionButtonLabel = vi ? "Mở Rương" : "Chest";
+                    InteractionHint = vi ? "Nhấn [F] để mở rương đồ cá nhân." : "Press [F] to open chest.";
+                    return;
+                }
+
+                if (interior.IsNearDoor(transform))
+                {
+                    CanUseAction = true;
+                    ActionButtonLabel = vi ? "Ra Ngoài" : "Exit";
+                    InteractionHint = vi ? "Nhấn [F] để bước ra ngoài." : "Press [F] to exit.";
+                    return;
+                }
+
                 return;
             }
 
@@ -93,8 +119,9 @@ namespace TheOldRoad.World
             if (nearestCabin == null) return;
 
             CanUseAction = true;
-            ActionButtonLabel = "Enter";
-            InteractionHint = "Press F to enter.";
+            string bName = LocalizationRuntime.BuildingName(nearestCabin.BuildingId);
+            ActionButtonLabel = vi ? "Vào Nhà" : "Enter";
+            InteractionHint = vi ? $"Nhấn [F] để vào {bName}." : $"Press [F] to enter {bName}.";
         }
 
         private void ExecuteAction()
@@ -104,17 +131,29 @@ namespace TheOldRoad.World
 
             if (interior != null && interior.IsInside)
             {
+                if (interior.IsNearStairs(transform))
+                {
+                    interior.ToggleFloor(player);
+                    hasInteriorValidPosition = false;
+                    return;
+                }
+
                 if (interior.IsNearBed(transform))
                 {
                     OpenSleepConfirmation();
                     return;
                 }
 
-                interior.Exit(player);
-                hasInteriorValidPosition = false;
-                InteractionHint = interior.Status;
-                TheOldRoad.Audio.AudioManager.PlayDoor();
-                PlayerSpeechBubble.Say("speech.exit_home");
+                if (interior.IsNearDoor(transform))
+                {
+                    interior.Exit(player);
+                    hasInteriorValidPosition = false;
+                    InteractionHint = interior.Status;
+                    TheOldRoad.Audio.AudioManager.PlayDoor();
+                    PlayerSpeechBubble.Say("speech.exit_home");
+                    return;
+                }
+
                 return;
             }
 
@@ -134,7 +173,9 @@ namespace TheOldRoad.World
             sleepConfirmationOpen = true;
             CanUseAction = false;
             ActionButtonLabel = "Sleep";
-            InteractionHint = "Sleep for 8 hours? Press Y to confirm or N/Esc to cancel.";
+            InteractionHint = LocalizationRuntime.IsVietnamese
+                ? "Ngủ 8 tiếng hồi đầy máu? Nhấn Y để đồng ý hoặc N/Esc để hủy."
+                : "Sleep for 8 hours? Press Y to confirm or N/Esc to cancel.";
             PlayerSpeechBubble.Say("speech.sleep_prompt", 3.2f);
         }
 
@@ -175,9 +216,14 @@ namespace TheOldRoad.World
         {
             return buildingId == "building.cabin" ||
                    buildingId == "building.stone-cottage" ||
+                   buildingId == "building.manor" ||
+                   buildingId == "building.windmill" ||
+                   buildingId == "building.lookout-tower" ||
                    buildingId == "building.herbalist-hut" ||
+                   buildingId == "building.greenhouse" ||
+                   buildingId == "building.tent" ||
                    buildingId == "building.storage-shed" ||
-                   buildingId == "building.lookout-tower";
+                   buildingId == "building.farm-barn";
         }
 
         private ConstructionSite FindNearestCompletedCabin()
@@ -225,8 +271,10 @@ namespace TheOldRoad.World
             GUI.DrawTexture(new Rect(panel.xMax - 3f, panel.y, 3f, panel.height), Texture2D.whiteTexture);
             GUI.color = previousColor;
 
+            UiFontHelper.EnsureGlobalSkinFont();
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 22,
                 fontStyle = FontStyle.Bold,
@@ -235,6 +283,7 @@ namespace TheOldRoad.World
 
             GUIStyle bodyStyle = new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 16,
                 wordWrap = true,

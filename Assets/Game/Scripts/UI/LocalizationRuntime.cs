@@ -79,12 +79,20 @@ namespace TheOldRoad.UI
                     return IsVietnamese ? "Nguyên liệu xây dựng" : "Building Material";
                 case "item.tool-axe":
                 case "item.tool-pickaxe":
+                case "item.tool-hoe":
+                case "item.weapon-sword":
+                case "item.weapon-bow":
+                case "item.ammo-arrow":
+                case "item.shield-wood":
+                case "item.armor-knight":
+                case "item.fishing-rod":
                 case "item.watering-can":
                 case "item.torch":
-                    return IsVietnamese ? "Công cụ & Trang bị" : "Tool & Equipment";
+                    return IsVietnamese ? "Công cụ & Vũ khí" : "Tools & Weapons";
                 case "item.wild-berries":
                 case "item.mushroom":
                 case "item.cooked-meal":
+                case "item.cooked-fish":
                     return IsVietnamese ? "Thực phẩm hồi sức" : "Consumable Food";
                 case "item.medicinal-herb":
                     return IsVietnamese ? "Dược liệu & Bào chế" : "Herbal & Apothecary";
@@ -93,22 +101,43 @@ namespace TheOldRoad.UI
                     return IsVietnamese ? "Tiền tệ & Trao đổi" : "Currency & Trade";
                 case "item.roadwarden-page":
                 case "item.bell-fragment":
-                    return IsVietnamese ? "Cổ vật & Nhiệm vụ" : "Artifact & Quest";
+                case "item.farm-deed":
+                    return IsVietnamese ? "Cổ vật & Giấy tờ" : "Artifacts & Deeds";
                 case "item.seed-wheat":
                 case "item.seed-corn":
                 case "item.seed-carrot":
+                case "item.seed-potato":
                 case "item.seed-pineapple":
                 case "item.seed-tomato":
-                    return IsVietnamese ? "Hạt giống nông trại" : "Farm Seeds";
+                case "item.fishing-bait":
+                    return IsVietnamese ? "Hạt giống & Mồi câu" : "Seeds & Bait";
                 case "item.wheat":
                 case "item.corn":
                 case "item.carrot":
+                case "item.potato":
                 case "item.pineapple":
                 case "item.tomato":
                 case "item.egg":
                 case "item.wool":
                 case "item.milk":
-                    return IsVietnamese ? "Nông sản & Sản vật" : "Farm Produce";
+                case "item.meat-raw":
+                case "item.leather":
+                case "item.hay":
+                case "item.grape":
+                case "item.pumpkin":
+                case "item.flour":
+                case "item.fish-salmon":
+                case "item.fish-carp":
+                case "item.fish-golden-perch":
+                    return IsVietnamese ? "Nông sản & Thủy sản" : "Produce & Fish";
+                case "item.cheese":
+                case "item.wine":
+                case "item.juice":
+                    return IsVietnamese ? "Đồ uống & Thành phẩm" : "Beverage & Artisan Food";
+                case "item.cloth":
+                case "item.iron-bar":
+                case "item.fertilizer":
+                    return IsVietnamese ? "Nguyên liệu chế tác" : "Crafting Material";
                 case "item.fence-wood":
                 case "item.gate-wood":
                     return IsVietnamese ? "Vật phẩm kiến trúc" : "Structure Part";
@@ -139,15 +168,18 @@ namespace TheOldRoad.UI
                     case "item.bell-fragment": return "Mảnh vỡ kim loại cổ phát ra âm vang vi vu bí ẩn, tàn tích của mạng lưới tháp chuông xưa.";
                     case "item.silver-coin": return "Đồng bạc chạm khắc gia huy vương quốc. Tiền tệ chính để giao thương mua bán vật phẩm với thương nhân.";
                     case "item.old-coin": return "Đồng xu cổ xỉn màu có niên đại hàng thế kỷ từ thời kỳ Con Đường Cũ hưng thịnh.";
+                    case "item.tool-hoe": return "Cuốc làm vườn cán gỗ cứng cáp. Dùng để xới các ô đất hoang thành luống đất màu mỡ sẵn sàng gieo hạt giống.";
                     case "item.watering-can": return "Bình tưới nước bằng sắt. Dùng để tưới ẩm các luống đất đã cuốc giúp cây trồng sinh trưởng nhanh.";
                     case "item.seed-wheat": return "Hạt giống lúa mì chọn lọc. Gieo vào đất đã xới để thu hoạch những bông lúa mì vàng óng.";
                     case "item.seed-corn": return "Hạt bắp giống chất lượng. Gieo trồng trên đất ẩm để thu hoạch những bắp ngô ngọt bùi.";
                     case "item.seed-carrot": return "Hạt giống cà rốt tươi tốt. Trồng và tưới nước đều đặn để thu hoạch củ cà rốt giòn ngọt.";
+                    case "item.seed-potato": return "Mầm khoai tây giống khỏe mạnh. Vùi xuống đất tơi xốp và tưới ẩm để thu hoạch những củ khoai tây bùi ngậy.";
                     case "item.seed-pineapple": return "Hạt giống dứa nhiệt đới quý hiếm. Trồng để thu hoạch quả dứa vàng mật thơm ngon.";
                     case "item.seed-tomato": return "Hạt giống cà chua đỏ mọng. Dễ trồng và cho năng suất quả cao.";
                     case "item.wheat": return "Bông lúa mì vàng óng ả vừa thu hoạch. Nguyên liệu quan trọng cho các bữa ăn no nê.";
                     case "item.corn": return "Bắp ngô vàng ngọt bùi đậm đà hương vị đồng quê.";
                     case "item.carrot": return "Củ cà rốt tươi ngon bổ dưỡng, có thể dùng làm thức ăn trực tiếp hoặc nấu nướng.";
+                    case "item.potato": return "Củ khoai tây vàng ươm bùi béo vừa nhổ lên từ luống đất. Lương thực no lâu và dễ chế biến.";
                     case "item.pineapple": return "Quả dứa vàng mật ngọt ngào, chứa nhiều nước và giá trị dinh dưỡng cao.";
                     case "item.tomato": return "Quả cà chua mọng nước, gia vị tuyệt vời cho các bữa ăn ấm áp.";
                     case "item.egg": return "Trứng gà tươi thu gom từ ổ rơm chuồng nuôi. Thực phẩm giàu đạm.";
@@ -155,6 +187,30 @@ namespace TheOldRoad.UI
                     case "item.milk": return "Bình sữa tươi nguyên chất từ bò sữa Valen. Thức uống bổ dưỡng hồi phục thể lực.";
                     case "item.fence-wood": return "Đoạn hàng rào gỗ mộc mạc dùng để bao quanh và bảo vệ khuôn viên nông trại.";
                     case "item.gate-wood": return "Cánh cổng rào gỗ có then cài. Cho phép đóng mở lối ra vào chuồng trại.";
+                    case "item.fishing-rod": return "Cần câu làm từ thân tre dẻo dai. Dùng để thả câu ven các khúc sông Valen yên ả.";
+                    case "item.fishing-bait": return "Trùn đất tươi béo ngậy đào từ đất ẩm. Mồi câu khoái khẩu của các loài cá sông.";
+                    case "item.fish-salmon": return "Cá hồi sông tươi rói vừa kéo lên từ làn nước mát. Thịt cá thơm ngon giàu dinh dưỡng.";
+                    case "item.fish-carp": return "Cá chép sông vảy xanh bóng. Nguyên liệu tuyệt vời cho các món cá nướng thảo mộc.";
+                    case "item.fish-golden-perch": return "Cá vược hoàng kim quý hiếm. Mang lại giá trị trao đổi rất cao với thương nhân.";
+                    case "item.cooked-fish": return "Cá sông nướng mọi thơm lừng tẩm ướp thảo dược rừng. Hồi phục một lượng lớn sinh lực (+18 HP).";
+                    case "item.weapon-sword": return "Thanh kiếm dài rèn từ quặng sắt tinh luyện. Vũ khí cận chiến sắc bén gây sát thương cao (+6 DMG).";
+                    case "item.weapon-bow": return "Cung săn bắn gỗ sồi dẻo dai. Cho phép bắn tên từ khoảng cách an toàn (+5 DMG).";
+                    case "item.ammo-arrow": return "Mũi tên bịt sắt có cánh lông chim. Đạn dược cần thiết để sử dụng cung săn bắn.";
+                    case "item.shield-wood": return "Khiên gỗ tròn viền sắt. Giúp giảm thiểu đáng kể sát thương từ các đòn tấn công của quái vật.";
+                    case "item.armor-knight": return "Bộ giáp ngực thép của hiệp sĩ hoàng hôn. Tăng cường giới hạn sinh lực tối đa (+10 Max HP).";
+                    case "item.meat-raw": return "Tảng thịt tươi săn được từ thú rừng. Có thể chế biến thành các món ăn bổ dưỡng.";
+                    case "item.leather": return "Tấm da thú dẻo dai đã qua xử lý. Nguyên liệu may giáp và chế tạo túi đồ.";
+                    case "item.hay": return "Bó cỏ khô thơm lừng thu hoạch từ đồng cỏ. Thức ăn khoái khẩu giúp gia súc tăng sản lượng.";
+                    case "item.farm-deed": return "Chứng thư khai hoang đất đai có đóng dấu đỏ của Làng Valen. Cho phép mở rộng thêm 12 ô đất nông trại mới.";
+                    case "item.flour": return "Bột mì nguyên cám xay nhuyễn từ cối xay gió. Nguyên liệu chính để nướng bánh mì và làm lương khô.";
+                    case "item.cheese": return "Khối phô mai vàng béo ngậy ủ từ sữa tươi nguyên chất. Món ngon cao cấp có giá trị thương mại cao.";
+                    case "item.cloth": return "Cuộn vải dệt từ sợi len mềm mịn. Nguyên liệu không thể thiếu để may trang phục và lều bạt.";
+                    case "item.wine": return "Bình rượu vang hảo hạng lên men từ nho rừng chín mọng. Thức uống quý phái được lái buôn săn đón.";
+                    case "item.juice": return "Cốc nước ép quả mọng tươi mát. Giải khát và hồi phục thể lực tức thì (+15 HP).";
+                    case "item.iron-bar": return "Thỏi sắt đúc từ lò rèn. Dùng để chế tạo các loại vũ khí, áo giáp và công cụ bền chắc.";
+                    case "item.fertilizer": return "Phân bón hữu cơ ủ từ thùng mùn. Bón vào đất giúp cây trồng tăng gấp đôi tốc độ phát triển.";
+                    case "item.grape": return "Chùm nho tím mọng nước vừa hái từ giàn leo. Vừa ngọt mát vừa là nguyên liệu ủ rượu tuyệt hảo.";
+                    case "item.pumpkin": return "Quả bí ngô to tròn thu hoạch từ luống vườn. Có thể nấu súp bổ dưỡng hoặc bán lấy tiền.";
                     default: return "Vật phẩm được lưu giữ an toàn trong túi hành lý của bạn.";
                 }
             }
@@ -167,6 +223,7 @@ namespace TheOldRoad.UI
                     case "item.cabin-plank": return "Carefully cut and planed wooden planks. Essential component for cabin construction and storage chests.";
                     case "item.tool-axe": return "A worn woodcutter's axe with a sharp edge. Allows faster wood chopping and clearing road blockades.";
                     case "item.tool-pickaxe": return "A sturdy stone pickaxe used for mining rocks and precious iron ore veins underground.";
+                    case "item.tool-hoe": return "A sturdy wooden-handled garden hoe. Used to till uncultivated dirt into fertile soil ready for planting seeds.";
                     case "item.iron-ore": return "Pure unrefined iron ore. Essential for forging high-tier metal gear and advanced tools.";
                     case "item.wild-berries": return "Sweet red forest berries. Can be eaten raw (press Q) to restore health or used in cooking.";
                     case "item.medicinal-herb": return "Fragrant wild herbs with soothing properties. Used in brewing remedies and nutritious meals.";
@@ -181,11 +238,13 @@ namespace TheOldRoad.UI
                     case "item.seed-wheat": return "Carefully sorted wheat seeds. Plant in tilled soil to grow golden wheat crops.";
                     case "item.seed-corn": return "Fresh corn seeds. Plant in moist soil to grow sweet farm corn.";
                     case "item.seed-carrot": return "Crisp carrot seeds. Cultivate and water regularly to harvest fresh carrots.";
+                    case "item.seed-potato": return "Healthy seed potatoes with vigorous eyes. Plant in tilled soil and water regularly to grow rich golden potatoes.";
                     case "item.seed-pineapple": return "Rare sweet pineapple seeds. Cultivate to produce juicy tropical pineapples.";
                     case "item.seed-tomato": return "Ripe tomato seeds. Fast-growing crop yielding juicy red tomatoes.";
                     case "item.wheat": return "Golden wheat sheaf harvested from the field. Staple grain for cooking meals.";
                     case "item.corn": return "Sweet golden corn cob, freshly picked from the farm plots.";
                     case "item.carrot": return "Crisp nutritious carrot, ready to eat or cook into stews.";
+                    case "item.potato": return "Golden farm potato harvested fresh from the soil. A hearty staple food rich in energy.";
                     case "item.pineapple": return "Juicy golden pineapple packed with sweetness and nutrients.";
                     case "item.tomato": return "Plump farm-fresh tomato, great for culinary recipes.";
                     case "item.egg": return "Fresh egg gathered from poultry nests in the animal pens.";
@@ -193,6 +252,30 @@ namespace TheOldRoad.UI
                     case "item.milk": return "Fresh dairy milk jug collected from cows at the Valen barn.";
                     case "item.fence-wood": return "Rustic wooden fence section to enclose farm animals and protect crops.";
                     case "item.gate-wood": return "A latchable wooden gate section for easy access into fenced areas.";
+                    case "item.fishing-rod": return "A flexible bamboo fishing rod. Use along the serene riverbanks of Valen to hook fish.";
+                    case "item.fishing-bait": return "Juicy earthworms dug up from fertile soil. Irresistible bait for river fish.";
+                    case "item.fish-salmon": return "A fresh river salmon caught from clear waters. Highly nutritious when cooked.";
+                    case "item.fish-carp": return "A plump river carp with shiny greenish scales. Perfect for grilling with herbs.";
+                    case "item.fish-golden-perch": return "A rare and prized golden perch. Highly valued by travelling merchants.";
+                    case "item.cooked-fish": return "A steaming grilled fish platter seasoned with forest herbs (+18 HP).";
+                    case "item.weapon-sword": return "A forged iron longsword with a keen edge. High melee slashing damage (+6 DMG).";
+                    case "item.weapon-bow": return "A sturdy wooden hunter's bow. Enables ranged combat against dangerous beasts (+5 DMG).";
+                    case "item.ammo-arrow": return "Feathered iron-tipped arrows. Required ammunition for shooting bows.";
+                    case "item.shield-wood": return "A round wooden shield with an iron rim. Blocks incoming melee and projectile damage.";
+                    case "item.armor-knight": return "A knight's steel chestplate. Enhances maximum health pool (+10 Max HP).";
+                    case "item.meat-raw": return "Fresh meat gathered from hunted wildlife. Can be cooked over fire.";
+                    case "item.leather": return "Tough cured beast leather. Essential for crafting armor and fine gear.";
+                    case "item.hay": return "A bundle of sweet dried hay. Nutritious feed to boost livestock production.";
+                    case "item.farm-deed": return "An official land reclamation deed bearing the Valen seal. Unlocks 12 additional farm plots.";
+                    case "item.flour": return "Fine whole grain flour ground at the windmill. Essential for bread and pastries.";
+                    case "item.cheese": return "Rich golden cheese aged from pure cow's milk. A delicacy of high trade value.";
+                    case "item.cloth": return "A roll of fine woven fabric made from soft sheep wool. Used in tents and clothing.";
+                    case "item.wine": return "A vintage bottle of ruby wine brewed in oak kegs. Favored by travelling merchants.";
+                    case "item.juice": return "A cup of refreshing chilled berry juice. Quenches thirst and restores health (+15 HP).";
+                    case "item.iron-bar": return "A refined iron ingot forged in the blacksmith furnace. Used to craft weapons and armor.";
+                    case "item.fertilizer": return "Organic soil fertilizer from composted herbs. Doubles crop growth speed when applied.";
+                    case "item.grape": return "Juicy purple grapes picked from the trellis. Delicious fresh or brewed into fine wine.";
+                    case "item.pumpkin": return "A massive ripe pumpkin harvested from the garden patch. Great for hearty soups.";
                     default: return "A useful item stored safely in your adventurer's backpack.";
                 }
             }
@@ -349,57 +432,206 @@ namespace TheOldRoad.UI
                 case "construction_catalog": return "Construction Catalog";
                 case "build_close": return "B / Esc to close";
                 case "categories": return "Categories";
-                case "housing": return "Housing";
-                case "housing_desc": return "Homes and shelters";
-                case "fire_light": return "Fire & Light";
-                case "fire_light_desc": return "Warmth and camp utility";
-                case "animal_pens": return "Animal Pens";
-                case "animal_pens_desc": return "Fenced square or rectangle yards";
+                case "housing": return "🏡 Housing & Lodges";
+                case "housing_desc": return "Homes, tents, cottages & estates";
+                case "fire_light": return "🔥 Fire & Lighting";
+                case "fire_light_desc": return "Warmth, torches, lanterns & hearths";
+                case "animal_pens": return "🐄 Animal Husbandry";
+                case "animal_pens_desc": return "Pastures, coops & livestock yards";
+                case "fences_security": return "🪵 Fences & Walls";
+                case "fences_security_desc": return "Enclose farms & protect homesteads";
+                case "paths_decor": return "🛤️ Paths & Landscaping";
+                case "paths_decor_desc": return "Paved roads, decking & bridges";
+                case "furniture_living": return "🪑 Furniture & Living";
+                case "furniture_living_desc": return "Beds, tables, chairs & rugs";
+                case "artisan_processing": return "🏭 Artisan & Processing";
+                case "artisan_processing_desc": return "Cheese press, loom, kegs & windmill";
+                case "storage_logistics": return "📦 Storage & Logistics";
+                case "storage_logistics_desc": return "Chests, stone vaults & silos";
+                case "gardening_greenery": return "🌿 Gardening & Greenery";
+                case "gardening_greenery_desc": return "Trellises, planters & flowerbeds";
+                case "water_irrigation": return "⛲ Water & Irrigation";
+                case "water_irrigation_desc": return "Wells, aqueducts & stone fountains";
+                case "monuments_shrines": return "🗿 Monuments & Shrines";
+                case "monuments_shrines_desc": return "Statues, relic altars & bell pillars";
+                case "market_commerce": return "🏪 Market & Commerce";
+                case "market_commerce_desc": return "Market stalls, signs & caravans";
+                case "defenses_traps": return "🏹 Defenses & Traps";
+                case "defenses_traps_desc": return "Spike traps, barricades & warning bells";
+                case "leisure_camping": return "🎪 Leisure & Camping";
+                case "leisure_camping_desc": return "Swings, chess tables & hammocks";
+                case "festivals_ornaments": return "🏮 Festivals & Ornaments";
+                case "festivals_ornaments_desc": return "Night lanterns, banners & firefly jars";
+
                 case "build_select_hint": return "Select a buildable card to enter placement mode.";
-                case "building_cabin": return "Cabin";
-                case "building_cabin_desc": return "Starter home with bed and interior.";
-                case "building_cottage": return "Stone Cottage";
-                case "building_cottage_desc": return "Larger stone home prototype.";
-                case "building_shed": return "Storage Shed";
-                case "building_shed_desc": return "Small utility storage building.";
-                case "building_campfire": return "Campfire";
-                case "building_campfire_desc": return "Small outdoor fire, light source, and cooking spot.";
-                case "building_hearth": return "Cooking Hearth";
-                case "building_hearth_desc": return "Stronger cooking station with warm light.";
-                case "building_pen_small": return "Small Animal Pen";
-                case "building_pen_small_desc": return "Square fenced yard. Produces eggs in prototype.";
-                case "building_pen_long": return "Long Animal Pen";
-                case "building_pen_long_desc": return "Rectangle fenced yard. Produces wool in prototype.";
-                case "building_herbalist": return "Herbalist Hut";
-                case "building_herbalist_desc": return "Thatch roof with dried herbs & flowerbeds.";
-                case "building_tower": return "Lookout Tower";
-                case "building_tower_desc": return "High observation stilt tower with beacon fire.";
-                case "building_barn": return "Farm Barn";
-                case "building_barn_desc": return "Corrugated tin roof barn with hay pile & tool room.";
-                case "building_fence": return "Wood Fence";
-                case "building_fence_desc": return "Timber fence post to enclose properties.";
-                case "building_gate": return "Wood Gate";
-                case "building_gate_desc": return "Openable wooden gate for fences.";
+                case "building_cabin": return "Wood Cabin (6x5)";
+                case "building_cabin_desc": return "Cozy starter log home with bed, hearth and rest bonus.";
+                case "building_cottage": return "Stone Cottage (7x6)";
+                case "building_cottage_desc": return "Sturdy stone home with reinforced cellar & forge.";
+                case "building_shed": return "Storage Shed (4x4)";
+                case "building_shed_desc": return "Utility storage shed for tools and excess materials.";
+                case "building_tent": return "Explorer Tent (3x3)";
+                case "building_tent_desc": return "Portable canvas tent for quick wilderness resting.";
+                case "building_manor": return "Grand Estate Manor (10x8)";
+                case "building_manor_desc": return "Expansive 2-story manor: +20% movement & wine cellar.";
+                case "building_greenhouse": return "All-Season Greenhouse (8x8)";
+                case "building_greenhouse_desc": return "Glasshouse allowing continuous crop growth in winter.";
+                case "building_silo": return "Grain Silo (4x4)";
+                case "building_silo_desc": return "Tall masonry silo storing bulk animal feed.";
+                case "building_herbalist": return "Herbalist Hut (5x4)";
+                case "building_herbalist_desc": return "Thatch roof hut boosting potion & medicine potency x2.";
+                case "building_tower": return "Lookout Watchtower (4x6)";
+                case "building_tower_desc": return "High observation stilt tower revealing monster scouts.";
+                case "building_barn": return "Red Dairy Barn (8x6)";
+                case "building_barn_desc": return "Spacious barn housing dairy cows and shearable sheep.";
+
+                case "building_campfire": return "Campfire (1x1)";
+                case "building_campfire_desc": return "Outdoor fire pit for simple roasting and night warmth.";
+                case "building_hearth": return "Cooking Hearth (2x2)";
+                case "building_hearth_desc": return "Stone hearth for crafting complex stat-boosting meals.";
+                case "building_street_lamp": return "Wrought Street Lamp (1x1)";
+                case "building_street_lamp_desc": return "Cast iron street lantern illuminating wide perimeter.";
+                case "building_ground_torch": return "Ground Torch (1x1)";
+                case "building_ground_torch_desc": return "Simple wooden torch to mark borders and illuminate paths.";
+                case "building_lantern_pole": return "Wooden Lantern Post (1x2)";
+                case "building_lantern_pole_desc": return "Rustic timber pole hung with glowing oil lantern.";
+                case "building_stone_fireplace": return "Stone Fireplace (2x2)";
+                case "building_stone_fireplace_desc": return "Indoor stone hearth providing comfort & warmth.";
+
+                case "building_pen_small": return "Small Animal Pen (7x5)";
+                case "building_pen_small_desc": return "7x5 fenced yard: shelter, 2 nests, hens, sheep & troughs.";
+                case "building_pen_long": return "Grand Avatar Pasture (11x6)";
+                case "building_pen_long_desc": return "11x6 compound: Red Barn, cows, sheep, hens, dog & troughs!";
+                case "building_sheep_pasture": return "Sheep Pasture (8x6)";
+                case "building_sheep_pasture_desc": return "Enclosed grassy pasture dedicated to fluffy wool sheep.";
+                case "building_hen_coop": return "Poultry Coop (6x4)";
+                case "building_hen_coop_desc": return "Enclosed coop keeping hens safe from nighttime foxes.";
+                case "building_feed_trough": return "Feed Trough (2x1)";
+                case "building_feed_trough_desc": return "Wooden trough holding hay to boost animal productivity.";
+                case "building_water_trough": return "Water Trough (2x1)";
+                case "building_water_trough_desc": return "Stone basin providing fresh water for livestock.";
+
                 case "building_fence_drag": return "Custom Drag Fence";
-                case "building_fence_drag_desc": return "Click and drag to enclose any custom area.";
+                case "building_fence_drag_desc": return "Click and drag to enclose any custom boundary.";
                 case "building_fence_small": return "Small Yard Fence (6x4)";
-                case "building_fence_small_desc": return "Complete 4-side perimeter fence with gate.";
+                case "building_fence_small_desc": return "Complete 4-side timber fence with latching gate.";
                 case "building_fence_med": return "Medium Estate Fence (10x8)";
                 case "building_fence_med_desc": return "Spacious perimeter fence with gate and lanterns.";
                 case "building_fence_lrg": return "Large Farmstead Fence (16x12)";
                 case "building_fence_lrg_desc": return "Large farm enclosure for house, barn, and fields.";
                 case "building_fence_grd": return "Grand Homestead Fence (24x16)";
                 case "building_fence_grd_desc": return "Expansive estate perimeter fence.";
-                case "fences_security": return "Fences & Security";
-                case "fences_security_desc": return "Enclose farms & protect homes";
-                case "paths_decor": return "Paths & Decor";
-                case "paths_decor_desc": return "Paved paths & farm decorations";
-                case "building_path_dirt": return "Dirt Path";
+                case "building_fence": return "Timber Fence Post (1x1)";
+                case "building_fence_desc": return "Individual wooden fence post to enclose properties.";
+                case "building_gate": return "Wood Gate (1x1)";
+                case "building_gate_desc": return "Openable wooden gate for quick access.";
+                case "building_stone_wall": return "Mortared Stone Wall (1x1)";
+                case "building_stone_wall_desc": return "Heavy stone wall resisting monster breaches.";
+                case "building_iron_gate": return "Reinforced Iron Gate (2x1)";
+                case "building_iron_gate_desc": return "Heavy wrought iron double gate for maximum security.";
+                case "building_log_palisade": return "Sharpened Log Palisade (1x1)";
+                case "building_log_palisade_desc": return "Defensive wooden barrier repelling wilderness beasts.";
+
+                case "building_path_dirt": return "Dirt Trail (1x1)";
                 case "building_path_dirt_desc": return "Compacted earthen trail. +15% move speed.";
-                case "building_path_cobble": return "Cobblestone Path";
-                case "building_path_cobble_desc": return "Interlocking stone road. +15% move speed.";
-                case "building_scarecrow": return "Farm Scarecrow";
-                case "building_scarecrow_desc": return "Straw scarecrow in blue coat to protect crops.";
+                case "building_path_cobble": return "Cobblestone Paving (1x1)";
+                case "building_path_cobble_desc": return "Interlocking stone road. +20% move speed.";
+                case "building_path_wood": return "Wood Boardwalk (1x1)";
+                case "building_path_wood_desc": return "Plank walkway keeping feet dry in muddy rain.";
+                case "building_path_stone_tile": return "Granite Tile (1x1)";
+                case "building_path_stone_tile_desc": return "Elegant polished plaza tile for courtyard paths.";
+                case "building_wood_bridge": return "Timber Bridge (3x2)";
+                case "building_wood_bridge_desc": return "Rustic wooden arch bridge crossing irrigation streams.";
+                case "building_scarecrow": return "Straw Scarecrow (1x1)";
+                case "building_scarecrow_desc": return "Straw scarecrow in coat protecting crops from crows.";
+
+                case "building_straw_bed": return "Straw Mattress Bed (2x2)";
+                case "building_straw_bed_desc": return "Soft herbal straw bed to rest and skip night hours.";
+                case "building_oak_table": return "Oak Dining Table (2x2)";
+                case "building_oak_table_desc": return "Solid oak table for dining and displaying farm wares.";
+                case "building_leather_chair": return "Leather Armchair (1x1)";
+                case "building_leather_chair_desc": return "Comfortable upholstered chair providing rest bonus.";
+                case "building_bookshelf": return "Scholar Bookshelf (2x3)";
+                case "building_bookshelf_desc": return "Holds Roadwarden logs and regional lore manuscripts.";
+                case "building_woven_rug": return "Woven Wool Rug (3x2)";
+                case "building_woven_rug_desc": return "Warm patterned wool rug insulating cold stone floors.";
+
+                case "building_cheese_press": return "Artisan Cheese Press (2x2)";
+                case "building_cheese_press_desc": return "Processes raw milk into high-value aged artisan cheese.";
+                case "building_loom": return "Spinning Loom (2x2)";
+                case "building_loom_desc": return "Weaves sheared raw wool into fine rolls of cloth.";
+                case "building_keg": return "Fermentation Keg (2x2)";
+                case "building_keg_desc": return "Brews harvested fruits and honey into fine wine & cider.";
+                case "building_windmill": return "Stone Windmill (4x4)";
+                case "building_windmill_desc": return "Grinds raw wheat grains into fine baking flour.";
+                case "building_blacksmith_forge": return "Blacksmith Forge (3x3)";
+                case "building_blacksmith_forge_desc": return "Smelts iron ores into refined ingots, weapons and armor.";
+                case "building_carpenter_bench": return "Carpenter Workbench (2x2)";
+                case "building_carpenter_bench_desc": return "Crafts furniture, barrels and intricate woodwork.";
+
+                case "building_wood_chest": return "Large Wood Chest (2x1)";
+                case "building_wood_chest_desc": return "Stores up to 24 item stacks securely at home.";
+                case "building_stone_vault": return "Reinforced Stone Vault (2x2)";
+                case "building_stone_vault_desc": return "Fireproof security vault for rare coins and artifacts.";
+                case "building_compost_bin": return "Organic Compost Bin (2x2)";
+                case "building_compost_bin_desc": return "Recycles excess crop leaves into potent fertilizer.";
+                case "building_barrel_rack": return "Oak Barrel Rack (3x1)";
+                case "building_barrel_rack_desc": return "Aging rack storing barrels of wine and vinegar.";
+
+                case "building_grape_trellis": return "Grapevine Trellis (3x1)";
+                case "building_grape_trellis_desc": return "Timber climbing trellis for sweet purple grapes.";
+                case "building_pumpkin_patch": return "Giant Pumpkin Trellis (3x3)";
+                case "building_pumpkin_patch_desc": return "Dedicated patch for growing giant prize pumpkins.";
+                case "building_flower_planter": return "Wildflower Planter (2x1)";
+                case "building_flower_planter_desc": return "Decorative planter blooming with fragrance.";
+                case "building_garden_hedge": return "Flowering Hedge (1x1)";
+                case "building_garden_hedge_desc": return "Lush green natural hedge separating garden zones.";
+
+                case "building_ancient_well": return "Stone Water Well (3x3)";
+                case "building_ancient_well_desc": return "Endless source of fresh clean water for crops.";
+                case "building_water_aqueduct": return "Irrigation Aqueduct (3x1)";
+                case "building_water_aqueduct_desc": return "Elevated timber flume channeling water to fields.";
+                case "building_stone_fountain": return "Granite Fountain (4x4)";
+                case "building_stone_fountain_desc": return "Majestic water fountain boosting farm aesthetic.";
+                case "building_hot_bath": return "Mineral Hot Tub (3x3)";
+                case "building_hot_bath_desc": return "Outdoor heated wooden tub rapidly restoring stamina.";
+
+                case "building_knight_statue": return "Guardian Knight Monument (2x3)";
+                case "building_knight_statue_desc": return "Carved stone monument honoring the first Roadwarden.";
+                case "building_guardian_shrine": return "Ancient Bell Shrine (2x2)";
+                case "building_guardian_shrine_desc": return "Consecrated shrine offering blessings and protection.";
+                case "building_bell_pillar": return "Resonant Bell Obelisk (2x4)";
+                case "building_bell_pillar_desc": return "Towering obelisk warding off wandering night spirits.";
+
+                case "building_market_stall": return "Village Market Stall (3x2)";
+                case "building_market_stall_desc": return "Roadside merchant stall to sell goods directly.";
+                case "building_farm_sign": return "Carved Estate Sign (1x1)";
+                case "building_farm_sign_desc": return "Wooden signboard displaying custom estate name.";
+                case "building_travel_cart": return "Merchant Wagon (4x3)";
+                case "building_travel_cart_desc": return "Covered wagon for transporting large harvest loads.";
+
+                case "building_spike_trap": return "Concealed Spike Trap (1x1)";
+                case "building_spike_trap_desc": return "Camouflaged pit trap damaging hostile night predators.";
+                case "building_wooden_barricade": return "Spiked Barricade (2x1)";
+                case "building_wooden_barricade_desc": return "Sturdy barrier stopping beast charges.";
+                case "building_alarm_bell": return "Watchpost Alarm Bell (1x2)";
+                case "building_alarm_bell_desc": return "Rings loudly to alert homestead during beast attacks.";
+
+                case "building_wood_swing": return "Garden Rope Swing (2x2)";
+                case "building_wood_swing_desc": return "Relaxing wooden swing suspended under tree shade.";
+                case "building_chess_table": return "Stone Chess Table (2x2)";
+                case "building_chess_table_desc": return "Outdoor chess table for peaceful afternoon pastimes.";
+                case "building_hammock": return "Shaded Canvas Hammock (3x1)";
+                case "building_hammock_desc": return "Breezy resting hammock hung between wooden posts.";
+                case "building_bbq_grill": return "Stone BBQ Grill Pit (2x2)";
+                case "building_bbq_grill_desc": return "Open charcoal grill for roasting large meat feasts.";
+
+                case "building_festival_banner": return "Pennant Banner Pole (3x1)";
+                case "building_festival_banner_desc": return "Colorful celebration flags fluttering in breeze.";
+                case "building_sky_lantern": return "Floating Sky Lantern (1x1)";
+                case "building_sky_lantern_desc": return "Luminous paper lantern glowing warmly in night.";
+                case "building_firefly_jar": return "Glowing Firefly Jar (1x1)";
+                case "building_firefly_jar_desc": return "Glass jar captured with magical bioluminescent fireflies.";
                 case "demolish_btn": return "🔨 Demolish (100% Refund)";
                 case "demolish_btn_desc": return "Left-click structure to remove & get items back [X]";
                 case "merchant": return "Travelling Merchant";
@@ -458,11 +690,27 @@ namespace TheOldRoad.UI
                 case "legend_building": return "Building";
                 case "legend_waypoint": return "Waypoint";
                 case "legend_clean_map_hint": return "Map hides resources, loot, NPCs, and animals so navigation stays clean.";
+                case "guide": return "Game Guide & Tutorial";
+                case "guide_short": return "Guide";
+                case "guide_tab_basics": return "1. Basics & Controls";
+                case "guide_tab_farming": return "2. Farming & Crops";
+                case "guide_tab_fishing": return "3. Fishing & Cooking";
+                case "guide_tab_combat": return "4. Combat & Defense";
+                case "guide_tab_expansion": return "5. Animals & Expansion";
+                case "guide_tab_compendium": return "6. Compendium & Records";
+                case "bulletin_board": return "Town Bulletin Board";
+                case "mailbox": return "Daily Gift Mailbox";
+                case "deliver": return "Deliver";
+                case "claim_gift": return "Claim Gift";
+                case "claimed": return "Claimed";
+                case "day_streak": return "Daily Streak";
+                case "compendium_title": return "Rural Compendium & Museum Records";
                 case "item.wood": return "Wood";
                 case "item.stone": return "Stone";
                 case "item.cabin-plank": return "Cabin Plank";
                 case "item.tool-axe": return "Worn Axe";
                 case "item.tool-pickaxe": return "Stone Pick";
+                case "item.tool-hoe": return "Worn Hoe";
                 case "item.wild-berries": return "Wild Berries";
                 case "item.medicinal-herb": return "Medicinal Herb";
                 case "item.mushroom": return "Mushroom";
@@ -479,15 +727,41 @@ namespace TheOldRoad.UI
                 case "item.seed-wheat": return "Wheat Seeds";
                 case "item.seed-corn": return "Corn Seeds";
                 case "item.seed-carrot": return "Carrot Seeds";
+                case "item.seed-potato": return "Potato Seeds";
                 case "item.wheat": return "Golden Wheat";
                 case "item.corn": return "Sweet Corn";
                 case "item.carrot": return "Crisp Carrot";
+                case "item.potato": return "Golden Potato";
                 case "item.fence-wood": return "Wood Fence";
                 case "item.gate-wood": return "Wood Gate";
                 case "item.seed-pineapple": return "Pineapple Seeds";
                 case "item.seed-tomato": return "Tomato Seeds";
                 case "item.pineapple": return "Sweet Pineapple";
                 case "item.tomato": return "Ripe Tomato";
+                case "item.fishing-rod": return "Bamboo Rod";
+                case "item.fishing-bait": return "Earthworm Bait";
+                case "item.fish-salmon": return "River Salmon";
+                case "item.fish-carp": return "Common Carp";
+                case "item.fish-golden-perch": return "Golden Perch";
+                case "item.cooked-fish": return "Grilled Fish";
+                case "item.weapon-sword": return "Iron Longsword";
+                case "item.weapon-bow": return "Hunter's Bow";
+                case "item.ammo-arrow": return "Flint Arrow";
+                case "item.shield-wood": return "Round Shield";
+                case "item.armor-knight": return "Knight Cuirass";
+                case "item.meat-raw": return "Raw Meat";
+                case "item.leather": return "Beast Leather";
+                case "item.hay": return "Dry Hay";
+                case "item.farm-deed": return "Farm Land Deed";
+                case "item.flour": return "Whole Grain Flour";
+                case "item.cheese": return "Artisan Cheese";
+                case "item.cloth": return "Fine Cloth";
+                case "item.wine": return "Vintage Wine";
+                case "item.juice": return "Fresh Berry Juice";
+                case "item.iron-bar": return "Iron Ingot";
+                case "item.fertilizer": return "Organic Fertilizer";
+                case "item.grape": return "Fresh Grapes";
+                case "item.pumpkin": return "Giant Pumpkin";
                 case "item.roadwarden-page": return "Father's Journal Page";
                 case "speech.gather_start": return "Let's see what I can use here.";
                 case "speech.gather_done": return "That should help on the road.";
@@ -622,6 +896,18 @@ namespace TheOldRoad.UI
                 case "landmark.ruin.south.journal": return "A crumbling archway standing at the southern border.";
                 case "landmark.cave.blackwood.title": return "Blackwood Cave Mouth";
                 case "landmark.cave.blackwood.journal": return "A dark opening leading down into cold subterranean tunnels.";
+                case "landmark.village.valen.title": return "Valen Village";
+                case "landmark.village.valen.journal": return "The rustic settlement along River Valen with warm cottages and friendly villagers.";
+                case "landmark.npc.eldon.title": return "Travelling Merchant Eldon";
+                case "landmark.npc.eldon.journal": return "Eldon travels the road selling rare seeds, deeds, equipment, and purchasing local goods.";
+                case "landmark.service.bulletin.title": return "Town Bulletin Board";
+                case "landmark.service.bulletin.journal": return "Community delivery board offering daily bounty rewards from town residents.";
+                case "landmark.service.mailbox.title": return "Daily Gift Mailbox";
+                case "landmark.service.mailbox.journal": return "Pigeon post mailbox providing daily login streak gifts and traveler rewards.";
+                case "landmark.farm.pasture.title": return "Avatar Animal Pasture";
+                case "landmark.farm.pasture.journal": return "Grand animal farm with dairy barn, cows, sheep, hens, troughs, and loyal farm dog.";
+                case "landmark.farm.garden.title": return "Farm Crop Garden";
+                case "landmark.farm.garden.journal": return "Fertile starter plots growing wheat, corn, carrots, potatoes, tomatoes, and pineapples.";
 
                 default: return key;
             }
@@ -683,37 +969,85 @@ namespace TheOldRoad.UI
                 case "construction_catalog": return "Danh mục xây dựng";
                 case "build_close": return "B / Esc để đóng";
                 case "categories": return "Thể loại";
-                case "housing": return "Nhà ở";
-                case "housing_desc": return "Nhà và nơi trú ẩn";
-                case "fire_light": return "Lửa & ánh sáng";
-                case "fire_light_desc": return "Giữ ấm và tiện ích trại";
-                case "animal_pens": return "Chuồng nuôi";
-                case "animal_pens_desc": return "Rào vuông hoặc chữ nhật";
+                case "housing": return "🏡 Nhà Ở & Kiến Trúc";
+                case "housing_desc": return "Nhà gỗ, lều bạt, biệt thự đá & trang viên";
+                case "fire_light": return "🔥 Lò Lửa, Sưởi & Chiếu Sáng";
+                case "fire_light_desc": return "Giữ ấm, đuốc cắm đất, đèn đường & lò sưởi";
+                case "animal_pens": return "🐄 Chuồng Trại & Chăn Nuôi";
+                case "animal_pens_desc": return "Khuôn viên chăn thả bò, cừu, chuồng gà & máng ăn";
+                case "fences_security": return "🪵 Hàng Rào, Cổng & Tường Rào";
+                case "fences_security_desc": return "Rào chắn đất trồng & phòng thủ thú dữ";
+                case "paths_decor": return "🛤️ Lối Đi, Đường Lát & Cầu";
+                case "paths_decor_desc": return "Đường lát đá, sàn ván gỗ & cầu qua mương";
+                case "furniture_living": return "🪑 Nội Thất & Tiện Nghi";
+                case "furniture_living_desc": return "Giường nệm rơm, bàn sồi, ghế da & thảm dệt";
+                case "artisan_processing": return "🏭 Máy Chế Biến & Xưởng";
+                case "artisan_processing_desc": return "Ép phô mai, khung dệt, thùng ủ & cối xay gió";
+                case "storage_logistics": return "📦 Kho Chứa & Thùng Hàng";
+                case "storage_logistics_desc": return "Rương gỗ lớn, hầm đá bảo mật & thùng ủ phân";
+                case "gardening_greenery": return "🌿 Làm Vườn, Giàn Leo & Chậu Cây";
+                case "gardening_greenery_desc": return "Giàn nho, giàn bí ngô, bồn hoa & bờ rào bụi";
+                case "water_irrigation": return "⛲ Thủy Lợi, Giếng Nước & Bồn Nước";
+                case "water_irrigation_desc": return "Giếng đá cổ, máng dẫn nước & đài phun nước";
+                case "monuments_shrines": return "🗿 Tượng Đài & Bia Đá Cổ Vật";
+                case "monuments_shrines_desc": return "Tượng hiệp sĩ, bàn thờ thần hộ mệnh & trụ chuông";
+                case "market_commerce": return "🏪 Thương Mại, Quầy Hàng & Biển";
+                case "market_commerce_desc": return "Quầy hàng chợ phiên, biển gỗ nông trại & xe du mục";
+                case "defenses_traps": return "🏹 Phòng Thủ, Bẫy Thú & Tháp Canh";
+                case "defenses_traps_desc": return "Bẫy chông ngầm, rào cọc nhọn & chuông báo động";
+                case "leisure_camping": return "🎪 Thư Giãn, Cắm Trại & Nghỉ Ngơi";
+                case "leisure_camping_desc": return "Xích đu gỗ, bàn cờ đá, võng dù & bếp nướng BBQ";
+                case "festivals_ornaments": return "🏮 Lễ Hội & Đèn Trang Trí Đêm";
+                case "festivals_ornaments_desc": return "Lồng đèn hoa đăng, cờ ngũ sắc & hũ đom đóm";
+
                 case "build_select_hint": return "Chọn thẻ công trình để vào chế độ đặt.";
-                case "building_cabin": return "Nhà gỗ";
-                case "building_cabin_desc": return "Nhà khởi đầu có giường và nội thất.";
-                case "building_cottage": return "Nhà đá";
-                case "building_cottage_desc": return "Bản thử nghiệm nhà đá rộng hơn.";
-                case "building_shed": return "Kho chứa";
-                case "building_shed_desc": return "Công trình tiện ích cất trữ vật tư.";
-                case "building_campfire": return "Bếp lửa";
-                case "building_campfire_desc": return "Nguồn sáng ngoài trời kiêm điểm nấu ăn.";
-                case "building_hearth": return "Bếp nấu";
-                case "building_hearth_desc": return "Trạm nấu kiên cố với ánh sáng ấm áp.";
-                case "building_pen_small": return "Chuồng nuôi nhỏ";
-                case "building_pen_small_desc": return "Sân rào vuông. Thu hoạch trứng.";
-                case "building_pen_long": return "Chuồng nuôi lớn";
-                case "building_pen_long_desc": return "Sân rào chữ nhật. Thu hoạch len cừu.";
-                case "building_herbalist": return "Nhà thảo dược";
-                case "building_herbalist_desc": return "Nhà lợp rêu phơi thảo dược & giàn hoa tím.";
-                case "building_tower": return "Chòi canh thám hiểm";
-                case "building_tower_desc": return "Tháp gỗ cao thắp đuốc sáng rực suốt đêm.";
-                case "building_barn": return "Nhà chuồng nông trại";
-                case "building_barn_desc": return "Chuồng mái tôn có đống rơm và kho nông cụ.";
-                case "building_fence": return "Hàng rào gỗ";
-                case "building_fence_desc": return "Cọc rào gỗ bao quanh bảo vệ nhà & đất trồng.";
-                case "building_gate": return "Cổng rào gỗ";
-                case "building_gate_desc": return "Cổng rào gỗ mở/đóng ra vào tự do.";
+                case "building_cabin": return "Nhà gỗ Cabin (6x5)";
+                case "building_cabin_desc": return "Nhà gỗ ấm cúng có giường ngủ, bếp sưởi và hồi phục thể lực.";
+                case "building_cottage": return "Nhà đá Cottage (7x6)";
+                case "building_cottage_desc": return "Biệt thự đá kiên cố có hầm ngầm bảo quản và xưởng rèn riêng.";
+                case "building_shed": return "Nhà kho Shed (4x4)";
+                case "building_shed_desc": return "Nhà kho lưu trữ dụng cụ và nông sản dư thừa.";
+                case "building_tent": return "Lều bạt dã ngoại (3x3)";
+                case "building_tent_desc": return "Lều bạt cơ động cắm ngoài trời giúp nghỉ ngơi nhanh.";
+                case "building_manor": return "Đại trang viên 2 tầng (10x8)";
+                case "building_manor_desc": return "Dinh thự sang trọng: Tăng 20% tốc độ chạy & có hầm ủ rượu.";
+                case "building_greenhouse": return "Nhà kính bốn mùa (8x8)";
+                case "building_greenhouse_desc": return "Nhà kính giữ nhiệt cho phép cây trồng lớn cả vào mùa đông.";
+                case "building_silo": return "Tháp Silo chứa hạt (4x4)";
+                case "building_silo_desc": return "Tháp trụ đá cao trữ lượng lớn cỏ khô và thức ăn gia súc.";
+                case "building_herbalist": return "Nhà thảo dược học (5x4)";
+                case "building_herbalist_desc": return "Nhà lợp rêu phơi dược liệu: Tăng gấp đôi hiệu lực thuốc hồi phục.";
+                case "building_tower": return "Chòi canh thám hiểm (4x6)";
+                case "building_tower_desc": return "Tháp gỗ cao thắp đuốc xua đuổi quái vật đêm từ xa.";
+                case "building_barn": return "Nhà chuồng nông trại (8x6)";
+                case "building_barn_desc": return "Chuồng mái đỏ rộng rãi nuôi bò sữa và cừu lông.";
+
+                case "building_campfire": return "Bếp lửa dã ngoại (1x1)";
+                case "building_campfire_desc": return "Nguồn sáng ngoài trời kiêm điểm nướng thịt cá đơn giản.";
+                case "building_hearth": return "Bếp nấu gia đình (2x2)";
+                case "building_hearth_desc": return "Trạm nấu nướng kiên cố chế biến món ăn tăng chỉ số.";
+                case "building_street_lamp": return "Cột đèn đường sắt (1x1)";
+                case "building_street_lamp_desc": return "Đèn đường sắt rèn chiếu sáng rực rỡ một vùng rộng lớn.";
+                case "building_ground_torch": return "Đuốc cắm đất (1x1)";
+                case "building_ground_torch_desc": return "Đuốc gỗ giản dị cắm dọc ranh giới để định hướng ban đêm.";
+                case "building_lantern_pole": return "Cột đèn lồng gỗ (1x2)";
+                case "building_lantern_pole_desc": return "Trụ gỗ mộc mạc treo lồng đèn dầu ấm áp.";
+                case "building_stone_fireplace": return "Lò sưởi đá phòng khách (2x2)";
+                case "building_stone_fireplace_desc": return "Lò sưởi bằng đá trong nhà xua tan giá lạnh mùa đông.";
+
+                case "building_pen_small": return "Chuồng nuôi nhỏ (7x5)";
+                case "building_pen_small_desc": return "Khuôn viên rào 7x5 gồm chuồng gà, 2 ổ rơm, đàn gà, cừu lông & máng ăn.";
+                case "building_pen_long": return "Vườn chăn nuôi Avatar (11x6)";
+                case "building_pen_long_desc": return "Khuôn viên 11x6: Chuồng bò đỏ, 2 bò sữa, 2 cừu lông, gà, chó & máng ăn!";
+                case "building_sheep_pasture": return "Đồng cỏ nuôi cừu (8x6)";
+                case "building_sheep_pasture_desc": return "Khuôn viên cỏ xanh rào kín dành riêng cho đàn cừu lấy len.";
+                case "building_hen_coop": return "Chuồng nuôi gia cầm (6x4)";
+                case "building_hen_coop_desc": return "Chuồng gà ấm áp an toàn tránh thú săn đêm.";
+                case "building_feed_trough": return "Máng cỏ ăn (2x1)";
+                case "building_feed_trough_desc": return "Máng gỗ đựng rơm cỏ giúp vật nuôi tăng năng suất.";
+                case "building_water_trough": return "Máng nước uống (2x1)";
+                case "building_water_trough_desc": return "Bồn đá chứa nước sạch cho vật nuôi giải khát.";
+
                 case "building_fence_drag": return "Rào Kéo Thả Tự Do";
                 case "building_fence_drag_desc": return "Nhấn giữ kéo chuột để rào quanh bất kỳ khu đất nào.";
                 case "building_fence_small": return "Rào Sân Nhỏ (6x4)";
@@ -724,16 +1058,117 @@ namespace TheOldRoad.UI
                 case "building_fence_lrg_desc": return "Khuôn viên trang trại lớn đủ chỗ làm nhà, chuồng, vườn.";
                 case "building_fence_grd": return "Rào Đại Điền Trang (24x16)";
                 case "building_fence_grd_desc": return "Khuôn viên điền trang siêu rộng bao quanh toàn bộ khu đất.";
-                case "fences_security": return "Hàng rào & bảo vệ";
-                case "fences_security_desc": return "Rào chắn đất trồng & bảo vệ nhà";
-                case "paths_decor": return "Đường đi & trang trí";
-                case "paths_decor_desc": return "Lát đường chạy nhanh và đạo cụ nông trại";
-                case "building_path_dirt": return "Đường đất nện";
+                case "building_fence": return "Cọc Rào Gỗ Đơn (1x1)";
+                case "building_fence_desc": return "Cọc rào gỗ bao quanh bảo vệ nhà & đất trồng.";
+                case "building_gate": return "Cổng Rào Gỗ (1x1)";
+                case "building_gate_desc": return "Cổng rào gỗ mở/đóng ra vào tự do.";
+                case "building_stone_wall": return "Tường Đá Kiên Cố (1x1)";
+                case "building_stone_wall_desc": return "Tường xây từ đá tảng chống chọi quái vật hung hãn.";
+                case "building_iron_gate": return "Cổng Sắt Rèn Đôi (2x1)";
+                case "building_iron_gate_desc": return "Cổng sắt đúc nặng bảo vệ kiên cố cho trang viên.";
+                case "building_log_palisade": return "Hàng Rào Cọc Gỗ Vót Nhọn (1x1)";
+                case "building_log_palisade_desc": return "Cọc gỗ vót nhọn dựng đứng đẩy lùi thú rừng xâm nhập.";
+
+                case "building_path_dirt": return "Lối Mòn Đất Nện (1x1)";
                 case "building_path_dirt_desc": return "Đường đất nện nông thôn. Tăng 15% tốc độ chạy.";
-                case "building_path_cobble": return "Đường đá sỏi";
-                case "building_path_cobble_desc": return "Đường lát đá sỏi kiên cố. Tăng 15% tốc độ chạy.";
-                case "building_scarecrow": return "Bù nhìn rơm";
+                case "building_path_cobble": return "Đường Lát Đá Sỏi (1x1)";
+                case "building_path_cobble_desc": return "Đường lát đá sỏi kiên cố. Tăng 20% tốc độ chạy.";
+                case "building_path_wood": return "Sàn Lát Ván Gỗ (1x1)";
+                case "building_path_wood_desc": return "Sàn ván gỗ sạch sẽ giúp không bị lấm bùn khi mưa.";
+                case "building_path_stone_tile": return "Gạch Đá Hoa Cương (1x1)";
+                case "building_path_stone_tile_desc": return "Đá hoa cương mài bóng sang trọng cho sân vườn.";
+                case "building_wood_bridge": return "Cầu Gỗ Qua Mương (3x2)";
+                case "building_wood_bridge_desc": return "Cầu gỗ uốn cong mộc mạc bắc qua các rãnh thủy lợi.";
+                case "building_scarecrow": return "Bù nhìn rơm (1x1)";
                 case "building_scarecrow_desc": return "Bù nhìn rơm mặc áo xanh giữ vườn bảo vệ mùa màng.";
+
+                case "building_straw_bed": return "Giường Nệm Rơm Êm (2x2)";
+                case "building_straw_bed_desc": return "Giường rơm êm ái thơm hương thảo mộc để ngủ qua đêm.";
+                case "building_oak_table": return "Bàn Ăn Gỗ Sồi (2x2)";
+                case "building_oak_table_desc": return "Bàn ăn gỗ sồi dày dặn bày biện nông sản và thức ăn.";
+                case "building_leather_chair": return "Ghế Bành Bọc Da (1x1)";
+                case "building_leather_chair_desc": return "Ghế ngồi thư giãn êm ái hồi phục năng lượng.";
+                case "building_bookshelf": return "Tủ Sách Học Giả (2x3)";
+                case "building_bookshelf_desc": return "Lưu giữ các trang nhật ký Roadwarden và bản đồ cổ.";
+                case "building_woven_rug": return "Thảm Len Dệt Tay (3x2)";
+                case "building_woven_rug_desc": return "Thảm len hoa văn ấm áp trải sàn nhà.";
+
+                case "building_cheese_press": return "Thùng Ép Phô Mai (2x2)";
+                case "building_cheese_press_desc": return "Chế biến sữa bò tươi thành phô mai ủ giá trị cao.";
+                case "building_loom": return "Khung Dệt Len (2x2)";
+                case "building_loom_desc": return "Dệt lông cừu thô thành những súc vải mềm mịn.";
+                case "building_keg": return "Thùng Gỗ Lên Men Rượu (2x2)";
+                case "building_keg_desc": return "Ủ trái cây và mật ngọt thành rượu hoa quả hảo hạng.";
+                case "building_windmill": return "Cối Xay Gió Bột Mì (4x4)";
+                case "building_windmill_desc": return "Xay hạt lúa mì thành bột mì mịn làm bánh.";
+                case "building_blacksmith_forge": return "Lò Rèn Kim Khí (3x3)";
+                case "building_blacksmith_forge_desc": return "Nung chảy quặng sắt rèn vũ khí, giáp trụ và công cụ.";
+                case "building_carpenter_bench": return "Bàn Thợ Mộc (2x2)";
+                case "building_carpenter_bench_desc": return "Xưởng mộc gia công đồ gỗ nội thất tinh xảo.";
+
+                case "building_wood_chest": return "Rương Gỗ Lớn (2x1)";
+                case "building_wood_chest_desc": return "Cất giữ an toàn 24 ngăn đồ đạc tại nông trại.";
+                case "building_stone_vault": return "Hầm Đá Gia Cố (2x2)";
+                case "building_stone_vault_desc": return "Hầm đá chống cháy bảo quản tiền bạc và cổ vật quý.";
+                case "building_compost_bin": return "Thùng Ủ Phân Hữu Cơ (2x2)";
+                case "building_compost_bin_desc": return "Tái chế phụ phẩm nông nghiệp thành phân bón tốt.";
+                case "building_barrel_rack": return "Kệ Thùng Gỗ Ủ (3x1)";
+                case "building_barrel_rack_desc": return "Kệ cất giữ các thùng rượu và giấm lâu năm.";
+
+                case "building_grape_trellis": return "Giàn Nho Leo Gỗ (3x1)";
+                case "building_grape_trellis_desc": return "Giàn leo gỗ sồi nâng đỡ các chùm nho ngọt.";
+                case "building_pumpkin_patch": return "Giàn Trồng Bí Ngô (3x3)";
+                case "building_pumpkin_patch_desc": return "Khu vực chuyên biệt nuôi dưỡng những quả bí khổng lồ.";
+                case "building_flower_planter": return "Bồn Hoa Thơm (2x1)";
+                case "building_flower_planter_desc": return "Bồn hoa dại nở rộ tỏa ngát hương thơm.";
+                case "building_garden_hedge": return "Bờ Rào Cây Xanh (1x1)";
+                case "building_garden_hedge_desc": return "Hàng rào cây bụi xanh mướt phân chia khu vườn.";
+
+                case "building_ancient_well": return "Giếng Nước Đá Cổ (3x3)";
+                case "building_ancient_well_desc": return "Nguồn nước ngọt ngầm vô tận tưới mát mọi mùa màng.";
+                case "building_water_aqueduct": return "Máng Dẫn Nước Gỗ (3x1)";
+                case "building_water_aqueduct_desc": return "Máng gỗ nâng cao dẫn nước ngọt tưới khắp các luống đất.";
+                case "building_stone_fountain": return "Đài Phun Nước Đá (4x4)";
+                case "building_stone_fountain_desc": return "Đài phun nước mát rượi tô điểm vẻ đẹp điền trang.";
+                case "building_hot_bath": return "Bồn Tắm Nước Khoáng (3x3)";
+                case "building_hot_bath_desc": return "Bồn tắm nước nóng gỗ sồi xua tan mỏi mệt tức thì.";
+
+                case "building_knight_statue": return "Tượng Đài Hiệp Sĩ (2x3)";
+                case "building_knight_statue_desc": return "Tượng đá tạc hình người Roadwarden đầu tiên hộ quốc.";
+                case "building_guardian_shrine": return "Bia Thờ Thần Hộ Mệnh (2x2)";
+                case "building_guardian_shrine_desc": return "Bàn thờ linh thiêng ban phước lành và bình an.";
+                case "building_bell_pillar": return "Cột Chuông Linh Hồn (2x4)";
+                case "building_bell_pillar_desc": return "Cột đá chuông cổ ngân vang xua đuổi tà khí bóng đêm.";
+
+                case "building_market_stall": return "Quầy Hàng Chợ Phiên (3x2)";
+                case "building_market_stall_desc": return "Quầy bán hàng trực tiếp đón khách lữ hành ghé thăm.";
+                case "building_farm_sign": return "Biển Gỗ Điền Trang (1x1)";
+                case "building_farm_sign_desc": return "Biển gỗ khắc tên nông trại trang nghiêm.";
+                case "building_travel_cart": return "Xe Ngựa Du Mục (4x3)";
+                case "building_travel_cart_desc": return "Xe hàng bạt lữ hành chuyên chở mùa màng bội thu.";
+
+                case "building_spike_trap": return "Bẫy Chông Ngầm (1x1)";
+                case "building_spike_trap_desc": return "Bẫy hố chông nhọn ngụy trang sát thương thú dữ.";
+                case "building_wooden_barricade": return "Rào Cọc Nhọn Chắn Địch (2x1)";
+                case "building_wooden_barricade_desc": return "Rào cọc gỗ cứng cáp ngăn chặn quái vật lao vào.";
+                case "building_alarm_bell": return "Chuông Báo Động (1x2)";
+                case "building_alarm_bell_desc": return "Gõ chuông rung chuyển cảnh báo toàn bộ nông trang.";
+
+                case "building_wood_swing": return "Ghế Xích Đu Gỗ (2x2)";
+                case "building_wood_swing_desc": return "Xích đu gỗ đung đưa dưới bóng cây mát rượi.";
+                case "building_chess_table": return "Bàn Cờ Đá Ngoài Trời (2x2)";
+                case "building_chess_table_desc": return "Bàn cờ thảnh thơi giải trí sau những giờ đồng áng.";
+                case "building_hammock": return "Võng Dù Mát Rượi (3x1)";
+                case "building_hammock_desc": return "Võng dù êm ái đón gió hiu hiu ngày nắng đẹp.";
+                case "building_bbq_grill": return "Bếp Nướng BBQ Đá (2x2)";
+                case "building_bbq_grill_desc": return "Lò than nướng thịt ngoài trời thơm lừng khắp xóm.";
+
+                case "building_festival_banner": return "Cột Cờ Lễ Hội Ngũ Sắc (3x1)";
+                case "building_festival_banner_desc": return "Dải cờ hoa rực rỡ tung bay mừng ngày hội mùa.";
+                case "building_sky_lantern": return "Lồng Đèn Hoa Đăng (1x1)";
+                case "building_sky_lantern_desc": return "Đèn hoa đăng phát sáng lung linh giữa bầu trời đêm.";
+                case "building_firefly_jar": return "Hũ Đom Đóm Ma Thuật (1x1)";
+                case "building_firefly_jar_desc": return "Bình thủy tinh chứa đàn đom đóm phát quang huyền ảo.";
                 case "demolish_btn": return "🔨 Xóa Công Trình (Hoàn 100%)";
                 case "demolish_btn_desc": return "Click chuột trái vào công trình để phá & thu hồi [X]";
                 case "merchant": return "Thương nhân lang thang";
@@ -792,11 +1227,27 @@ namespace TheOldRoad.UI
                 case "legend_building": return "Công trình";
                 case "legend_waypoint": return "Mốc ghim";
                 case "legend_clean_map_hint": return "Bản đồ ẩn tài nguyên, rương, NPC và động vật để dễ định hướng.";
+                case "guide": return "Hướng Dẫn Chơi & Tân Thủ";
+                case "guide_short": return "Hướng Dẫn";
+                case "guide_tab_basics": return "1. Điều Khiển & Cơ Bản";
+                case "guide_tab_farming": return "2. Nông Trại & Trồng Trọt";
+                case "guide_tab_fishing": return "3. Câu Cá & Nấu Ăn";
+                case "guide_tab_combat": return "4. Chiến Đấu & Phòng Thủ";
+                case "guide_tab_expansion": return "5. Chăn Nuôi & Đất Đai";
+                case "guide_tab_compendium": return "6. Sổ Bách Khoa Bộ Sưu Tập";
+                case "bulletin_board": return "Bảng Đơn Hàng Thị Trấn";
+                case "mailbox": return "Hòm Thư Quà Tặng Mỗi Ngày";
+                case "deliver": return "Giao Hàng";
+                case "claim_gift": return "Nhận Quà Hôm Nay";
+                case "claimed": return "Đã Nhận";
+                case "day_streak": return "Chuỗi Ngày";
+                case "compendium_title": return "Sổ Bách Khoa & Kỷ Lục Đồng Quê";
                 case "item.wood": return "Gỗ";
                 case "item.stone": return "Đá";
                 case "item.cabin-plank": return "Ván gỗ";
                 case "item.tool-axe": return "Rìu cũ";
                 case "item.tool-pickaxe": return "Cuốc đá";
+                case "item.tool-hoe": return "Cuốc làm vườn";
                 case "item.wild-berries": return "Quả dại";
                 case "item.medicinal-herb": return "Thảo dược";
                 case "item.mushroom": return "Nấm";
@@ -813,15 +1264,41 @@ namespace TheOldRoad.UI
                 case "item.seed-wheat": return "Hạt lúa mì";
                 case "item.seed-corn": return "Hạt bắp";
                 case "item.seed-carrot": return "Hạt cà rốt";
+                case "item.seed-potato": return "Hạt khoai tây";
                 case "item.wheat": return "Lúa mì vàng";
                 case "item.corn": return "Bắp ngọt";
                 case "item.carrot": return "Cà rốt tươi";
+                case "item.potato": return "Khoai tây vàng";
                 case "item.fence-wood": return "Hàng rào gỗ";
                 case "item.gate-wood": return "Cổng rào gỗ";
                 case "item.seed-pineapple": return "Hạt giống dứa";
                 case "item.seed-tomato": return "Hạt giống cà chua";
                 case "item.pineapple": return "Dứa vàng ngọt";
                 case "item.tomato": return "Cà chua tươi";
+                case "item.fishing-rod": return "Cần câu tre";
+                case "item.fishing-bait": return "Mồi trùn đất";
+                case "item.fish-salmon": return "Cá hồi sông";
+                case "item.fish-carp": return "Cá chép sông";
+                case "item.fish-golden-perch": return "Cá vược hoàng kim";
+                case "item.cooked-fish": return "Cá nướng thảo mộc";
+                case "item.weapon-sword": return "Kiếm sắt dài";
+                case "item.weapon-bow": return "Cung săn bắn";
+                case "item.ammo-arrow": return "Mũi tên bịt sắt";
+                case "item.shield-wood": return "Khiên gỗ tròn";
+                case "item.armor-knight": return "Giáp ngực hiệp sĩ";
+                case "item.meat-raw": return "Thịt thú tươi";
+                case "item.leather": return "Da thú thuộc";
+                case "item.hay": return "Cỏ khô cho gia súc";
+                case "item.farm-deed": return "Thư khai hoang đất";
+                case "item.flour": return "Bột mì nguyên cám";
+                case "item.cheese": return "Phô mai vàng";
+                case "item.cloth": return "Cuộn vải dệt";
+                case "item.wine": return "Rượu vang đỏ";
+                case "item.juice": return "Nước ép quả mọng";
+                case "item.iron-bar": return "Thỏi sắt đúc";
+                case "item.fertilizer": return "Phân bón hữu cơ";
+                case "item.grape": return "Chùm nho tươi";
+                case "item.pumpkin": return "Quả bí ngô";
                 case "item.roadwarden-page": return "Trang nhật ký của cha";
                 case "speech.gather_start": return "Để xem có dùng được gì ở đây.";
                 case "speech.gather_done": return "Thứ này sẽ có ích trên đường.";
@@ -956,6 +1433,18 @@ namespace TheOldRoad.UI
                 case "landmark.ruin.south.journal": return "Cánh cổng đá đổ nát sừng sững tại ranh giới phía nam.";
                 case "landmark.cave.blackwood.title": return "Cửa Hang Blackwood";
                 case "landmark.cave.blackwood.journal": return "Cửa hang u tối dẫn sâu xuống những đường hầm buốt lạnh dưới lòng đất.";
+                case "landmark.village.valen.title": return "Làng Valen";
+                case "landmark.village.valen.journal": return "Khu định cư yên bình ven sông Valen với những ngôi nhà gỗ ấm cúng và cư dân thân thiện.";
+                case "landmark.npc.eldon.title": return "Thương Nhân Eldon";
+                case "landmark.npc.eldon.journal": return "Thương gia lữ hành buôn bán hạt giống quý, công cụ, thư khai hoang đất và thu mua nông sản.";
+                case "landmark.service.bulletin.title": return "Bảng Đơn Hàng Thị Trấn";
+                case "landmark.service.bulletin.journal": return "Bảng thông báo trung tâm nơi cư dân thị trấn đăng đơn hàng giao nộp nhận thưởng hàng ngày.";
+                case "landmark.service.mailbox.title": return "Hòm Thư Quà Tặng Mỗi Ngày";
+                case "landmark.service.mailbox.journal": return "Hòm thư bồ câu chuyển phát quà tặng điểm danh chuỗi 7 ngày và bưu phẩm.";
+                case "landmark.farm.pasture.title": return "Trại Chăn Nuôi Avatar";
+                case "landmark.farm.pasture.journal": return "Khu chăn nuôi rộng lớn với nhà chuồng bò đỏ, 2 bò sữa, 2 cừu lông, đàn gà đẻ trứng và chó giữ cổng.";
+                case "landmark.farm.garden.title": return "Vườn Nông Trại Trồng Trọt";
+                case "landmark.farm.garden.journal": return "Các luống đất màu mỡ trồng lúa mì, bắp ngọt, cà rốt giòn, khoai tây, cà chua và dứa hoàng gia.";
 
                 default: return English(key);
             }

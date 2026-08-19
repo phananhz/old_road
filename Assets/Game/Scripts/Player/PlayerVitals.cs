@@ -42,19 +42,61 @@ namespace TheOldRoad.Player
             switch (itemId)
             {
                 case "item.wild-berries":
-                    healedAmount = 2;
+                    healedAmount = 3;
                     break;
                 case "item.medicinal-herb":
-                    healedAmount = 5;
+                    healedAmount = 6;
+                    break;
+                case "item.mushroom":
+                    healedAmount = 4;
                     break;
                 case "item.cooked-meal":
-                    healedAmount = 12;
+                    healedAmount = 15;
+                    break;
+                case "item.cooked-fish":
+                    healedAmount = 16;
                     break;
                 case "item.egg":
                     healedAmount = 3;
                     break;
                 case "item.milk":
-                    healedAmount = 4;
+                    healedAmount = 5;
+                    break;
+                case "item.carrot":
+                    healedAmount = 5;
+                    break;
+                case "item.potato":
+                    healedAmount = 6;
+                    break;
+                case "item.corn":
+                    healedAmount = 5;
+                    break;
+                case "item.tomato":
+                    healedAmount = 5;
+                    break;
+                case "item.pineapple":
+                    healedAmount = 8;
+                    break;
+                case "item.strawberry":
+                    healedAmount = 6;
+                    break;
+                case "item.apple":
+                    healedAmount = 7;
+                    break;
+                case "item.grape":
+                    healedAmount = 6;
+                    break;
+                case "item.pumpkin":
+                    healedAmount = 10;
+                    break;
+                case "item.cheese":
+                    healedAmount = 14;
+                    break;
+                case "item.wine-fruit":
+                    healedAmount = 8;
+                    break;
+                case "item.juice":
+                    healedAmount = 8;
                     break;
                 default:
                     return false;

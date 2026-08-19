@@ -115,8 +115,10 @@ namespace TheOldRoad.World
             GUI.DrawTexture(new Rect(rect.xMax - 3f, rect.y, 3f, rect.height), Texture2D.whiteTexture);
             GUI.color = prev;
 
+            UiFontHelper.EnsureGlobalSkinFont();
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 20,
                 fontStyle = FontStyle.Bold,
@@ -125,6 +127,7 @@ namespace TheOldRoad.World
 
             GUIStyle sectionStyle = new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleLeft,
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
@@ -133,6 +136,7 @@ namespace TheOldRoad.World
 
             GUIStyle itemStyle = new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleLeft,
                 fontSize = 13,
                 normal = { textColor = new Color(0.92f, 0.92f, 0.88f, 1f) }

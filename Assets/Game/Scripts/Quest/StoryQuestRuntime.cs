@@ -124,22 +124,65 @@ namespace TheOldRoad.Quest
                             || context.HasCompletedBuilding("building.animal-pen-long"))
                 }),
             new StoryQuestChapter(
-                "chapter.04.blackwood",
-                "Chapter IV - Blackwood Omen",
-                "The road points toward the Blackwood caves and an old dragon scar. This is the next major adventure arc.",
+                "chapter.04.river-and-hunt",
+                "Chapter IV - Riverbanks and Night Hunt",
+                "The road extends past the riverbanks into predator grounds. Master river fishing and arm yourself for the wild trail.",
                 new[]
                 {
                     new StoryQuestStep(
-                        "story.16-find-cave",
-                        "Find Blackwood Cave",
-                        "Discover the Blackwood cave mouth.",
-                        "The cave breathes cold air. Roadwarden marks warn that the tunnels run below the forest.",
-                        context => context.HasDiscoveredLandmark("landmark.cave.blackwood")),
+                        "story.16.fish-river",
+                        "Cast a line into Valen River",
+                        "Catch any fresh fish (salmon, carp, or perch) from the river.",
+                        "The clear river waters provide life and food for those willing to wait patiently.",
+                        context => context.HasAnyFish()),
                     new StoryQuestStep(
-                        "story.17-read-ridge",
-                        "Read the dragon-scarred ridge",
-                        "Discover the ridge scarred by ancient dragon flame.",
-                        "The fused stone proves the old stories were not only stories. Something burned here and survived memory.",
+                        "story.17.cook-fish",
+                        "Grill fish over the hearth",
+                        "Prepare a savory grilled fish meal.",
+                        "A hot grilled fish restores spirit and stamina on long expeditions.",
+                        context => context.HasItem("item.cooked-fish")),
+                    new StoryQuestStep(
+                        "story.18.forge-weapons",
+                        "Arm yourself for the road",
+                        "Obtain an Iron Longsword, Hunter's Bow, or Knight Cuirass.",
+                        "The monsters in the dark will not heed words. Steel and bowstring speak clearly.",
+                        context => context.HasAdvancedGear()),
+                    new StoryQuestStep(
+                        "story.19.blackwood-cave",
+                        "Discover the Blackwood Cave",
+                        "Scout the cold mouth of the ancient Blackwood caverns.",
+                        "The cave breathes cold air. Roadwarden marks warn that the deep tunnels run far below the forest.",
+                        context => context.HasDiscoveredLandmark("landmark.cave.blackwood"))
+                }),
+            new StoryQuestChapter(
+                "chapter.05.prosperity",
+                "Chapter V - Prosperity of the Old Road",
+                "Expand the homestead into a thriving agrarian haven and restore trade across the realm.",
+                new[]
+                {
+                    new StoryQuestStep(
+                        "story.20.farm-harvest",
+                        "Harvest the bounty of the fields",
+                        "Harvest fresh wheat, potatoes, carrots, corn, or tomatoes.",
+                        "Golden crops wave across the tilled soil, proving life has returned to the forgotten plots.",
+                        context => context.HasAnyFarmHarvest()),
+                    new StoryQuestStep(
+                        "story.21.livestock-flock",
+                        "Nurture the farm animals",
+                        "Gather fresh eggs, milk, or wool from well-fed livestock.",
+                        "The gentle lowing of cattle and clucking of hens brings genuine warmth to the village.",
+                        context => context.HasItem("item.milk") || context.HasItem("item.egg") || context.HasItem("item.wool")),
+                    new StoryQuestStep(
+                        "story.22.merchant-wealth",
+                        "Trade with Eldon the Merchant",
+                        "Accumulate at least 15 Silver Coins from trade and bounty.",
+                        "Trade caravans begin to speak of Valen once more. The road is alive.",
+                        context => context.HasItem("item.silver-coin", 15)),
+                    new StoryQuestStep(
+                        "story.23.dragon-ridge",
+                        "Survey the Dragon Scarred Ridge",
+                        "Discover the legendary fused stone ridge.",
+                        "The ancient stone bears witness: you have walked the full length of The Old Road and made it home.",
                         context => context.HasDiscoveredLandmark("landmark.dragon.ridge")
                             || context.HasDiscoveredLandmark("landmark.ridge.dragon"))
                 })

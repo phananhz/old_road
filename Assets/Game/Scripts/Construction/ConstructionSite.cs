@@ -55,7 +55,7 @@ namespace TheOldRoad.Construction
             long now = clock?.NowUnixSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             float progress = job.GetProgress(now);
             int stageIndex = job.GetStageIndex(now, 5);
-            if (job.buildingId != null && job.buildingId.Contains("perimeter-fence"))
+            if (job.buildingId != null && (job.buildingId.Contains("perimeter-fence") || job.buildingId.Contains("animal-pen")))
             {
                 siteRenderer.sprite = null;
             }
@@ -126,10 +126,13 @@ namespace TheOldRoad.Construction
                 pixel.Apply();
             }
 
+            TheOldRoad.UI.UiFontHelper.EnsureGlobalSkinFont();
             labelStyle ??= new GUIStyle(GUI.skin.label)
             {
+                font = TheOldRoad.UI.UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 12,
+                fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(0.86f, 0.94f, 1f, 1f) }
             };
         }

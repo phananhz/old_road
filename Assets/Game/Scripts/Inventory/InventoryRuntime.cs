@@ -26,6 +26,13 @@ namespace TheOldRoad.Inventory
             else items.Add(itemId, new InventoryItem(itemId, quantity));
         }
 
+        public bool TryAdd(string itemId, int quantity)
+        {
+            if (string.IsNullOrWhiteSpace(itemId) || quantity <= 0) return false;
+            Add(itemId, quantity);
+            return true;
+        }
+
         public bool TryRemove(string itemId, int quantity)
         {
             if (!items.TryGetValue(itemId, out InventoryItem item) || !item.Remove(quantity)) return false;

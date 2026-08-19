@@ -121,8 +121,10 @@ namespace TheOldRoad.UI
                 pixel.Apply(false, true);
             }
 
+            UiFontHelper.EnsureGlobalSkinFont();
             textStyle ??= new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,

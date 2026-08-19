@@ -9,6 +9,7 @@ using TheOldRoad.Construction;
 using TheOldRoad.Crafting;
 using TheOldRoad.Economy;
 using TheOldRoad.Farming;
+using TheOldRoad.Fishing;
 using TheOldRoad.Gathering;
 using TheOldRoad.Input;
 using TheOldRoad.Inventory;
@@ -143,7 +144,16 @@ namespace TheOldRoad.Core
         public BuildingDefinition GetBuildingDefinition(string buildingId)
         {
             if (string.IsNullOrWhiteSpace(buildingId)) return null;
-            return buildingDefinitions.TryGetValue(buildingId, out BuildingDefinition definition) ? definition : null;
+            if (buildingDefinitions.TryGetValue(buildingId, out BuildingDefinition definition)) return definition;
+
+            BuildingDefinition dynamicDef = CreateDynamicBuildingDefinition(buildingId);
+            if (dynamicDef != null)
+            {
+                RegisterBuildingDefinition(dynamicDef);
+                return dynamicDef;
+            }
+
+            return null;
         }
 
         private void Awake()
@@ -325,6 +335,20 @@ namespace TheOldRoad.Core
                     .Select(chest => new LootChestSaveEntry { chestId = chest.ChestId, opened = chest.IsOpened })
                     .ToArray(),
                 completedStorySteps = BuildCompletedStoryStepSaveEntries(),
+                farmPlots = FindObjectsByType<FarmPlotController>(FindObjectsInactive.Exclude)
+                    .Select(p => p.ToSaveEntry())
+                    .ToArray(),
+                chests = FindObjectsByType<TheOldRoad.Building.ChestStorageController>(FindObjectsInactive.Exclude)
+                    .Select(c => c.Save())
+                    .ToArray(),
+                silos = FindObjectsByType<TheOldRoad.Building.SiloStorageController>(FindObjectsInactive.Exclude)
+                    .Select(s => s.Save())
+                    .ToArray(),
+                artisanMachines = FindObjectsByType<TheOldRoad.Building.ArtisanProcessingController>(FindObjectsInactive.Exclude)
+                    .Select(m => m.Save())
+                    .ToArray(),
+                hotbar = FindAnyObjectByType<InventoryDebugHud>()?.GetHotbarSaveEntries() ?? Array.Empty<string>(),
+                lastSavedUnixSeconds = clock.NowUnixSeconds,
                 player = CreatePlayerSaveEntry(),
                 gameTime = CreateGameTimeSaveEntry(),
                 talkedToVillager = talkedToVillager
@@ -522,8 +546,198 @@ namespace TheOldRoad.Core
             EnsureHomeStorage();
             EnsureBellTowerPuzzle();
             EnsureMerchant();
+            EnsureWanderingMerchant();
+            EnsureFarmArea();
+            EnsureAvatarAnimalPasture(inventorySession);
+            EnsureDailyRetention(inventorySession);
             EnsurePlayerFarming();
+            EnsurePlayerFishing();
             EnsureNightMonsters();
+        }
+
+        private void EnsureFarmArea()
+        {
+            if (FindObjectsByType<FarmPlotController>(FindObjectsInactive.Exclude).Length > 0) return;
+
+            GameObject farmAreaParent = new GameObject("Farm Garden (12 Plots & Decor)");
+            farmAreaParent.transform.position = new Vector3(4.0f, -6.5f, 0f);
+
+            const int rows = 3;
+            const int cols = 4;
+            const float spacingX = 1.8f;
+            const float spacingY = 1.8f;
+
+            // Pre-configured crops setup for an authentic, lush starter garden:
+            // Diverse crops at varied growth stages (some mature for immediate harvest, some growing, some tilled)
+            (string cropId, bool tilled, bool watered, int stage, float progress)[] starterGarden = new[]
+            {
+                // Row 0: Wheat & Corn
+                ("wheat", true, true, 4, 8f),       // [0,0] Golden Wheat (Harvest ready)
+                ("wheat", true, true, 3, 5f),       // [0,1] Wheat (Growing)
+                ("corn", true, true, 4, 12f),       // [0,2] Sweet Corn (Harvest ready)
+                ("corn", true, false, 2, 4f),       // [0,3] Corn Sprout (Needs water)
+
+                // Row 1: Carrots & Potatoes
+                ("carrot", true, true, 4, 10f),     // [1,0] Crisp Carrot (Harvest ready)
+                ("carrot", true, true, 3, 6f),      // [1,1] Carrot (Growing)
+                ("potato", true, true, 4, 10f),     // [1,2] Golden Potato (Harvest ready)
+                ("potato", true, false, 1, 2f),     // [1,3] Potato Sprout (Needs water)
+
+                // Row 2: Tomatoes, Pineapples & Prepared Soil
+                ("tomato", true, true, 4, 14f),     // [2,0] Ripe Tomato (Harvest ready)
+                ("pineapple", true, true, 2, 6f),   // [2,1] Pineapple (Growing)
+                ("", true, true, 0, 0f),            // [2,2] Tilled & Watered Soil (Ready to plant)
+                ("", true, false, 0, 0f)            // [2,3] Tilled Soil (Ready to water & plant)
+            };
+
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    int index = r * cols + c;
+                    var config = starterGarden[index];
+
+                    string plotId = $"plot.farm.{r}.{c}";
+                    GameObject plotObj = new GameObject($"Farm Plot [{r},{c}]");
+                    plotObj.transform.SetParent(farmAreaParent.transform, false);
+                    plotObj.transform.localPosition = new Vector3(c * spacingX, -r * spacingY, 0f);
+
+                    FarmPlotController plot = plotObj.AddComponent<FarmPlotController>();
+                    plot.Configure(plotId, config.tilled, config.watered, config.cropId, config.progress, config.stage);
+                }
+            }
+
+            // Garden Decor & Atmosphere:
+            // 1. Scarecrow standing proudly on the eastern edge of the field
+            GameObject scarecrowObj = new GameObject("Farm Garden Scarecrow");
+            scarecrowObj.transform.SetParent(farmAreaParent.transform, false);
+            scarecrowObj.transform.localPosition = new Vector3((cols - 1) * spacingX + 1.2f, -1.0f * spacingY, 0f);
+            var srScarecrow = scarecrowObj.AddComponent<SpriteRenderer>();
+            srScarecrow.sprite = PrototypePixelArtFactory.Scarecrow();
+            scarecrowObj.AddComponent<YSortSprite>().Configure(15);
+
+            // 2. Farm Signboard at garden entrance
+            GameObject signboardObj = new GameObject("Farm Garden Signboard");
+            signboardObj.transform.SetParent(farmAreaParent.transform, false);
+            signboardObj.transform.localPosition = new Vector3(-1.1f, 0.4f, 0f);
+            var srSign = signboardObj.AddComponent<SpriteRenderer>();
+            srSign.sprite = PrototypePixelArtFactory.FarmSignboard();
+            signboardObj.AddComponent<YSortSprite>().Configure(15);
+
+            // 3. Garden Entrance Gate & Lanterns
+            GameObject gateObj = new GameObject("Farm Garden Wood Gate");
+            gateObj.transform.SetParent(farmAreaParent.transform, false);
+            gateObj.transform.localPosition = new Vector3(-1.1f, -1.0f * spacingY, 0f);
+            var srGate = gateObj.AddComponent<SpriteRenderer>();
+            srGate.sprite = PrototypePixelArtFactory.WoodGate(true);
+            gateObj.AddComponent<YSortSprite>().Configure(10);
+
+            GameObject lanternObj = new GameObject("Farm Garden Gate Lantern");
+            lanternObj.transform.SetParent(farmAreaParent.transform, false);
+            lanternObj.transform.localPosition = new Vector3(-1.1f, -0.1f, 0f);
+            var srLantern = lanternObj.AddComponent<SpriteRenderer>();
+            srLantern.sprite = PrototypePixelArtFactory.GateLantern(true);
+            lanternObj.AddComponent<YSortSprite>().Configure(15);
+
+            // 4. Perimeter Fences along the top, bottom, left and right borders
+            for (float fx = 0f; fx <= (cols - 1) * spacingX; fx += 1.8f)
+            {
+                GameObject topFence = new GameObject($"Farm Fence Top {fx:F1}");
+                topFence.transform.SetParent(farmAreaParent.transform, false);
+                topFence.transform.localPosition = new Vector3(fx, 0.9f, 0f);
+                var srTop = topFence.AddComponent<SpriteRenderer>();
+                srTop.sprite = PrototypePixelArtFactory.WoodFenceHorizontal();
+                topFence.AddComponent<YSortSprite>().Configure(5);
+
+                GameObject botFence = new GameObject($"Farm Fence Bot {fx:F1}");
+                botFence.transform.SetParent(farmAreaParent.transform, false);
+                botFence.transform.localPosition = new Vector3(fx, -(rows - 1) * spacingY - 1.1f, 0f);
+                var srBot = botFence.AddComponent<SpriteRenderer>();
+                srBot.sprite = PrototypePixelArtFactory.WoodFenceHorizontal();
+                botFence.AddComponent<YSortSprite>().Configure(25);
+            }
+
+            // 5. Garden Water Trough & Tool Box
+            GameObject waterTrough = new GameObject("Farm Garden Water Trough");
+            waterTrough.transform.SetParent(farmAreaParent.transform, false);
+            waterTrough.transform.localPosition = new Vector3(-1.2f, -(rows - 1) * spacingY - 0.2f, 0f);
+            var srTrough = waterTrough.AddComponent<SpriteRenderer>();
+            srTrough.sprite = PrototypePixelArtFactory.WaterTrough();
+            waterTrough.AddComponent<YSortSprite>().Configure(20);
+
+            // 6. Right side perimeter fence
+            for (int r = 0; r < rows; r++)
+            {
+                GameObject rightFence = new GameObject($"Farm Fence Right {r}");
+                rightFence.transform.SetParent(farmAreaParent.transform, false);
+                rightFence.transform.localPosition = new Vector3((cols - 1) * spacingX + 1.2f, -r * spacingY + 0.2f, 0f);
+                var srRight = rightFence.AddComponent<SpriteRenderer>();
+                srRight.sprite = PrototypePixelArtFactory.WoodFenceHorizontal();
+                rightFence.AddComponent<YSortSprite>().Configure(15);
+            }
+        }
+
+        public void EnsureFarmExpansion()
+        {
+            if (GameObject.Find("Farm Expansion (Grid B 12 Plots)") != null) return;
+
+            GameObject expansionParent = new GameObject("Farm Expansion (Grid B 12 Plots)");
+            expansionParent.transform.position = new Vector3(-8.5f, -6.5f, 0f);
+
+            const int rows = 3;
+            const int cols = 4;
+            const float spacingX = 1.8f;
+            const float spacingY = 1.8f;
+
+            for (int r = 0; r < rows; r++)
+            {
+                for (int c = 0; c < cols; c++)
+                {
+                    string plotId = $"plot.farm.b.{r}.{c}";
+                    GameObject plotObj = new GameObject($"Farm Plot B [{r},{c}]");
+                    plotObj.transform.SetParent(expansionParent.transform, false);
+                    plotObj.transform.localPosition = new Vector3(c * spacingX, -r * spacingY, 0f);
+
+                    FarmPlotController plot = plotObj.AddComponent<FarmPlotController>();
+                    plot.Configure(plotId, false, false, string.Empty, 0f, 0);
+                }
+            }
+
+            FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "ĐÃ MỞ RỘNG THÊM 12 Ô ĐẤT NÔNG TRẠI MỚI!" : "EXPANDED 12 NEW FARM PLOTS!", Vector3.zero, Color.green, 2.5f);
+        }
+
+        private void EnsureAvatarAnimalPasture(InventorySession session)
+        {
+            if (GameObject.Find("Grand Avatar Animal Pasture") != null) return;
+
+            GameObject pastureParent = new GameObject("Grand Avatar Animal Pasture");
+            pastureParent.transform.position = new Vector3(12.5f, -4.8f, 0f);
+
+            AnimalPenController pen = pastureParent.AddComponent<AnimalPenController>();
+            pen.Configure(null, session, this, AnimalPenLongId);
+        }
+
+        private void EnsureDailyRetention(InventorySession session)
+        {
+            if (GameObject.Find("Daily Mailbox & Bulletin Compound") != null) return;
+
+            GameObject retentionParent = new GameObject("Daily Mailbox & Bulletin Compound");
+
+            // 1. Mailbox outside Starter Cabin (right of the front porch)
+            GameObject mailboxObj = new GameObject("Daily Countryside Mailbox");
+            mailboxObj.transform.SetParent(retentionParent.transform, false);
+            mailboxObj.transform.localPosition = new Vector3(2.2f, 1.2f, 0f);
+            DailyMailboxController mailbox = mailboxObj.AddComponent<DailyMailboxController>();
+            mailbox.Configure(session, 1, true);
+            mailboxObj.AddComponent<YSortSprite>().Configure(10);
+
+            // 2. Town Bulletin Board near farm crossroads
+            GameObject boardObj = new GameObject("Daily Town Bulletin Board");
+            boardObj.transform.SetParent(retentionParent.transform, false);
+            boardObj.transform.localPosition = new Vector3(1.2f, -3.8f, 0f);
+            DailyBulletinBoardController board = boardObj.AddComponent<DailyBulletinBoardController>();
+            board.Configure(session);
+            boardObj.AddComponent<YSortSprite>().Configure(15);
         }
 
         private void EnsureBellTowerPuzzle()
@@ -540,6 +754,13 @@ namespace TheOldRoad.Core
             merchantObj.AddComponent<MerchantNpcController>();
         }
 
+        private void EnsureWanderingMerchant()
+        {
+            if (FindAnyObjectByType<TheOldRoad.World.WanderingMerchantController>() != null) return;
+            GameObject wanderingMerchantObj = new GameObject("Wandering Mysterious Merchant");
+            wanderingMerchantObj.AddComponent<TheOldRoad.World.WanderingMerchantController>();
+        }
+
         private void EnsurePlayerFarming()
         {
             PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
@@ -547,6 +768,16 @@ namespace TheOldRoad.Core
             {
                 PlayerFarmingInteractor farming = player.gameObject.AddComponent<PlayerFarmingInteractor>();
                 farming.Configure(inventorySession);
+            }
+        }
+
+        private void EnsurePlayerFishing()
+        {
+            PlayerMovement player = FindAnyObjectByType<PlayerMovement>();
+            if (player != null && player.GetComponent<PlayerFishingInteractor>() == null)
+            {
+                PlayerFishingInteractor fishing = player.gameObject.AddComponent<PlayerFishingInteractor>();
+                fishing.Configure(inventorySession);
             }
         }
 
@@ -609,9 +840,59 @@ namespace TheOldRoad.Core
 
         private void LoadState()
         {
-            if (!saveRepository.TryLoad(out SaveData data, out saveStatus)) return;
+            if (!saveRepository.TryLoad(out SaveData data, out saveStatus))
+            {
+                // New game: Give starting farming tools, seeds, fishing rod, and combat equipment
+                Inventory.Add("item.tool-hoe", 1);
+                Inventory.Add("item.watering-can", 1);
+                Inventory.Add("item.seed-carrot", 10);
+                Inventory.Add("item.seed-wheat", 10);
+                Inventory.Add("item.seed-potato", 10);
+                Inventory.Add("item.seed-corn", 10);
+                Inventory.Add("item.seed-tomato", 10);
+                Inventory.Add("item.seed-pineapple", 5);
+                Inventory.Add("item.fertilizer", 5);
+                Inventory.Add("item.fishing-rod", 1);
+                Inventory.Add("item.fishing-bait", 6);
+                Inventory.Add("item.weapon-sword", 1);
+                Inventory.Add("item.weapon-bow", 1);
+                Inventory.Add("item.ammo-arrow", 20);
+                Inventory.Add("item.shield-wood", 1);
+                Inventory.Add("item.tool-axe", 1);
+                Inventory.Add("item.tool-pickaxe", 1);
+                Inventory.Add("item.wood", 15);
+                Inventory.Add("item.stone", 10);
+                return;
+            }
 
             Inventory.LoadFromSaveEntries(data.inventory);
+
+            // Ensure player always has essential tools if missing
+            if (Inventory.GetQuantity("item.tool-hoe") <= 0) Inventory.Add("item.tool-hoe", 1);
+            if (Inventory.GetQuantity("item.watering-can") <= 0) Inventory.Add("item.watering-can", 1);
+            if (Inventory.GetQuantity("item.fishing-rod") <= 0) Inventory.Add("item.fishing-rod", 1);
+            if (Inventory.GetQuantity("item.seed-carrot") <= 0 && Inventory.GetQuantity("item.seed-wheat") <= 0 && Inventory.GetQuantity("item.seed-potato") <= 0)
+            {
+                Inventory.Add("item.seed-carrot", 6);
+                Inventory.Add("item.seed-wheat", 6);
+            }
+
+            // Check if player owns farm deed to expand grid
+            if (Inventory.GetQuantity("item.farm-deed") > 0)
+            {
+                EnsureFarmExpansion();
+            }
+
+            if (data.hotbar != null && data.hotbar.Length > 0)
+            {
+                InventoryDebugHud hud = FindAnyObjectByType<InventoryDebugHud>();
+                if (hud != null) hud.LoadHotbarEntries(data.hotbar);
+            }
+
+            // Calculate offline progress (in-game minutes)
+            long currentUnix = clock.NowUnixSeconds;
+            long elapsedRealSeconds = (data.lastSavedUnixSeconds > 0) ? (currentUnix - data.lastSavedUnixSeconds) : 0;
+            float elapsedInGameMinutes = (elapsedRealSeconds > 0) ? (elapsedRealSeconds * 1.2f) : 0f;
 
             foreach (ResourceNodeSaveEntry resourceSave in data.resourceNodes ?? Array.Empty<ResourceNodeSaveEntry>())
             {
@@ -648,6 +929,24 @@ namespace TheOldRoad.Core
                 completedStoryStepIds.Add(storySave.stepId);
             }
 
+            // Restore Farm Plots & apply offline growth
+            Dictionary<string, FarmPlotSaveEntry> plotSaves = (data.farmPlots ?? Array.Empty<FarmPlotSaveEntry>())
+                .Where(e => e != null && !string.IsNullOrEmpty(e.plotId))
+                .ToDictionary(e => e.plotId, e => e);
+
+            foreach (FarmPlotController plot in FindObjectsByType<FarmPlotController>(FindObjectsInactive.Exclude))
+            {
+                if (plot == null) continue;
+                if (plotSaves.TryGetValue(plot.PlotId, out FarmPlotSaveEntry saveEntry))
+                {
+                    plot.LoadFromSaveEntry(saveEntry);
+                    if (elapsedInGameMinutes > 0f)
+                    {
+                        plot.ProgressOfflineTime(elapsedInGameMinutes);
+                    }
+                }
+            }
+
             foreach (ConstructionSaveEntry constructionSave in data.constructionJobs ?? Array.Empty<ConstructionSaveEntry>())
             {
                 if (constructionSave == null || string.IsNullOrWhiteSpace(constructionSave.constructionId)) continue;
@@ -660,10 +959,49 @@ namespace TheOldRoad.Core
                 CreateConstructionSite(job, definition);
             }
 
+            // Restore Chests
+            if (data.chests != null && data.chests.Length > 0)
+            {
+                var chestDict = data.chests.Where(c => c != null && !string.IsNullOrEmpty(c.chestId)).ToDictionary(c => c.chestId, c => c);
+                foreach (TheOldRoad.Building.ChestStorageController chest in FindObjectsByType<TheOldRoad.Building.ChestStorageController>(FindObjectsInactive.Exclude))
+                {
+                    if (chest != null && chestDict.TryGetValue(chest.ChestId, out var save))
+                    {
+                        chest.Load(save);
+                    }
+                }
+            }
+
+            // Restore Silos
+            if (data.silos != null && data.silos.Length > 0)
+            {
+                var siloDict = data.silos.Where(s => s != null && !string.IsNullOrEmpty(s.siloId)).ToDictionary(s => s.siloId, s => s);
+                foreach (TheOldRoad.Building.SiloStorageController silo in FindObjectsByType<TheOldRoad.Building.SiloStorageController>(FindObjectsInactive.Exclude))
+                {
+                    if (silo != null && siloDict.TryGetValue(silo.SiloId, out var save))
+                    {
+                        silo.Load(save);
+                    }
+                }
+            }
+
+            // Restore Artisan Machines
+            if (data.artisanMachines != null && data.artisanMachines.Length > 0)
+            {
+                var machineDict = data.artisanMachines.Where(m => m != null && !string.IsNullOrEmpty(m.machineId)).ToDictionary(m => m.machineId, m => m);
+                foreach (TheOldRoad.Building.ArtisanProcessingController machine in FindObjectsByType<TheOldRoad.Building.ArtisanProcessingController>(FindObjectsInactive.Exclude))
+                {
+                    if (machine != null && machineDict.TryGetValue(machine.MachineId, out var save))
+                    {
+                        machine.Load(save);
+                    }
+                }
+            }
+
             if (data.gameTime != null)
             {
                 GameTimeController gameTime = FindAnyObjectByType<GameTimeController>();
-                if (gameTime != null) gameTime.LoadAbsoluteMinute(data.gameTime.absoluteMinute);
+                if (gameTime != null) gameTime.LoadAbsoluteMinute(data.gameTime.absoluteMinute + Mathf.FloorToInt(elapsedInGameMinutes));
             }
 
             talkedToVillager = data.talkedToVillager;
@@ -715,7 +1053,7 @@ namespace TheOldRoad.Core
                         new BuildCostEntry { itemId = "item.wood", quantity = 3 },
                         new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                     },
-                    30f,
+                    15f,
                     new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
             }
 
@@ -727,7 +1065,7 @@ namespace TheOldRoad.Core
                     new BuildCostEntry { itemId = "item.wood", quantity = 2 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
-                12f,
+                5f,
                 new[] { "Ring", "Kindling", "Flame" });
 
             cookingHearthDefinition ??= CreatePrototypeBuilding(
@@ -739,29 +1077,29 @@ namespace TheOldRoad.Core
                     new BuildCostEntry { itemId = "item.wood", quantity = 2 },
                     new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 }
                 },
-                25f,
+                10f,
                 new[] { "Base", "Chamber", "Ready" });
 
             animalPenSmallDefinition ??= CreatePrototypeBuilding(
                 AnimalPenSmallId,
-                new Vector2Int(3, 2),
+                new Vector2Int(5, 4),
                 new[]
                 {
                     new BuildCostEntry { itemId = "item.wood", quantity = 6 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
-                35f,
+                15f,
                 new[] { "Posts", "Rails", "Gate", "Ready" });
 
             animalPenLongDefinition ??= CreatePrototypeBuilding(
                 AnimalPenLongId,
-                new Vector2Int(4, 2),
+                new Vector2Int(7, 4),
                 new[]
                 {
                     new BuildCostEntry { itemId = "item.wood", quantity = 10 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 4 }
                 },
-                45f,
+                20f,
                 new[] { "Posts", "Rails", "Gate", "Ready" });
 
             storageShedDefinition ??= CreatePrototypeBuilding(
@@ -773,7 +1111,7 @@ namespace TheOldRoad.Core
                     new BuildCostEntry { itemId = "item.cabin-plank", quantity = 1 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
-                30f,
+                15f,
                 new[] { "Foundation", "Frame", "Roof", "Ready" });
 
             stoneCottageDefinition ??= CreatePrototypeBuilding(
@@ -782,10 +1120,10 @@ namespace TheOldRoad.Core
                 new[]
                 {
                     new BuildCostEntry { itemId = "item.stone", quantity = 8 },
-                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 6 },
                     new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 }
                 },
-                60f,
+                20f,
                 new[] { "Foundation", "Frame", "Walls", "Roof", "Complete" });
 
             herbalistHutDefinition ??= CreatePrototypeBuilding(
@@ -793,11 +1131,11 @@ namespace TheOldRoad.Core
                 new Vector2Int(3, 2),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
-                    new BuildCostEntry { itemId = "item.stone", quantity = 4 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 6 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 3 },
                     new BuildCostEntry { itemId = "item.medicinal-herb", quantity = 2 }
                 },
-                40f,
+                15f,
                 new[] { "Foundation", "Frame", "Thatch", "Garden", "Ready" });
 
             lookoutTowerDefinition ??= CreatePrototypeBuilding(
@@ -805,11 +1143,11 @@ namespace TheOldRoad.Core
                 new Vector2Int(2, 2),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
-                    new BuildCostEntry { itemId = "item.iron-ore", quantity = 3 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 },
+                    new BuildCostEntry { itemId = "item.iron-ore", quantity = 2 },
                     new BuildCostEntry { itemId = "item.torch", quantity = 1 }
                 },
-                35f,
+                15f,
                 new[] { "Stilts", "Braces", "Platform", "Beacon", "Ready" });
 
             farmBarnDefinition ??= CreatePrototypeBuilding(
@@ -817,11 +1155,11 @@ namespace TheOldRoad.Core
                 new Vector2Int(4, 3),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 12 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
                     new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 4 }
                 },
-                50f,
+                25f,
                 new[] { "Foundation", "Frame", "Tin Roof", "Haystack", "Ready" });
 
             fenceDefinition ??= CreatePrototypeBuilding(
@@ -829,29 +1167,29 @@ namespace TheOldRoad.Core
                 new Vector2Int(1, 1),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 2 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 1 }
                 },
-                0f,
-                new[] { "Placed" });
+                2f,
+                new[] { "Placed", "Fixed" });
 
             gateDefinition ??= CreatePrototypeBuilding(
                 GateId,
                 new Vector2Int(1, 1),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 4 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 2 }
                 },
-                0f,
-                new[] { "Placed" });
+                3f,
+                new[] { "Posts", "Hinges", "Ready" });
 
             perimeterFenceDragDefinition ??= CreatePrototypeBuilding(
                 PerimeterFenceDragId,
-                new Vector2Int(10, 8),
+                new Vector2Int(8, 6),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 10 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 8 }
                 },
-                10f,
+                8f,
                 new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
 
             perimeterFenceSmallDefinition ??= CreatePrototypeBuilding(
@@ -859,42 +1197,42 @@ namespace TheOldRoad.Core
                 new Vector2Int(6, 4),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 8 }
+                    new BuildCostEntry { itemId = "item.wood", quantity = 6 }
                 },
-                10f,
+                8f,
                 new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
 
             perimeterFenceMediumDefinition ??= CreatePrototypeBuilding(
                 PerimeterFenceMediumId,
-                new Vector2Int(10, 8),
+                new Vector2Int(8, 6),
                 new[]
                 {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 12 },
+                    new BuildCostEntry { itemId = "item.wood", quantity = 10 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 2 }
                 },
-                15f,
+                10f,
                 new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
 
             perimeterFenceLargeDefinition ??= CreatePrototypeBuilding(
                 PerimeterFenceLargeId,
-                new Vector2Int(16, 12),
+                new Vector2Int(12, 8),
+                new[]
+                {
+                    new BuildCostEntry { itemId = "item.wood", quantity = 14 },
+                    new BuildCostEntry { itemId = "item.stone", quantity = 3 }
+                },
+                12f,
+                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
+
+            perimeterFenceGrandDefinition ??= CreatePrototypeBuilding(
+                PerimeterFenceGrandId,
+                new Vector2Int(16, 10),
                 new[]
                 {
                     new BuildCostEntry { itemId = "item.wood", quantity = 18 },
                     new BuildCostEntry { itemId = "item.stone", quantity = 4 }
                 },
-                20f,
-                new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
-
-            perimeterFenceGrandDefinition ??= CreatePrototypeBuilding(
-                PerimeterFenceGrandId,
-                new Vector2Int(24, 16),
-                new[]
-                {
-                    new BuildCostEntry { itemId = "item.wood", quantity = 25 },
-                    new BuildCostEntry { itemId = "item.stone", quantity = 6 }
-                },
-                25f,
+                15f,
                 new[] { "Marking", "Posts", "Rails", "Gate", "Ready" });
 
             pathDirtDefinition ??= CreatePrototypeBuilding(
@@ -904,8 +1242,8 @@ namespace TheOldRoad.Core
                 {
                     new BuildCostEntry { itemId = "item.wood", quantity = 1 }
                 },
-                0f,
-                new[] { "Paved" });
+                2f,
+                new[] { "Cleared", "Paved" });
 
             pathCobblestoneDefinition ??= CreatePrototypeBuilding(
                 PathCobblestoneId,
@@ -914,8 +1252,8 @@ namespace TheOldRoad.Core
                 {
                     new BuildCostEntry { itemId = "item.stone", quantity = 1 }
                 },
-                0f,
-                new[] { "Paved" });
+                2f,
+                new[] { "Levelled", "Paved" });
 
             scarecrowDefinition ??= CreatePrototypeBuilding(
                 ScarecrowId,
@@ -925,7 +1263,7 @@ namespace TheOldRoad.Core
                     new BuildCostEntry { itemId = "item.wood", quantity = 2 },
                     new BuildCostEntry { itemId = "item.wheat", quantity = 2 }
                 },
-                5f,
+                4f,
                 new[] { "Frame", "Clothes", "Hat", "Ready" });
 
             RegisterBuildingDefinition(cabinDefinition);
@@ -1017,7 +1355,8 @@ namespace TheOldRoad.Core
             string[] stages)
         {
             BuildingDefinition definition = ScriptableObject.CreateInstance<BuildingDefinition>();
-            definition.ConfigureForPrototype(buildingId, footprint, costs, durationSeconds, stages);
+            Sprite completeSprite = PrototypePixelArtFactory.BuildingCatalogIcon(buildingId);
+            definition.ConfigureForPrototype(buildingId, footprint, costs, durationSeconds, stages, completeSprite);
             return definition;
         }
 
@@ -1025,6 +1364,159 @@ namespace TheOldRoad.Core
         {
             if (definition == null || string.IsNullOrWhiteSpace(definition.BuildingId)) return;
             buildingDefinitions[definition.BuildingId] = definition;
+        }
+
+        private BuildingDefinition CreateDynamicBuildingDefinition(string buildingId)
+        {
+            switch (buildingId)
+            {
+                // Category 0: Housing & Lodges
+                case "building.tent":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 3), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 6 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 8f, new[] { "Stakes", "Canvas", "Ready" });
+                case "building.manor":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(6, 5), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 18 }, new BuildCostEntry { itemId = "item.cabin-plank", quantity = 10 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 5 } }, 30f, new[] { "Foundation", "Walls", "UpperFloor", "Roof", "Ready" });
+                case "building.greenhouse":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(5, 4), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 15 }, new BuildCostEntry { itemId = "item.stone", quantity = 8 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 4 } }, 20f, new[] { "Frame", "GlassPanes", "Planters", "Ready" });
+                case "building.silo":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 3), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 12 }, new BuildCostEntry { itemId = "item.wood", quantity = 6 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 2 } }, 15f, new[] { "Foundation", "Tower", "Cap", "Ready" });
+
+                // Category 1: Fire & Lighting
+                case "building.street-lamp":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 2 }, new BuildCostEntry { itemId = "item.torch", quantity = 1 } }, 4f, new[] { "Post", "Lantern", "Ready" });
+                case "building.ground-torch":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 1 }, new BuildCostEntry { itemId = "item.torch", quantity = 1 } }, 3f, new[] { "Stake", "Flame" });
+                case "building.lantern-pole":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 }, new BuildCostEntry { itemId = "item.torch", quantity = 1 } }, 5f, new[] { "Post", "Arm", "Ready" });
+                case "building.stone-fireplace":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 8 }, new BuildCostEntry { itemId = "item.wood", quantity = 3 } }, 10f, new[] { "Hearth", "Chimney", "Ready" });
+
+                // Category 2: Animal Husbandry
+                case "building.sheep-pasture":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(6, 5), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 12 }, new BuildCostEntry { itemId = "item.stone", quantity = 4 } }, 15f, new[] { "Posts", "Rails", "Shelter", "Ready" });
+                case "building.hen-coop":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(4, 3), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.wheat", quantity = 4 } }, 12f, new[] { "Frame", "Nests", "Roost", "Ready" });
+                case "building.feed-trough":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 } }, 4f, new[] { "Box", "Lining", "Ready" });
+                case "building.water-trough":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 }, new BuildCostEntry { itemId = "item.stone", quantity = 2 } }, 4f, new[] { "Basin", "Seal", "Ready" });
+
+                // Category 3: Fences & Walls
+                case "building.stone-wall":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 2 } }, 3f, new[] { "Foundation", "Mortar", "Ready" });
+                case "building.iron-gate":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.iron-ore", quantity = 3 }, new BuildCostEntry { itemId = "item.wood", quantity = 2 } }, 5f, new[] { "Pillars", "IronBars", "Ready" });
+                case "building.log-palisade":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 2 } }, 3f, new[] { "Stakes", "Crossbeam", "Ready" });
+
+                // Category 4: Paths & Bridges
+                case "building.path-wood":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 1 } }, 2f, new[] { "Planks", "Nailed" });
+                case "building.path-stone-tile":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 1 } }, 2f, new[] { "Grout", "Tiled" });
+                case "building.wood-bridge":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.cabin-plank", quantity = 2 } }, 8f, new[] { "Supports", "Decking", "Ready" });
+
+                // Category 5: Furniture & Living
+                case "building.straw-bed":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.wheat", quantity = 3 } }, 4f, new[] { "Frame", "StrawMattress", "Ready" });
+                case "building.oak-table":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 } }, 4f, new[] { "Legs", "Tabletop", "Ready" });
+                case "building.leather-chair":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 2 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 4f, new[] { "Frame", "Cushion", "Ready" });
+                case "building.bookshelf":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 6 }, new BuildCostEntry { itemId = "item.cabin-plank", quantity = 1 } }, 5f, new[] { "Shelves", "Books", "Ready" });
+                case "building.woven-rug":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wool", quantity = 3 } }, 3f, new[] { "Weave", "Fringes", "Ready" });
+
+                // Category 6: Artisan & Processing
+                case "building.cheese-press":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 6 }, new BuildCostEntry { itemId = "item.stone", quantity = 2 } }, 6f, new[] { "Base", "PressScrew", "Ready" });
+                case "building.loom":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 } }, 6f, new[] { "Frame", "Heddles", "Ready" });
+                case "building.keg":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 } }, 6f, new[] { "Staves", "Hoops", "Ready" });
+                case "building.windmill":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(4, 4), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 20 }, new BuildCostEntry { itemId = "item.wood", quantity = 15 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 4 } }, 20f, new[] { "Tower", "Millstone", "Sails", "Ready" });
+                case "building.blacksmith-forge":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 3), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 16 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 4 } }, 15f, new[] { "Anvil", "Bellows", "ForgeFire", "Ready" });
+                case "building.carpenter-bench":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 } }, 5f, new[] { "Bench", "Vise", "Ready" });
+
+                // Category 7: Storage & Logistics
+                case "building.wood-chest":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 } }, 4f, new[] { "Planks", "Hinges", "Ready" });
+                case "building.stone-vault":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 10 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 2 } }, 8f, new[] { "Frame", "Reinforce", "Ready" });
+                case "building.compost-bin":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.wheat", quantity = 2 } }, 4f, new[] { "Slats", "SoilBed", "Ready" });
+                case "building.barrel-rack":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 6 } }, 4f, new[] { "Frame", "Barrels", "Ready" });
+
+                // Category 8: Gardening & Greenery
+                case "building.grape-trellis":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 } }, 4f, new[] { "Posts", "Trellis", "Ready" });
+                case "building.pumpkin-patch":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.wheat", quantity = 2 } }, 5f, new[] { "Plot", "Vines", "Ready" });
+                case "building.flower-planter":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 }, new BuildCostEntry { itemId = "item.wild-berries", quantity = 1 } }, 3f, new[] { "Box", "Flowers", "Ready" });
+                case "building.garden-hedge":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 1 }, new BuildCostEntry { itemId = "item.medicinal-herb", quantity = 1 } }, 3f, new[] { "Planting", "Trimming", "Ready" });
+
+                // Category 9: Water & Irrigation
+                case "building.ancient-well":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 12 }, new BuildCostEntry { itemId = "item.wood", quantity = 4 } }, 10f, new[] { "Pit", "Curb", "Windlass", "Ready" });
+                case "building.water-aqueduct":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.stone", quantity = 1 } }, 4f, new[] { "Trestles", "Flume", "Ready" });
+                case "building.stone-fountain":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 3), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 18 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 3 } }, 15f, new[] { "Basin", "Spout", "Ready" });
+                case "building.hot-bath":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 10 }, new BuildCostEntry { itemId = "item.wood", quantity = 5 } }, 10f, new[] { "Tub", "Heater", "Ready" });
+
+                // Category 10: Monuments & Shrines
+                case "building.knight-statue":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 18 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 4 } }, 15f, new[] { "Plinth", "Statue", "Polished" });
+                case "building.guardian-shrine":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 12 }, new BuildCostEntry { itemId = "item.bell-fragment", quantity = 1 } }, 10f, new[] { "Altar", "Relic", "Blessed" });
+                case "building.bell-pillar":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 14 }, new BuildCostEntry { itemId = "item.bell-fragment", quantity = 1 } }, 12f, new[] { "Base", "Pillar", "BellMounted" });
+
+                // Category 11: Market & Commerce
+                case "building.market-stall":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 8 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 6f, new[] { "Counter", "Canopy", "Ready" });
+                case "building.farm-sign":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 2 } }, 3f, new[] { "Post", "Board", "Ready" });
+                case "building.travel-cart":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(3, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 12 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 3 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 10f, new[] { "Chassis", "Wheels", "Cover", "Ready" });
+
+                // Category 12: Defenses & Traps
+                case "building.spike-trap":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 1 } }, 3f, new[] { "Base", "Spikes", "Ready" });
+                case "building.wooden-barricade":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 } }, 4f, new[] { "CrossLogs", "Lashing", "Ready" });
+                case "building.alarm-bell":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 4 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 2 } }, 5f, new[] { "Post", "Bell", "Ready" });
+
+                // Category 13: Leisure & Camping
+                case "building.wood-swing":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 5 }, new BuildCostEntry { itemId = "item.wool", quantity = 1 } }, 4f, new[] { "Frame", "Ropes", "Seat", "Ready" });
+                case "building.chess-table":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 4 }, new BuildCostEntry { itemId = "item.wood", quantity = 2 } }, 4f, new[] { "Pedestal", "Board", "Ready" });
+                case "building.hammock":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 3 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 3f, new[] { "Posts", "Netting", "Ready" });
+                case "building.bbq-grill":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 2), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 6 }, new BuildCostEntry { itemId = "item.iron-ore", quantity = 2 } }, 5f, new[] { "GrillPit", "Rack", "Ready" });
+
+                // Category 14: Festivals & Ornaments
+                case "building.festival-banner":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(2, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 2 }, new BuildCostEntry { itemId = "item.wool", quantity = 2 } }, 3f, new[] { "Poles", "Pennants", "Ready" });
+                case "building.sky-lantern":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.wood", quantity = 1 }, new BuildCostEntry { itemId = "item.torch", quantity = 1 } }, 2f, new[] { "Frame", "Paper", "Ready" });
+                case "building.firefly-jar":
+                    return CreatePrototypeBuilding(buildingId, new Vector2Int(1, 1), new[] { new BuildCostEntry { itemId = "item.stone", quantity = 1 }, new BuildCostEntry { itemId = "item.wild-berries", quantity = 1 } }, 2f, new[] { "Base", "Jar", "Ready" });
+
+                default:
+                    return null;
+            }
         }
 
         private Camera EnsureCamera()
@@ -1125,13 +1617,84 @@ namespace TheOldRoad.Core
 
         private void EnsureLandmarks()
         {
+            // 1. Settlements & NPCs & Farm POIs
+            EnsureLandmark(
+                "landmark.village.valen",
+                "Valen Village Settlement",
+                "Valen Village",
+                "The rustic settlement along River Valen with warm cottages and friendly villagers.",
+                null,
+                new Vector3(0.5f, 1.5f, 0f),
+                "🏘️",
+                new Color(0.20f, 0.82f, 0.92f, 1f),
+                8.0f);
+
+            EnsureLandmark(
+                "landmark.npc.eldon",
+                "Travelling Merchant Eldon",
+                "Travelling Merchant Eldon",
+                "Eldon travels the road selling rare seeds, deeds, equipment, and purchasing local goods.",
+                null,
+                new Vector3(-4.5f, 0f, 0f),
+                "🛒",
+                new Color(1.0f, 0.78f, 0.20f, 1f),
+                6.5f);
+
+            EnsureLandmark(
+                "landmark.service.bulletin",
+                "Daily Town Bulletin Board",
+                "Town Bulletin Board",
+                "Community delivery board offering daily bounty rewards from town residents.",
+                null,
+                new Vector3(1.2f, -3.8f, 0f),
+                "📜",
+                new Color(0.95f, 0.60f, 0.20f, 1f),
+                5.5f);
+
+            EnsureLandmark(
+                "landmark.service.mailbox",
+                "Daily Countryside Mailbox",
+                "Daily Gift Mailbox",
+                "Pigeon post mailbox providing daily login streak gifts and traveler rewards.",
+                null,
+                new Vector3(2.2f, 1.2f, 0f),
+                "📬",
+                new Color(0.95f, 0.35f, 0.35f, 1f),
+                5.5f);
+
+            EnsureLandmark(
+                "landmark.farm.pasture",
+                "Grand Avatar Animal Pasture",
+                "Avatar Animal Pasture",
+                "Grand animal farm with dairy barn, cows, sheep, hens, troughs, and loyal farm dog.",
+                null,
+                new Vector3(12.5f, -4.8f, 0f),
+                "🐄",
+                new Color(0.35f, 0.88f, 0.45f, 1f),
+                8.5f);
+
+            EnsureLandmark(
+                "landmark.farm.garden",
+                "Farm Garden (12 Plots & Decor)",
+                "Farm Crop Garden",
+                "Fertile starter plots growing wheat, corn, carrots, potatoes, tomatoes, and pineapples.",
+                null,
+                new Vector3(4.0f, -6.5f, 0f),
+                "🌾",
+                new Color(0.85f, 0.90f, 0.25f, 1f),
+                7.0f);
+
+            // 2. Exploration Landmarks & Road Network
             EnsureLandmark(
                 "landmark.waystone.north",
                 "Northern Waystone",
                 "Northern Waystone",
                 "A cold marker from the old road network. Its carved bell sigil still catches the morning light.",
                 PrototypePixelArtFactory.Waystone(),
-                new Vector3(-21f, 13f, 0f));
+                new Vector3(-21f, 13f, 0f),
+                "📍",
+                new Color(0.95f, 0.78f, 0.25f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.sign.old-road",
@@ -1139,7 +1702,10 @@ namespace TheOldRoad.Core
                 "Old Road Sign",
                 "The sign points east toward a village name scratched away long ago.",
                 PrototypePixelArtFactory.RoadSign(),
-                new Vector3(-8f, 1.7f, 0f));
+                new Vector3(-8f, 1.7f, 0f),
+                "🪧",
+                new Color(0.85f, 0.65f, 0.35f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.arch.watch",
@@ -1147,7 +1713,10 @@ namespace TheOldRoad.Core
                 "Broken Watch Arch",
                 "A ruined watch arch from the Roadwarden days. Someone recently cleared moss from one stone.",
                 PrototypePixelArtFactory.RuinedArch(),
-                new Vector3(16f, 8.5f, 0f));
+                new Vector3(16f, 8.5f, 0f),
+                "🏛️",
+                new Color(0.75f, 0.78f, 0.82f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.bridge.river",
@@ -1155,7 +1724,10 @@ namespace TheOldRoad.Core
                 "River Footbridge",
                 "An old timber bridge still holds over the shallow river bend. Fresh boot marks cross it.",
                 PrototypePixelArtFactory.Footbridge(),
-                new Vector3(-14f, -4.2f, 0f));
+                new Vector3(-14f, -4.2f, 0f),
+                "🎣",
+                new Color(0.30f, 0.75f, 1.0f, 1f),
+                6.5f);
 
             EnsureLandmark(
                 "landmark.camp.abandoned",
@@ -1163,7 +1735,10 @@ namespace TheOldRoad.Core
                 "Abandoned Camp",
                 "The ashes are old, but the stones around the fire pit were set with care.",
                 PrototypePixelArtFactory.Campfire(),
-                new Vector3(8f, -11f, 0f));
+                new Vector3(8f, -11f, 0f),
+                "🔥",
+                new Color(0.95f, 0.45f, 0.15f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.bell.east",
@@ -1171,7 +1746,10 @@ namespace TheOldRoad.Core
                 "Eastern Bell Marker",
                 "A small bell marker stands far down the road. The metal is silent, but the air around it feels tense.",
                 PrototypePixelArtFactory.Waystone(),
-                new Vector3(46f, 9f, 0f));
+                new Vector3(46f, 9f, 0f),
+                "🔔",
+                new Color(0.80f, 0.50f, 1.0f, 1f),
+                6.5f);
 
             EnsureLandmark(
                 "landmark.shrine.north",
@@ -1179,7 +1757,10 @@ namespace TheOldRoad.Core
                 "Hunter Shrine",
                 "A weathered hunter shrine watches the northern tree line. Offerings have not fully rotted away.",
                 PrototypePixelArtFactory.RoadSign(),
-                new Vector3(-38f, 25f, 0f));
+                new Vector3(-38f, 25f, 0f),
+                "⛩️",
+                new Color(0.90f, 0.35f, 0.35f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.ridge.dragon",
@@ -1187,7 +1768,10 @@ namespace TheOldRoad.Core
                 "Dragon-Scarred Ridge",
                 "Black glass and fused stone mark where dragon flame hit the northern rock. Old ash still smells bitter.",
                 PrototypePixelArtFactory.RuinedArch(),
-                new Vector3(34f, 27f, 0f));
+                new Vector3(34f, 27f, 0f),
+                "🐉",
+                new Color(1.0f, 0.42f, 0.18f, 1f),
+                7.0f);
 
             EnsureLandmark(
                 "landmark.ruin.south",
@@ -1195,7 +1779,10 @@ namespace TheOldRoad.Core
                 "South Ruin Gate",
                 "Broken stones mark a ruined southern gate. The road once continued beyond it.",
                 PrototypePixelArtFactory.RuinedArch(),
-                new Vector3(34f, -25f, 0f));
+                new Vector3(34f, -25f, 0f),
+                "⛩️",
+                new Color(0.70f, 0.70f, 0.75f, 1f),
+                6.0f);
 
             EnsureLandmark(
                 "landmark.cave.blackwood",
@@ -1203,7 +1790,10 @@ namespace TheOldRoad.Core
                 "Blackwood Cave Mouth",
                 "Cold air moves from the cave as if the hill is breathing. Old Roadwarden marks warn that deeper tunnels connect to ruins below the forest.",
                 PrototypePixelArtFactory.RuinedArch(),
-                new Vector3(-48f, 18f, 0f));
+                new Vector3(-48f, 18f, 0f),
+                "⛰️",
+                new Color(0.60f, 0.65f, 0.70f, 1f),
+                7.5f);
 
             EnsureLandmark(
                 "landmark.dragon.ridge",
@@ -1211,7 +1801,10 @@ namespace TheOldRoad.Core
                 "Dragon-Scarred Ridge",
                 "The stone is glassy and black where something vast burned across it. Villagers call this proof that an ancient dragon still sleeps beyond the northern road.",
                 PrototypePixelArtFactory.Waystone(),
-                new Vector3(52f, 25f, 0f));
+                new Vector3(52f, 25f, 0f),
+                "🐉",
+                new Color(1.0f, 0.42f, 0.18f, 1f),
+                7.0f);
         }
 
         private void EnsurePrototypeEnemies()
@@ -1219,23 +1812,33 @@ namespace TheOldRoad.Core
             if (FindAnyObjectByType<EnemyController>() != null) return;
 
             // Forest Wolf near eastern woods
-            CreateEnemy("enemy.forest-wolf.1", "Forest Wolf", 10, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(32f, 12f, 0f), new[]
+            CreateEnemy("enemy.forest-wolf.1", "Forest Wolf", 12, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(32f, 12f, 0f), new[]
             {
-                new EnemyLootEntry { itemId = "item.wool", minQuantity = 1, maxQuantity = 2, dropChance = 0.9f },
-                new EnemyLootEntry { itemId = "item.wild-berries", minQuantity = 1, maxQuantity = 2, dropChance = 0.5f }
+                new EnemyLootEntry { itemId = "item.meat-raw", minQuantity = 1, maxQuantity = 2, dropChance = 0.85f },
+                new EnemyLootEntry { itemId = "item.leather", minQuantity = 1, maxQuantity = 2, dropChance = 0.75f },
+                new EnemyLootEntry { itemId = "item.wool", minQuantity = 1, maxQuantity = 1, dropChance = 0.4f }
             });
 
             // Forest Wolf near northern trees
-            CreateEnemy("enemy.forest-wolf.2", "Forest Wolf", 10, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(-28f, 20f, 0f), new[]
+            CreateEnemy("enemy.forest-wolf.2", "Forest Wolf", 12, 2.4f, 3, 0.95f, 5.5f, 1.3f, new Vector3(-28f, 20f, 0f), new[]
             {
-                new EnemyLootEntry { itemId = "item.wool", minQuantity = 1, maxQuantity = 2, dropChance = 0.9f }
+                new EnemyLootEntry { itemId = "item.meat-raw", minQuantity = 1, maxQuantity = 2, dropChance = 0.85f },
+                new EnemyLootEntry { itemId = "item.leather", minQuantity = 1, maxQuantity = 2, dropChance = 0.75f }
             });
 
             // Bandit Scout near broken arch
-            CreateEnemy("enemy.bandit.1", "Bandit Scout", 14, 1.9f, 4, 1.1f, 6.0f, 1.5f, new Vector3(22f, 9.5f, 0f), new[]
+            CreateEnemy("enemy.bandit.1", "Bandit Scout", 16, 2.0f, 4, 1.1f, 6.0f, 1.4f, new Vector3(22f, 9.5f, 0f), new[]
             {
-                new EnemyLootEntry { itemId = "item.old-coin", minQuantity = 2, maxQuantity = 5, dropChance = 1.0f },
-                new EnemyLootEntry { itemId = "item.torch", minQuantity = 1, maxQuantity = 1, dropChance = 0.6f }
+                new EnemyLootEntry { itemId = "item.silver-coin", minQuantity = 2, maxQuantity = 5, dropChance = 0.95f },
+                new EnemyLootEntry { itemId = "item.ammo-arrow", minQuantity = 3, maxQuantity = 6, dropChance = 0.8f },
+                new EnemyLootEntry { itemId = "item.old-coin", minQuantity = 2, maxQuantity = 4, dropChance = 0.7f }
+            });
+
+            // Shadow Stalker near ancient ruins
+            CreateEnemy("enemy.shadow-stalker.1", "Shadow Stalker", 22, 1.8f, 5, 1.3f, 7.0f, 1.2f, new Vector3(-36f, -14f, 0f), new[]
+            {
+                new EnemyLootEntry { itemId = "item.bell-fragment", minQuantity = 1, maxQuantity = 1, dropChance = 1.0f },
+                new EnemyLootEntry { itemId = "item.silver-coin", minQuantity = 6, maxQuantity = 12, dropChance = 1.0f }
             });
         }
 
@@ -1362,9 +1965,16 @@ namespace TheOldRoad.Core
             if (npcInteractor == null) npcInteractor = player.AddComponent<PlayerNpcInteractor>();
             npcInteractor.Configure(this, 1.55f);
 
+            TheOldRoad.Building.BuildingInteractionController buildingInteraction = player.GetComponent<TheOldRoad.Building.BuildingInteractionController>();
+            if (buildingInteraction == null) player.AddComponent<TheOldRoad.Building.BuildingInteractionController>();
+
             PlayerCombatController combat = player.GetComponent<PlayerCombatController>();
             if (combat == null) combat = player.AddComponent<PlayerCombatController>();
             combat.Configure(session);
+
+            PlayerMouseToolTargeter mouseTargeter = player.GetComponent<PlayerMouseToolTargeter>();
+            if (mouseTargeter == null) mouseTargeter = player.AddComponent<PlayerMouseToolTargeter>();
+            mouseTargeter.Configure(session, gathering, player.GetComponent<PlayerFarmingInteractor>());
         }
 
         private void EnsureDayNightLighting(Camera mainCamera, GameTimeController gameTime, InventorySession session)
@@ -1586,6 +2196,53 @@ namespace TheOldRoad.Core
                 fence.Configure(fp.x, fp.y);
             }
 
+            if (job.buildingId == "building.silo")
+            {
+                var silo = site.GetComponent<TheOldRoad.Building.SiloStorageController>();
+                if (silo == null) silo = site.AddComponent<TheOldRoad.Building.SiloStorageController>();
+                silo.Configure(job.constructionId);
+            }
+
+            if (job.buildingId == "building.wood-chest" || job.buildingId == "building.stone-vault" || job.buildingId == "building.storage-shed")
+            {
+                var chest = site.GetComponent<TheOldRoad.Building.ChestStorageController>();
+                if (chest == null) chest = site.AddComponent<TheOldRoad.Building.ChestStorageController>();
+                int cap = job.buildingId == "building.storage-shed" ? 32 : (job.buildingId == "building.stone-vault" ? 24 : 16);
+                chest.Configure(job.constructionId, cap, LocalizationRuntime.BuildingName(job.buildingId), "Storage Chest");
+            }
+
+            if (job.buildingId == "building.windmill" || job.buildingId == "building.blacksmith-forge" || job.buildingId == "building.cheese-press" || job.buildingId == "building.loom" || job.buildingId == "building.keg" || job.buildingId == "building.carpenter-bench")
+            {
+                var machine = site.GetComponent<TheOldRoad.Building.ArtisanProcessingController>();
+                if (machine == null) machine = site.AddComponent<TheOldRoad.Building.ArtisanProcessingController>();
+                machine.Configure(job.constructionId, job.buildingId);
+            }
+
+            if (job.buildingId == "building.spike-trap")
+            {
+                var trap = site.GetComponent<TheOldRoad.Building.SpikeTrapController>();
+                if (trap == null) site.AddComponent<TheOldRoad.Building.SpikeTrapController>();
+            }
+
+            if (job.buildingId == "building.water-aqueduct")
+            {
+                var aqueduct = site.GetComponent<TheOldRoad.Building.WaterAqueductController>();
+                if (aqueduct == null) site.AddComponent<TheOldRoad.Building.WaterAqueductController>();
+            }
+
+            if (job.buildingId == "building.market-stall")
+            {
+                var stall = site.GetComponent<TheOldRoad.Economy.MarketStallController>();
+                if (stall == null) site.AddComponent<TheOldRoad.Economy.MarketStallController>();
+            }
+
+            if (job.buildingId == "building.sprinkler-copper" || job.buildingId == "building.sprinkler-iron" || job.buildingId == "building.sprinkler-gold")
+            {
+                var sprinkler = site.GetComponent<TheOldRoad.Farming.SprinklerController>();
+                if (sprinkler == null) sprinkler = site.AddComponent<TheOldRoad.Farming.SprinklerController>();
+                sprinkler.ConfigureFromBuildingId(job.buildingId);
+            }
+
             // Attach solid colliders to prevent walking through walls
             BoxCollider2D collider = site.GetComponent<BoxCollider2D>();
             if (collider == null && !job.buildingId.StartsWith("building.path") && !job.buildingId.Contains("perimeter-fence"))
@@ -1688,16 +2345,30 @@ namespace TheOldRoad.Core
             CreateSpriteObject(name, sprite, position, sortingOffset);
         }
 
-        private void EnsureLandmark(string landmarkId, string objectName, string title, string journalText, Sprite sprite, Vector3 position)
+        private void EnsureLandmark(
+            string landmarkId,
+            string objectName,
+            string title,
+            string journalText,
+            Sprite sprite,
+            Vector3 position,
+            string emoji = "★",
+            Color? mapColor = null,
+            float autoRadius = 6.0f)
         {
             if (landmarks.ContainsKey(landmarkId)) return;
 
             GameObject landmarkObject = GameObject.Find(objectName);
-            if (landmarkObject == null) landmarkObject = CreateSpriteObject(objectName, sprite, position, 10);
+            if (landmarkObject == null && sprite != null) landmarkObject = CreateSpriteObject(objectName, sprite, position, 10);
+            else if (landmarkObject == null)
+            {
+                landmarkObject = new GameObject(objectName);
+                landmarkObject.transform.position = position;
+            }
 
             DiscoverableLandmark landmark = landmarkObject.GetComponent<DiscoverableLandmark>();
             if (landmark == null) landmark = landmarkObject.AddComponent<DiscoverableLandmark>();
-            landmark.Configure(landmarkId, title, journalText);
+            landmark.Configure(landmarkId, title, journalText, false, emoji, mapColor, autoRadius);
             landmarks[landmarkId] = landmark;
         }
 

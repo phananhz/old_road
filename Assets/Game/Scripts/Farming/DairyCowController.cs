@@ -21,6 +21,10 @@ namespace TheOldRoad.Farming
         private GameObject heartObj;
         private float heartHideTime;
 
+        private Vector3 spawnPosition;
+        private float nextWanderTime;
+        private Vector3 wanderTarget;
+
         public void Configure(InventorySession session)
         {
             this.inventorySession = session;
@@ -28,6 +32,8 @@ namespace TheOldRoad.Farming
 
         private void Start()
         {
+            spawnPosition = transform.position;
+            wanderTarget = spawnPosition;
             cowRenderer = GetComponent<SpriteRenderer>();
             if (cowRenderer == null)
             {
@@ -52,6 +58,23 @@ namespace TheOldRoad.Farming
                 heartObj.SetActive(false);
             }
 
+            // Gentle natural idle wandering
+            if (UnityEngine.Time.time >= nextWanderTime)
+            {
+                nextWanderTime = UnityEngine.Time.time + Random.Range(5f, 10f);
+                Vector2 offset = Random.insideUnitCircle * 2.0f;
+                wanderTarget = spawnPosition + new Vector3(offset.x, offset.y, 0f);
+            }
+
+            if (Vector3.Distance(transform.position, wanderTarget) > 0.05f)
+            {
+                transform.position = Vector3.MoveTowards(transform.position, wanderTarget, UnityEngine.Time.deltaTime * 0.35f);
+                if (cowRenderer != null)
+                {
+                    cowRenderer.flipX = (wanderTarget.x - transform.position.x) > 0;
+                }
+            }
+
             if (playerTransform == null)
             {
                 var player = GameObject.FindWithTag("Player");
@@ -63,29 +86,50 @@ namespace TheOldRoad.Farming
             {
                 if (TheOldRoad.Input.PrototypeInput.GetKeyDown(KeyCode.F))
                 {
-                    TryMilkCow();
+                    TryInteractCow();
                 }
             }
+        }
+
+        private void TryInteractCow()
+        {
+            InventoryRuntime inv = inventorySession != null ? inventorySession.Runtime : null;
+            bool hasFeed = inv != null && (inv.GetQuantity("item.hay") > 0 || inv.GetQuantity("item.wheat") > 0);
+
+            // If player has feed and cow is resting, feed the cow
+            if (hasFeed && UnityEngine.Time.time < nextMilkTime)
+            {
+                string feedItem = inv.GetQuantity("item.hay") > 0 ? "item.hay" : "item.wheat";
+                inv.TryRemove(feedItem, 1);
+                nextMilkTime = 0f; // Instant reset
+                ShowHeartEmote();
+                AudioManager.PlayItemPickup();
+                FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "Đã cho Bò ăn cỏ thơm! (Sẵn sàng vắt sữa)" : "Fed hay to Cow! (Ready to milk)", transform.position + Vector3.up * 1.3f, Color.green);
+                return;
+            }
+
+            TryMilkCow();
         }
 
         private void TryMilkCow()
         {
             if (UnityEngine.Time.time < nextMilkTime)
             {
-                FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "Bò đang nghỉ ngơi..." : "Cow is resting...", transform.position + Vector3.up * 1.2f, Color.white);
+                FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "Bò đang nghỉ ngơi... (Cho ăn cỏ khô để vắt tiếp)" : "Cow is resting... (Feed hay to refresh)", transform.position + Vector3.up * 1.2f, Color.white);
                 return;
             }
 
             nextMilkTime = UnityEngine.Time.time + milkCooldownSeconds;
             AudioManager.PlayChestOpen();
 
+            int yield = 1;
             if (inventorySession != null && inventorySession.Runtime != null)
             {
-                inventorySession.Runtime.Add("item.milk", 1);
+                inventorySession.Runtime.Add("item.milk", yield);
             }
 
             ShowHeartEmote();
-            FloatingTextController.Spawn("+1 " + (LocalizationRuntime.IsVietnamese ? "Bình sữa tươi" : "Fresh Milk"), transform.position + Vector3.up * 1.2f, new Color(0.9f, 0.95f, 1f, 1f));
+            FloatingTextController.Spawn("+" + yield + " " + (LocalizationRuntime.IsVietnamese ? "Bình sữa tươi" : "Fresh Milk"), transform.position + Vector3.up * 1.2f, new Color(0.9f, 0.95f, 1f, 1f));
         }
 
         private void ShowHeartEmote()

@@ -71,10 +71,26 @@ namespace TheOldRoad.Player
             IsSprinting = IsMoving && shiftPressed;
             
             float pathBonus = 1.0f;
-            Collider2D pathHit = Physics2D.OverlapPoint(transform.position);
-            if (pathHit != null && pathHit.gameObject.name.Contains("Path"))
+            Collider2D[] hits = Physics2D.OverlapPointAll(transform.position);
+            for (int i = 0; i < hits.Length; i++)
             {
-                pathBonus = 1.15f;
+                if (hits[i] == null) continue;
+                string hitName = hits[i].gameObject.name.ToLowerInvariant();
+                if (hitName.Contains("stone-tile") || hitName.Contains("highway"))
+                {
+                    pathBonus = 1.35f;
+                    break;
+                }
+                if (hitName.Contains("cobble") || hitName.Contains("wood") || hitName.Contains("bridge"))
+                {
+                    pathBonus = 1.25f;
+                    break;
+                }
+                if (hitName.Contains("path") || hitName.Contains("dirt"))
+                {
+                    pathBonus = 1.15f;
+                    break;
+                }
             }
 
             float currentSpeed = moveSpeed * (IsSprinting ? sprintMultiplier : 1f) * pathBonus;
@@ -99,7 +115,13 @@ namespace TheOldRoad.Player
                 }
             }
 
-            transform.position += new Vector3(direction.x, direction.y, 0f) * (currentSpeed * UnityEngine.Time.deltaTime);
+            Vector3 targetPosition = transform.position + new Vector3(direction.x, direction.y, 0f) * (currentSpeed * UnityEngine.Time.deltaTime);
+            if (targetPosition.x < 100f)
+            {
+                targetPosition.x = Mathf.Clamp(targetPosition.x, -58f, 58f);
+                targetPosition.y = Mathf.Clamp(targetPosition.y, -34f, 34f);
+            }
+            transform.position = targetPosition;
         }
     }
 }

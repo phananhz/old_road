@@ -111,8 +111,9 @@ namespace TheOldRoad.NPC
         {
             return new GUIStyle(GUI.skin.label)
             {
+                font = TheOldRoad.UI.UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 9,
+                fontSize = 11,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(0.92f, 0.88f, 0.70f, 1f) }
             };

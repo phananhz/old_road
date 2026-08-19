@@ -196,20 +196,32 @@ namespace TheOldRoad.Building
 
             preview = new GameObject("Building Placement Preview");
             preview.name = GetBuildingName() + " Placement Preview";
-            preview.transform.localScale = GetFootprint();
             SpriteRenderer renderer = preview.AddComponent<SpriteRenderer>();
-            renderer.sprite = PrototypePixelArtFactory.PlacementPreview();
+            Sprite bSprite = buildingDefinition != null ? (buildingDefinition.CompleteSprite ?? PrototypePixelArtFactory.BuildingCatalogIcon(buildingDefinition.BuildingId)) : null;
+            renderer.sprite = bSprite != null ? bSprite : PrototypePixelArtFactory.PlacementPreview();
             renderer.sortingOrder = 9000;
         }
 
         private void UpdatePreview(Vector2Int cell)
         {
             if (preview == null) return;
-            preview.transform.localScale = GetFootprint();
+            SpriteRenderer renderer = preview.GetComponent<SpriteRenderer>();
+            if (renderer != null && renderer.sprite == PrototypePixelArtFactory.PlacementPreview())
+            {
+                preview.transform.localScale = GetFootprint();
+            }
+            else
+            {
+                preview.transform.localScale = Vector3.one;
+            }
+
             preview.transform.position = new Vector3(cell.x * gridSize, cell.y * gridSize, 0);
-            preview.GetComponent<SpriteRenderer>().color = IsCurrentPlacementValid()
-                ? new Color(0.2f, 0.9f, 0.3f, 0.55f)
-                : new Color(0.9f, 0.2f, 0.2f, 0.55f);
+            if (renderer != null)
+            {
+                renderer.color = IsCurrentPlacementValid()
+                    ? new Color(0.4f, 1.0f, 0.5f, 0.75f)
+                    : new Color(1.0f, 0.3f, 0.3f, 0.75f);
+            }
         }
 
         private void UpdateDragPreview(Vector2Int cell, Vector2Int footprint)
@@ -217,9 +229,13 @@ namespace TheOldRoad.Building
             if (preview == null) return;
             preview.transform.localScale = new Vector3(footprint.x * gridSize, footprint.y * gridSize, 1f);
             preview.transform.position = new Vector3((cell.x + footprint.x * 0.5f - 0.5f) * gridSize, (cell.y + footprint.y * 0.5f - 0.5f) * gridSize, 0f);
-            preview.GetComponent<SpriteRenderer>().color = IsCurrentPlacementValid()
-                ? new Color(0.2f, 0.7f, 1.0f, 0.55f)
-                : new Color(0.9f, 0.2f, 0.2f, 0.55f);
+            SpriteRenderer renderer = preview.GetComponent<SpriteRenderer>();
+            if (renderer != null)
+            {
+                renderer.color = IsCurrentPlacementValid()
+                    ? new Color(0.2f, 0.7f, 1.0f, 0.55f)
+                    : new Color(0.9f, 0.2f, 0.2f, 0.55f);
+            }
         }
 
         private void ConfirmPlacement()

@@ -132,10 +132,13 @@ namespace TheOldRoad.UI
                 pixel.Apply();
             }
 
+            UiFontHelper.EnsureGlobalSkinFont();
             labelStyle ??= new GUIStyle(GUI.skin.label)
             {
+                font = UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 12,
+                fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(1f, 0.94f, 0.76f, 1f) }
             };
         }

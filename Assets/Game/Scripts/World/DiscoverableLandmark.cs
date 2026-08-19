@@ -1,19 +1,29 @@
 using UnityEngine;
+using TheOldRoad.Combat;
+using TheOldRoad.Core;
+using TheOldRoad.UI;
 
 namespace TheOldRoad.World
 {
-    /// <summary>Small exploration target for the prototype map.</summary>
+    /// <summary>
+    /// Interactive & Auto-Discoverable Landmark / Settlement / NPC POI on the World Map.
+    /// When the player visits or gets close, it automatically saves and unlocks on the Map & Minimap.
+    /// </summary>
     public sealed class DiscoverableLandmark : MonoBehaviour
     {
         [SerializeField] private string landmarkId;
         [SerializeField] private string title;
         [SerializeField, TextArea] private string journalText;
+        [SerializeField] private string mapIconEmoji = "★";
+        [SerializeField] private Color mapColor = new Color(0.95f, 0.78f, 0.25f, 1f);
+        [SerializeField] private float autoDiscoverRadius = 6.0f;
 
         private bool discovered;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer glowRenderer;
         private Vector3 baseScale;
         private Color baseColor = Color.white;
+        private Transform playerTransform;
 
         public string LandmarkId => landmarkId;
         public string Title => TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".title") != landmarkId + ".title"
@@ -23,17 +33,50 @@ namespace TheOldRoad.World
             ? TheOldRoad.UI.LocalizationRuntime.T(landmarkId + ".journal")
             : journalText;
         public bool IsDiscovered => discovered;
+        public string MapIconEmoji => string.IsNullOrWhiteSpace(mapIconEmoji) ? "★" : mapIconEmoji;
+        public Color MapColor => mapColor;
 
         private void Awake()
         {
             CaptureVisualState();
         }
 
-        public void Configure(string landmarkId, string title, string journalText, bool discovered = false)
+        private void Update()
+        {
+            if (discovered) return;
+
+            if (playerTransform == null)
+            {
+                var player = GameObject.FindWithTag("Player");
+                if (player != null) playerTransform = player.transform;
+                return;
+            }
+
+            if (autoDiscoverRadius > 0f)
+            {
+                float dist = Vector2.Distance(playerTransform.position, transform.position);
+                if (dist <= autoDiscoverRadius)
+                {
+                    DiscoverWithPopup();
+                }
+            }
+        }
+
+        public void Configure(
+            string landmarkId,
+            string title,
+            string journalText,
+            bool discovered = false,
+            string mapIconEmoji = "★",
+            Color? mapColor = null,
+            float autoDiscoverRadius = 6.0f)
         {
             this.landmarkId = landmarkId;
             this.title = title;
             this.journalText = journalText;
+            this.mapIconEmoji = mapIconEmoji;
+            if (mapColor.HasValue) this.mapColor = mapColor.Value;
+            this.autoDiscoverRadius = autoDiscoverRadius;
             CaptureVisualState();
             SetDiscovered(discovered);
         }
@@ -41,8 +84,24 @@ namespace TheOldRoad.World
         public bool Discover()
         {
             if (discovered || string.IsNullOrWhiteSpace(landmarkId)) return false;
-            TheOldRoad.Audio.AudioManager.PlayLoot();
+            TheOldRoad.Audio.AudioManager.PlayGatherSuccess();
             SetDiscovered(true);
+            return true;
+        }
+
+        public bool DiscoverWithPopup()
+        {
+            if (discovered || string.IsNullOrWhiteSpace(landmarkId)) return false;
+            TheOldRoad.Audio.AudioManager.PlayGatherSuccess();
+            SetDiscovered(true);
+
+            string discMsg = LocalizationRuntime.IsVietnamese
+                ? $"🗺️ ĐÃ KHÁM PHÁ: {Title}"
+                : $"🗺️ DISCOVERED: {Title}";
+            FloatingTextController.Spawn(discMsg, transform.position + Vector3.up * 1.6f, new Color(1f, 0.88f, 0.2f), 2.5f);
+
+            var slice = FindAnyObjectByType<VerticalSliceController>();
+            slice?.NotifyLandmarkDiscovered(this);
             return true;
         }
 
@@ -98,7 +157,7 @@ namespace TheOldRoad.World
 
             glowRenderer = glowObject.AddComponent<SpriteRenderer>();
             glowRenderer.sprite = spriteRenderer.sprite;
-            glowRenderer.color = new Color(0.42f, 0.78f, 1f, 0.52f);
+            glowRenderer.color = new Color(0.38f, 0.82f, 1f, 0.45f);
             glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
             glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
             glowRenderer.enabled = false;
@@ -106,16 +165,10 @@ namespace TheOldRoad.World
 
         private void SetGlowVisible(bool visible)
         {
-            EnsureGlowRenderer();
-            if (glowRenderer == null) return;
-
-            glowRenderer.sprite = spriteRenderer != null ? spriteRenderer.sprite : glowRenderer.sprite;
-            if (spriteRenderer != null)
+            if (glowRenderer != null)
             {
-                glowRenderer.sortingLayerID = spriteRenderer.sortingLayerID;
-                glowRenderer.sortingOrder = spriteRenderer.sortingOrder - 1;
+                glowRenderer.enabled = visible;
             }
-            glowRenderer.enabled = visible && !discovered;
         }
     }
 }

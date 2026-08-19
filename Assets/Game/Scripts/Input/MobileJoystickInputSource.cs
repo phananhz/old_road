@@ -130,8 +130,10 @@ namespace TheOldRoad.Input
 
         private void DrawLabel(Rect rect, string text)
         {
+            TheOldRoad.UI.UiFontHelper.EnsureGlobalSkinFont();
             GUIStyle style = new GUIStyle(GUI.skin.label)
             {
+                font = TheOldRoad.UI.UiFontHelper.CleanFont,
                 alignment = TextAnchor.MiddleCenter,
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,

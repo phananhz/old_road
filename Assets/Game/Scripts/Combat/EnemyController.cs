@@ -342,7 +342,11 @@ namespace TheOldRoad.Combat
 
         private void UpdateSprite()
         {
-            if (EnemyId.Contains("wolf"))
+            if (EnemyId.Contains("stalker") || EnemyId.Contains("shadow"))
+            {
+                spriteRenderer.sprite = PrototypePixelArtFactory.ShadowStalkerSprite(animFrame);
+            }
+            else if (EnemyId.Contains("wolf"))
             {
                 spriteRenderer.sprite = PrototypePixelArtFactory.WolfSprite(animFrame);
             }

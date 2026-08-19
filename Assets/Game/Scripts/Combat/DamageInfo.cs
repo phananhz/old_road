@@ -7,7 +7,8 @@ namespace TheOldRoad.Combat
         Physical,
         Fire,
         Blunt,
-        Slashing
+        Slashing,
+        Piercing
     }
 
     public struct DamageInfo

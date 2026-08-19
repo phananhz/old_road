@@ -57,6 +57,21 @@ namespace TheOldRoad.Gathering
             BeginGather(nearestNode);
         }
 
+        public bool TryGatherNode(ResourceNode node)
+        {
+            if (node == null || node.IsHarvested || inventorySession == null) return false;
+
+            if (!node.CanHarvest(inventorySession.Runtime))
+            {
+                InteractionHint = FormatBlockedHint(node);
+                PlayerSpeechBubble.Say("speech.gather_blocked");
+                return false;
+            }
+
+            BeginGather(node);
+            return true;
+        }
+
         private void BeginGather(ResourceNode node)
         {
             if (node == null || node.IsHarvested) return;

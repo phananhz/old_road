@@ -39,5 +39,29 @@ namespace TheOldRoad.Tests.EditMode
             Assert.AreEqual(1, progress.CompletedCount);
             Assert.AreEqual("Search an abandoned cache", progress.ActiveStep.Title);
         }
+
+        [Test]
+        public void Evaluate_ChecksChapterFourAndFiveSteps()
+        {
+            HashSet<string> completed = new HashSet<string>();
+            StoryQuestContext context = new StoryQuestContext
+            {
+                GetItemQuantity = itemId =>
+                {
+                    if (itemId == "item.fish-salmon") return 2;
+                    if (itemId == "item.cooked-fish") return 1;
+                    if (itemId == "item.weapon-sword") return 1;
+                    if (itemId == "item.wheat") return 5;
+                    if (itemId == "item.milk") return 2;
+                    if (itemId == "item.silver-coin") return 20;
+                    return 0;
+                }
+            };
+
+            Assert.IsTrue(context.HasAnyFish());
+            Assert.IsTrue(context.HasAnyFarmHarvest());
+            Assert.IsTrue(context.HasAdvancedGear());
+            Assert.IsTrue(context.HasItem("item.silver-coin", 15));
+        }
     }
 }

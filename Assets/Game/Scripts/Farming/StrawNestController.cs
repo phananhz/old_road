@@ -51,12 +51,36 @@ namespace TheOldRoad.Farming
                 return;
             }
 
-            if (hasEgg && Vector2.Distance(playerTransform.position, transform.position) <= 1.8f)
+            if (Vector2.Distance(playerTransform.position, transform.position) <= 1.8f)
             {
                 if (TheOldRoad.Input.PrototypeInput.GetKeyDown(KeyCode.F))
                 {
-                    CollectEgg();
+                    TryInteractNest();
                 }
+            }
+        }
+
+        private void TryInteractNest()
+        {
+            if (hasEgg)
+            {
+                CollectEgg();
+                return;
+            }
+
+            InventoryRuntime inv = inventorySession != null ? inventorySession.Runtime : null;
+            if (inv != null && (inv.GetQuantity("item.seed-wheat") > 0 || inv.GetQuantity("item.wheat") > 0))
+            {
+                string seedItem = inv.GetQuantity("item.seed-wheat") > 0 ? "item.seed-wheat" : "item.wheat";
+                inv.TryRemove(seedItem, 1);
+                hasEgg = true;
+                UpdateVisual();
+                AudioManager.PlayItemPickup();
+                FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "Đã rải thóc cho gà! (Có trứng mới)" : "Scattered grain for hens! (New egg ready)", transform.position + Vector3.up * 1.0f, Color.yellow);
+            }
+            else
+            {
+                FloatingTextController.Spawn(LocalizationRuntime.IsVietnamese ? "Ổ rơm trống... (Rải hạt thóc để gà đẻ nhanh)" : "Empty nest... (Scatter seeds to refresh)", transform.position + Vector3.up * 0.8f, Color.white);
             }
         }
 
